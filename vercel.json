@@ -1,0 +1,5 @@
+{
+  "rewrites": [
+    { "source": "/__/auth/:path*", "destination": "https://mojave-caravan.firebaseapp.com/__/auth/:path*" }
+  ]
+}
