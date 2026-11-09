@@ -6,7 +6,7 @@
 <title>Mojave Caravan</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Limelight&family=Special+Elite&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Limelight&family=Special+Elite&family=Press+Start+2P&family=Rye&family=Stardos+Stencil:wght@700&family=Playfair+Display:wght@700&family=Permanent+Marker&family=Orbitron:wght@700&display=swap" rel="stylesheet">
 <style>
 :root{
   /* Mojave night: dusk-dark ground, bone cards, one amber neon accent. Layout: single column table, 3 lanes per side facing each other. */
@@ -21,11 +21,20 @@
   --muted:#a8957c;
   --display:'Limelight', Georgia, serif;
   --body:'Special Elite', 'Courier New', monospace;
-  --cw:clamp(46px, 11.5vw, 66px);
+  --cw:clamp(52px, 13.4vw, 76px);
   --ch:calc(var(--cw) * 1.4);
   --off:calc(var(--cw) * 0.42);
   color-scheme:dark;
 }
+/* Card fonts */
+:root,[data-font="deco"]{--card-font:'Limelight',Georgia,serif;--card-fs:1}
+[data-font="pixel"]{--card-font:'Press Start 2P',monospace;--card-fs:.62}
+[data-font="western"]{--card-font:'Rye',Georgia,serif;--card-fs:.95}
+[data-font="typewriter"]{--card-font:'Special Elite','Courier New',monospace;--card-fs:1.02}
+[data-font="stencil"]{--card-font:'Stardos Stencil',Impact,sans-serif;--card-fs:1.05}
+[data-font="classic"]{--card-font:'Playfair Display',Georgia,serif;--card-fs:1}
+[data-font="marker"]{--card-font:'Permanent Marker',cursive;--card-fs:.95}
+[data-font="atomic"]{--card-font:'Orbitron',sans-serif;--card-fs:.82}
 /* Cosmetics: each option only sets variables, so the nearest choice wins (lets previews show their own style). */
 :root,[data-face="bone"]{--card-bg:linear-gradient(160deg,#f6ead0,#eee0c1 55%,#d9c8a3);--card-ink:#2a1e18;--card-red:#c8442f;--card-blue:#2c62a8;--card-green:#2c7a3c;--card-border:#b9a581;--face-bg:linear-gradient(160deg,#f3e2bb,#e7cf9c 60%,#cfae74);--chip-bg:#e7cf9c}
 [data-face="sand"]{--card-bg:linear-gradient(160deg,#ecd3a3,#dcb97c 60%,#c69b5d);--card-ink:#3a2614;--card-red:#a52f1b;--card-blue:#24548f;--card-green:#2a6a33;--card-border:#a47e47;--face-bg:linear-gradient(160deg,#e3c08a,#cfa365 60%,#b4844a);--chip-bg:#dcb97c}
@@ -83,16 +92,16 @@ h1,h2,h3{font-family:var(--display);font-weight:400;text-wrap:balance;margin:0}
 .card.s-S,.card.s-C{color:var(--card-ink)}
 [data-four="1"] .card.s-D,[data-four="1"] .chip.s-D{color:var(--card-blue)}
 [data-four="1"] .card.s-C,[data-four="1"] .chip.s-C{color:var(--card-green)}
-.card .r,.card .r2{position:absolute;font-family:var(--display);font-size:calc(var(--cw)*0.27);line-height:1;display:flex;flex-direction:column;align-items:center}
+.card .r,.card .r2{position:absolute;font-family:var(--card-font);font-size:calc(var(--cw)*0.27*var(--card-fs));line-height:1;display:flex;flex-direction:column;align-items:center}
 .card .r{top:3px;left:4px;flex-direction:row;gap:1px;align-items:baseline}
 .card .r2{bottom:3px;right:4px;transform:rotate(180deg)}
 .card .r i,.card .r2 i{font-style:normal;font-size:.8em}
-.card .pip{position:absolute;inset:0;display:grid;place-items:center;font-size:calc(var(--cw)*0.5);font-family:var(--display)}
+.card .pip{position:absolute;inset:0;display:grid;place-items:center;font-size:calc(var(--cw)*0.5);font-family:var(--card-font)}
 .card.face{background:var(--face-bg)}
-.card.face .pip{font-size:calc(var(--cw)*0.56);text-shadow:0 1px 0 #ffffff88}
+.card.face .pip{font-size:calc(var(--cw)*0.56*var(--card-fs));text-shadow:0 1px 0 #ffffff88}
 .card.face::after{content:"";position:absolute;inset:4px;border:1px solid currentColor;border-radius:3px;opacity:.35}
 .card.joker{background:linear-gradient(160deg,#2b1d2b,#4a2532);color:var(--neon)}
-.card.joker .pip{font-size:calc(var(--cw)*0.26);letter-spacing:.06em;text-shadow:0 0 8px #ffa44999}
+.card.joker .pip{font-size:calc(var(--cw)*0.26*var(--card-fs));letter-spacing:.06em;text-shadow:0 0 8px #ffa44999}
 .card.back{background:var(--back-bg);border-color:var(--back-border)}
 .card-btn{background:none;border:0;padding:0;border-radius:5px;transition:transform .15s}
 
@@ -155,7 +164,7 @@ details.rules ul{padding-left:18px;margin:10px 0 0;display:grid;gap:6px;max-widt
 .slot{width:var(--cw);height:var(--ch);border-radius:5px;border:1px dashed #ffffff30;display:grid;place-items:center;color:#ffffff40;font-size:11px;text-align:center}
 .entry{position:absolute;left:0;right:0}
 .entry.can .card{box-shadow:0 0 0 2px var(--neon), 0 0 14px #ffa449aa;cursor:pointer}
-.chip{position:absolute;top:2px;width:17px;height:19px;border-radius:3px;background:var(--chip-bg);color:var(--card-ink);font-family:var(--display);
+.chip{position:absolute;top:2px;width:16px;height:19px;border-radius:3px;background:var(--chip-bg);color:var(--card-ink);font-family:var(--card-font);
   font-size:10px;letter-spacing:-1px;display:grid;place-items:center;box-shadow:0 1px 3px #0008}
 .chip.s-H,.chip.s-D{color:var(--card-red)}
 .chip.jk{background:#4a2532;color:var(--neon)}
@@ -299,6 +308,19 @@ body[data-screen="match"]{background:radial-gradient(ellipse at 50% 30%, #000000
 #dustfx{position:fixed;inset:0;width:100%;height:100%;z-index:2;pointer-events:none}
 .fanline{position:relative;z-index:1;max-width:760px;margin:0 auto;padding:6px 16px calc(18px + env(safe-area-inset-bottom));text-align:center;font-size:11px;line-height:1.5;color:#a8957c99}
 .overlay{z-index:6}
+.deckrow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:2px 6px}
+.deckrow.top{padding-bottom:8px;margin-bottom:6px;border-bottom:1px solid #ffffff10}
+.deckrow.bottom{padding-top:8px;margin-top:6px;border-top:1px solid #ffffff10}
+.fan{display:flex;--cw:30px;padding-left:12px;min-height:46px;align-items:flex-end}
+.fan .card{margin-left:-14px;transform:rotate(var(--r)) translateY(calc(var(--r) * var(--r) * .015 / 1deg / 1deg * 1px));transform-origin:50% 120%;box-shadow:0 2px 5px #0009}
+.deckpile{position:relative;flex:none;width:calc(var(--cw) + 6px);height:calc(var(--cw) * 1.4 + 6px)}
+.deckpile.small{--cw:30px}
+.deckpile.mine{--cw:clamp(40px,10vw,54px)}
+.deckpile .card{position:absolute;left:calc(var(--o) * 1.5px);top:calc(6px - var(--o) * 1.5px);box-shadow:0 2px 4px #000a}
+.pilecount{position:absolute;right:-6px;bottom:-6px;min-width:22px;padding:1px 6px;border-radius:999px;background:#000d;border:1px solid #c9a25a99;color:var(--bone);font-size:11px;text-align:center}
+.emptypile{width:100%;height:100%;border:1px dashed #ffffff30;border-radius:5px;display:grid;place-items:center;font-size:10px;color:#ffffff50}
+.decklabel{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
+.decklabel .card{--cw:26px}.decklabel .card .r2{display:none}
 @media (prefers-reduced-motion: reduce){.glowdot{animation:none}}
 
 [data-back="sunburst"]{--back-bg:var(--back-sunburst) center/100% 100% no-repeat, #2a2420;--back-border:#00000099}
@@ -708,6 +730,7 @@ let buildDraft=null;
 
 // Cosmetics. Every item has an id; add unlock:{...} to an item later to gate it.
 const LOOKS={
+  font:[{id:'deco',name:'Deco'},{id:'pixel',name:'Pixel'},{id:'western',name:'Western'},{id:'typewriter',name:'Typewriter'},{id:'stencil',name:'Stencil'},{id:'classic',name:'Classic'},{id:'marker',name:'Marker'},{id:'atomic',name:'Atomic'}],
   face:[{id:'bone',name:'Bone'},{id:'sand',name:'Sun-bleached'},{id:'night',name:'Midnight'},{id:'contrast',name:'High contrast'}],
   back:[{id:'sunburst',name:'Sunburst'},{id:'cap',name:'Bottle cap'},{id:'stripe',name:'Barber pole'},{id:'dusk',name:'Mojave dusk'},{id:'star',name:'Lone star'},
     {id:'blood',name:'Blood-spattered'},{id:'uranium',name:'Uranium glow'},{id:'cowhide',name:'Cowhide'},{id:'rust',name:'Rusted steel'},{id:'shot',name:'Shot up'},{id:'map',name:'Old trail map'},
@@ -737,7 +760,7 @@ const backReward=achId=>LOOKS.back.find(b=>b.unlock===achId);
 function applyLook(){
   {const b=LOOKS.back.find(o=>o.id===meta.look.back);if(!b||!lookUnlocked(b))meta.look.back='sunburst';}
   const L=meta.look, el=document.documentElement;
-  el.dataset.face=L.face; el.dataset.back=L.back; el.dataset.mat=L.mat; el.dataset.four=L.four?'1':'0';
+  el.dataset.font=L.font||'deco'; el.dataset.face=L.face; el.dataset.back=L.back; el.dataset.mat=L.mat; el.dataset.four=L.four?'1':'0';
 }
 let lookFrom='home';
 
@@ -970,7 +993,7 @@ let meta=null, G=null, screen='home', sel=null, disbandMode=false, busy=false, s
 function freshMeta(){
   meta={v:2,caps:START_CAPS,deck:starterDeck(),beaten:[],wins:0,losses:0,tutorialDone:false,match:null,
     perks:[],equipped:[],chems:{spy:1,coffee:0,fresh:0,shoe:0},draft:null,roadTutDone:false,starter:null,
-    look:{face:'bone',back:'sunburst',mat:'leather',four:false,unlocked:[]},
+    look:{font:'deco',face:'bone',back:'sunburst',mat:'leather',four:false,unlocked:[]},
     classic:{deck:null,wins:0,losses:0,rec:{},camp:null}};
   restock();
   return meta;
@@ -988,7 +1011,7 @@ function migrate(m){
   if(m.tutorialDone==null)m.tutorialDone=false;
   if(m.roadTutDone==null)m.roadTutDone=false;
   m.ach=m.ach||{}; if(m.char===undefined)m.char=null; m.stripBy=m.stripBy||[]; m.path=m.path||{}; m.opt=Object.assign({speed:'normal',dust:true,confirm:true,sound:true,haptics:true},m.opt||{}); m.st=Object.assign({hands:0,wins:0,kings:0,jacks:0,bounties:0,chems:0},m.st||{});
-  m.look=Object.assign({face:'bone',back:'sunburst',mat:'leather',four:false,unlocked:[]},m.look||{});
+  m.look=Object.assign({font:'deco',face:'bone',back:'sunburst',mat:'leather',four:false,unlocked:[]},m.look||{});
   if(m.starter===undefined)m.starter=(m.wins||m.losses||(m.beaten&&m.beaten.length))?'legacy':null;
   m.classic=Object.assign({deck:null,wins:0,losses:0,rec:{},camp:null},m.classic||{});
   if(typeof m.caps!=='number'||m.caps<0)m.caps=0;
@@ -1046,6 +1069,8 @@ function renderLook(){
     ${sample}
     <h3 class="sub">Card faces</h3>
     <div class="opts">${LOOKS.face.map(o=>opt('face',o,`<span class="duo">${cardHTML({rank:'7',suit:'H'})}${cardHTML({rank:'K',suit:'S'})}</span>`)).join('')}</div>
+    <h3 class="sub">Card font</h3>
+    <div class="opts">${LOOKS.font.map(o=>opt('font',o,`<span class="duo">${cardHTML({rank:'10',suit:'H'})}${cardHTML({rank:'Q',suit:'S'})}</span>`)).join('')}</div>
     <h3 class="sub">Card backs</h3>
     <div class="opts">${LOOKS.back.filter(o=>!o.unlock).map(o=>opt('back',o,'<div class="card back"></div>')).join('')}</div>
     <h3 class="sub">Unlockable card backs <span class="pill num" style="font-size:12px;vertical-align:middle">${LOOKS.back.filter(o=>o.unlock&&lookUnlocked(o)).length}/${LOOKS.back.filter(o=>o.unlock).length}</span></h3>
@@ -1440,7 +1465,7 @@ function laneHTML(side,l,lanes,selMoves,proj){
     const ce=selMoves.some(m=>m.t==='face'&&m.side===side&&m.lane===l&&m.idx===i)||(turretMode&&side==='a'&&i===cv.length-1);
     const ek=`E${side}${l}${i}`, anim=fx?(fx.kind==='num'&&i===cv.length-1?' land-'+fx.by:(fx.kind==='face'&&fx.rank!=='J'&&i===fx.idx?' pop':'')):'';
     return `<div class="entry${ce?' can':''}${anim}" data-side="${side}" data-lane="${l}" data-idx="${i}" style="top:calc(var(--off) * ${i})">${cardHTML(e.card)}${
-      e.faces.map((f,k)=>`<span class="chip${f.rank==='JK'?' jk':' s-'+f.suit}" style="left:calc(var(--cw) + 3px + ${(k%3)*18}px);top:${2+Math.floor(k/3)*21}px">${f.rank==='JK'?'★':f.rank+SUIT_CH[f.suit]}</span>`).join('')}${proj[ek]!=null?`<span class="ebadge ${pcls(proj[ek])}">=${proj[ek]}</span>`:''}</div>`;
+      e.faces.map((f,k)=>`<span class="chip${f.rank==='JK'?' jk':' s-'+f.suit}" style="left:calc(var(--cw) + 2px + ${(k%3)*17}px);top:${2+Math.floor(k/3)*21}px">${f.rank==='JK'?'★':f.rank+SUIT_CH[f.suit]}</span>`).join('')}${proj[ek]!=null?`<span class="ebadge ${pcls(proj[ek])}">=${proj[ek]}</span>`:''}</div>`;
   }).join('');
   const h=Math.max(0,cv.length-1);
   return `<div class="lane${can?' can':''}${flash}" data-side="${side}" data-lane="${l}" ${can?'role="button" tabindex="0"':''} aria-label="${side==='p'?'Your':'Their'} caravan ${ROMAN[l]}${hide?'':`, value ${v}`}">
@@ -1506,6 +1531,10 @@ function abilityBar(myTurn){
   if(G.char==='greg')return `<div class="chems"><button class="btn ability" data-hug ${!G.hugUsed&&ready?'':'disabled'}>${G.hugUsed?(G.hugPending?'Hug coming…':'Hug given'):'Bear hug'}</button><span class="chem-note">${G.hugPending?'The dealer skips their next turn.':G.hugUsed?'':'Once per hand. Doesn’t use your turn.'}</span></div>`;
   return '';
 }
+function pileHTML(n,label,cls){
+  const layers=Math.min(4,Math.max(1,Math.ceil(n/10)));
+  return `<div class="deckpile ${cls}" role="img" aria-label="${label}: ${n} cards">${n?Array.from({length:layers},(_,i)=>`<div class="card back" style="--o:${i}"></div>`).join(''):'<div class="emptypile">empty</div>'}<span class="pilecount num">${n}</span></div>`;
+}
 function renderMatch(){
   const o=OPP(), lanes=lanesResult(G), tut=tutActive();
   const myTurn=G.turn==='p'&&!G.over&&!busy;
@@ -1523,16 +1552,24 @@ function renderMatch(){
   const dealt=new Set(G.dealtDone?[]:(G.dealt||[]));
   app.innerHTML=`
   <div class="mbar">
-    <div class="opp">${o.rival?`<img class="rivalimg big" src="${portrait(o.rival)}" alt="">`:''}<h2>${esc(o.name)}</h2><small>${esc(o.place)}${G.stake?` · buy-in ${G.stake}`:''} · hand ${G.a.hand.length}<span class="backs">${'<div class="card back"></div>'.repeat(backs)}</span> · deck ${G.a.deck.length}</small></div>
+    <div class="opp">${o.rival?`<img class="rivalimg big" src="${portrait(o.rival)}" alt="">`:''}<h2>${esc(o.name)}</h2><small>${esc(o.place)}${G.stake?` · buy-in ${G.stake}`:''}</small></div>
     <button class="btn ghost${armedFold?' armed':''}" data-fold>${armedFold?(G.stake?`Fold, lose ${G.stake}`:'Tap to fold'):'Fold'}</button>
   </div>
   ${rulesBar()}
   ${G.peek&&!G.over?`<div class="peek"><span>Their hand</span><div class="deckgrid">${G.a.hand.map(cardHTML).join('')}</div></div>`:''}
   <div class="mgrid"><div class="mg-table">
   <div class="table">
+    <div class="deckrow top">
+      <div class="fan" aria-label="Dealer holds ${G.a.hand.length} cards">${G.a.hand.map((_,i,a)=>`<div class="card back" style="--r:${(i-(a.length-1)/2)*6}deg"></div>`).join('')}</div>
+      ${pileHTML(G.a.deck.length,'Dealer’s deck','small')}
+    </div>
     <div class="side">${[0,1,2].map(l=>laneHTML('a',l,lanes,selMoves,proj)).join('')}</div>
     <div class="mid"><span class="turn${G.turn==='p'?' mine':''}">${G.over?'Hand over':G.turn==='p'?'Your move':'Their move'}</span><span class="log">${esc(G.log[0]||'Sell two caravans in range to win.')}</span></div>
     <div class="side">${[0,1,2].map(l=>laneHTML('p',l,lanes,selMoves,proj)).join('')}</div>
+    <div class="deckrow bottom">
+      <span class="decklabel">${G.char==='nuke'&&G.mode==='road'&&G.p.deck.length?`Next draw ${cardHTML(G.p.deck[G.p.deck.length-1])}`:'Your deck'}</span>
+      ${pileHTML(G.p.deck.length,'Your deck','mine')}
+    </div>
   </div>
   </div><div class="mg-side">
   ${tut?coachHTML():`<p class="hint" aria-live="polite">${esc(hintText(selMoves))}</p>`}
@@ -1543,8 +1580,6 @@ function renderMatch(){
     <button class="btn" data-discard ${canDiscard?'':'disabled'}>Discard</button>
     <button class="btn${disbandMode?' armed':''}" data-disband ${canDisband||disbandMode?'':'disabled'}>Disband${G.rules.freeDisband.p?' (free)':''}</button>
     ${undoable()?`<button class="btn" data-undo ${myTurn&&undoStack.length?'':'disabled'}>Undo</button>`:''}
-    <span class="pill num" style="font-size:13px"><span class="pile"><div class="card back"></div></span>Your deck ${G.p.deck.length}</span>
-    ${G.char==='nuke'&&G.mode==='road'&&G.p.deck.length?`<span class="nextdraw" title="Probability Theory">Next draw ${cardHTML(G.p.deck[G.p.deck.length-1])}</span>`:''}
   </div>
   </div></div>
   ${propsHTML()}
@@ -2125,7 +2160,7 @@ function renderCustom(){
     <h3 class="sub">Cards &amp; table</h3>
     <div class="road">
       <div class="stop"><div class="mile"><div class="card back" style="--cw:30px"></div></div>
-        <div><div class="place">Look</div><div class="who">${esc(nm('face',L.face))} faces · ${esc(nm('back',L.back))} back · ${esc(nm('mat',L.mat))}${L.four?' · four-color suits':''}</div></div>
+        <div><div class="place">Look</div><div class="who">${esc(nm('font',L.font||'deco'))} font · ${esc(nm('face',L.face))} faces · ${esc(nm('back',L.back))} back · ${esc(nm('mat',L.mat))}${L.four?' · four-color suits':''}</div></div>
         <button class="btn" data-go="look">Change</button></div>
     </div>
   </section>`;
