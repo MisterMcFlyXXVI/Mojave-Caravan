@@ -331,6 +331,11 @@ body[data-screen="match"]{background:radial-gradient(ellipse at 50% 30%, #000000
 .achrow b{display:block;font-family:var(--display);font-weight:400;font-size:16px}
 .achrow > div > span{display:block;font-size:12.5px;color:var(--muted)}
 .achrow small{display:block;font-size:11px;color:var(--sage);margin-top:2px}
+.achrow .reward{display:block;font-size:11.5px;color:var(--neon);margin-top:2px}
+.opt.locked .optart .card{filter:grayscale(.7) brightness(.35)}
+.optart{position:relative;display:inline-block}
+.lockbadge.sm{width:24px;height:24px;font-size:11px;font-style:normal}
+.opt .req{display:block;font-size:10.5px;line-height:1.35;color:var(--sage);text-align:center}
 .achprog{height:5px;border-radius:999px;background:#0007;margin-top:6px;overflow:hidden}
 .achprog i{display:block;height:100%;background:var(--sage)}
 @media (prefers-reduced-motion: reduce){.toast{transition:none}}
@@ -705,11 +710,32 @@ let buildDraft=null;
 const LOOKS={
   face:[{id:'bone',name:'Bone'},{id:'sand',name:'Sun-bleached'},{id:'night',name:'Midnight'},{id:'contrast',name:'High contrast'}],
   back:[{id:'sunburst',name:'Sunburst'},{id:'cap',name:'Bottle cap'},{id:'stripe',name:'Barber pole'},{id:'dusk',name:'Mojave dusk'},{id:'star',name:'Lone star'},
-    {id:'blood',name:'Blood-spattered'},{id:'uranium',name:'Uranium glow'},{id:'cowhide',name:'Cowhide'},{id:'rust',name:'Rusted steel'},{id:'shot',name:'Shot up'},{id:'map',name:'Old trail map'}],
+    {id:'blood',name:'Blood-spattered'},{id:'uranium',name:'Uranium glow'},{id:'cowhide',name:'Cowhide'},{id:'rust',name:'Rusted steel'},{id:'shot',name:'Shot up'},{id:'map',name:'Old trail map'},
+    // Unlockable backs: art comes from the "cardbacks" folder (file name = id). unlock = achievement id.
+    {id:'vault13',name:'Vault 13',art:true,unlock:'tut_basics'},
+    {id:'goldencaps',name:'Golden Bottlecaps',art:true,unlock:'hoard'},
+    {id:'nukacola',name:'Nuka Cola',art:true,unlock:'chems10'},
+    {id:'tops',name:'The Tops',art:true,unlock:'wins10'},
+    {id:'gomorrah',name:'Gomorrah',art:true,unlock:'comeback'},
+    {id:'fisto',name:'FISTO',art:true,unlock:'quick'},
+    {id:'sierramadre',name:'Sierra Madre',art:true,unlock:'exact26'},
+    {id:'zeta',name:'Mothership Zeta',art:true,unlock:'wipe'},
+    {id:'gnr',name:'Galaxy News Radio',art:true,unlock:'jeanita'},
+    {id:'ultraluxe',name:'Ultra-Luxe',art:true,unlock:'all_in'},
+    {id:'brotherhood',name:'Brotherhood of Steel',art:true,unlock:'camp_done'},
+    {id:'lucky38',name:'Lucky 38',art:true,unlock:'road_strip'},
+    {id:'dogmeat',name:'Dogmeat',art:true,unlock:'first_win'},
+    {id:'tunnelsnakes',name:'Tunnel Snakes',art:true,unlock:'sweep'},
+    {id:'uraniumfever',name:'Uranium Fever',art:true,unlock:'blind'},
+    {id:'greatkhans',name:'Great Khans',art:true,unlock:'jacks25'},
+    {id:'ncr',name:'NCR',art:true,unlock:'bounty10'},
+    {id:'legion',name:'Caesar’s Legion',art:true,unlock:'wins50'}],
   mat:[{id:'leather',name:'Saddle leather'},{id:'felt',name:'Casino felt'},{id:'navy',name:'Midnight felt'},{id:'wood',name:'Barn wood'},{id:'desert',name:'Desert sand'}],
 };
-const lookUnlocked=item=>!item.unlock||meta.look.unlocked.includes(item.id);
+const lookUnlocked=item=>!item.unlock||!!(meta.ach&&meta.ach[item.unlock])||meta.look.unlocked.includes(item.id);
+const backReward=achId=>LOOKS.back.find(b=>b.unlock===achId);
 function applyLook(){
+  {const b=LOOKS.back.find(o=>o.id===meta.look.back);if(!b||!lookUnlocked(b))meta.look.back='sunburst';}
   const L=meta.look, el=document.documentElement;
   el.dataset.face=L.face; el.dataset.back=L.back; el.dataset.mat=L.mat; el.dataset.four=L.four?'1':'0';
 }
@@ -1010,7 +1036,8 @@ function renderLook(){
       <div class="entry" style="top:calc(var(--off) * 1)">${cardHTML({rank:'9',suit:'C'})}</div>
       <div class="entry" style="top:calc(var(--off) * 2)">${cardHTML({rank:'10',suit:'D'})}</div></div></div>
     <div class="prevrow">${cardHTML({rank:'A',suit:'S'})}${cardHTML({rank:'Q',suit:'H'})}${cardHTML({rank:'JK',suit:null})}<div class="card back"></div></div></div>`;
-  const opt=(kind,o,inner)=>{const ok=lookUnlocked(o);return `<button class="opt" data-look="${kind}:${o.id}" data-${kind}="${o.id}" aria-pressed="${L[kind]===o.id}" ${ok?'':'disabled'}>${inner}<span>${esc(o.name)}${ok?'':' · locked'}</span></button>`;};
+  const opt=(kind,o,inner)=>{const ok=lookUnlocked(o),a=o.unlock&&ACH.find(x=>x.id===o.unlock);
+    return `<button class="opt${ok?'':' locked'}" data-look="${kind}:${o.id}" data-${kind}="${o.id}" aria-pressed="${L[kind]===o.id}" ${ok?'':'disabled'}><span class="optart">${inner}${ok?'':'<i class="lockbadge sm" aria-hidden="true">🔒︎</i>'}</span><span>${esc(o.name)}</span>${!ok&&a?`<small class="req">${esc(a.name)}: ${esc(a.desc)}</small>`:''}</button>`;};
   app.innerHTML=`
   <div class="mbar">${backBtn(lookFrom,'Back')}</div>
   <section class="panel">
@@ -1020,12 +1047,15 @@ function renderLook(){
     <h3 class="sub">Card faces</h3>
     <div class="opts">${LOOKS.face.map(o=>opt('face',o,`<span class="duo">${cardHTML({rank:'7',suit:'H'})}${cardHTML({rank:'K',suit:'S'})}</span>`)).join('')}</div>
     <h3 class="sub">Card backs</h3>
-    <div class="opts">${LOOKS.back.map(o=>opt('back',o,'<div class="card back"></div>')).join('')}</div>
+    <div class="opts">${LOOKS.back.filter(o=>!o.unlock).map(o=>opt('back',o,'<div class="card back"></div>')).join('')}</div>
+    <h3 class="sub">Unlockable card backs <span class="pill num" style="font-size:12px;vertical-align:middle">${LOOKS.back.filter(o=>o.unlock&&lookUnlocked(o)).length}/${LOOKS.back.filter(o=>o.unlock).length}</span></h3>
+    <p class="note">Earn these through achievements.</p>
+    <div class="opts">${LOOKS.back.filter(o=>o.unlock).map(o=>opt('back',o,'<div class="card back"></div>')).join('')}</div>
     <h3 class="sub">Play mat</h3>
     <div class="opts">${LOOKS.mat.map(o=>opt('mat',o,'<div class="table swatch"></div>')).join('')}</div>
     <h3 class="sub">Suit colors</h3>
     <button class="prow toggle" data-togglefour aria-pressed="${L.four}"><div><b>Four-color suits ${L.four?'on':'off'}</b><span>Diamonds turn blue and clubs turn green, so suits are easier to tell apart at a glance.</span></div><span class="sw" aria-hidden="true"></span></button>
-    <p class="note" style="margin-top:14px">More card backs and play mats are planned as unlockables.</p>
+
   </section>`;
 }
 
@@ -1905,7 +1935,8 @@ function unlock(id){
   if(!meta.ach)meta.ach={};
   if(meta.ach[id])return false;
   meta.ach[id]=Date.now();
-  const a=ACH.find(x=>x.id===id); if(a&&!achSilent)toast(a);
+  const a=ACH.find(x=>x.id===id),rw=backReward(id);
+  if(a&&!achSilent)toast(rw?{...a,desc:`${a.desc} Unlocked the ${rw.name} card back.`}:a);
   return true;
 }
 function toast(a){toastQ.push(a);if(!toastOn)nextToast();}
@@ -1983,7 +2014,8 @@ function renderAch(){
     <div class="achbar" role="progressbar" aria-valuenow="${got}" aria-valuemin="0" aria-valuemax="${ACH.length}"><span style="width:${got/ACH.length*100}%"></span></div>
     ${ACH_CATS.map((cat,ci)=>`<h3 class="sub">${cat}</h3><div class="achlist">${ACH.filter(a=>a.cat===ci).map(a=>{
       const when=meta.ach[a.id], p=a.prog&&!when?a.prog():null;
-      return `<div class="achrow${when?' got':''}"><span class="medal" aria-hidden="true">★</span><div><b>${esc(a.name)}</b><span>${esc(a.desc)}</span>
+      const rw=backReward(a.id);
+      return `<div class="achrow${when?' got':''}"><span class="medal" aria-hidden="true">★</span><div><b>${esc(a.name)}</b><span>${esc(a.desc)}</span>${rw?`<span class="reward">Reward: ${esc(rw.name)} card back</span>`:''}
         ${when?`<small>Earned ${new Date(when).toLocaleDateString()}</small>`:p?`<div class="achprog"><i style="width:${Math.min(100,p[0]/p[1]*100)}%"></i></div><small>${Math.min(p[0],p[1])} / ${p[1]}</small>`:''}</div></div>`;}).join('')}</div>`).join('')}
   </section>`;
 }
@@ -2209,7 +2241,13 @@ async function pushNow(){
 }
 function adoptCloud(cloud){
   const inMatch=screen==='match'&&G&&!G.over;
+  const keepAch=Object.assign({},meta&&meta.ach), keepSeen=(meta&&meta.achSeen)||0;
   meta=migrate(cloud); meta.syncUid=user.uid;
+  // never lose an achievement when switching to the account copy
+  for(const [k,v] of Object.entries(keepAch))if(!meta.ach[k]||v<meta.ach[k])meta.ach[k]=v;
+  meta.achSeen=Math.max(meta.achSeen||0,keepSeen);
+  achSilent=true;const n=checkState();achSilent=false;
+  if(n>0||Object.keys(keepAch).length)setTimeout(()=>{save();},0);
   if(!meta.stock||!meta.perkStock||!meta.bounties||meta.bounties.length!==ROAD.length)restock();
   if(inMatch)meta.match=G; else{G=null;if(['match','build','vendor','shop'].includes(screen))screen='home';}
   applyLook();
@@ -2571,7 +2609,29 @@ function startDust(){
   requestAnimationFrame(tick);
 }
 
+// Unlockable card back art: cardbacks/<id>.png|jpg|jpeg|webp, with a placeholder until it's uploaded.
+function backPlaceholder(name){
+  const W=240,H=336,[c,x]=mkCanvas(W,H);
+  const g=x.createLinearGradient(0,0,0,H);g.addColorStop(0,'#3a2618');g.addColorStop(1,'#1b110b');x.fillStyle=g;x.fillRect(0,0,W,H);
+  x.strokeStyle='#c9a25a';x.lineWidth=3;rrect(x,12,12,W-24,H-24,10);x.stroke();x.lineWidth=1;rrect(x,20,20,W-40,H-40,7);x.stroke();
+  x.fillStyle='#e6c171';x.textAlign='center';x.font='22px Limelight, Georgia, serif';
+  const words=name.toUpperCase().split(' ');let line='',lines=[];for(const w of words){if((line+' '+w).trim().length>11){lines.push(line.trim());line=w;}else line+=' '+w;}lines.push(line.trim());
+  lines.forEach((l,i)=>x.fillText(l,W/2,H/2-((lines.length-1)*14)+i*28));
+  return c.toDataURL();
+}
+function loadBackArt(){
+  const css=[],exts=['png','jpg','jpeg','webp','PNG','JPG','JPEG'];
+  for(const b of LOOKS.back.filter(b=>b.art)){
+    document.documentElement.style.setProperty('--back-'+b.id,`url(${backPlaceholder(b.name)})`);
+    css.push(`[data-back="${b.id}"]{--back-bg:var(--back-${b.id}) center/cover no-repeat, #1b110b;--back-border:#00000099}`);
+    const tryExt=n=>{if(n>=exts.length)return;const im=new Image();im.onload=()=>document.documentElement.style.setProperty('--back-'+b.id,`url(${im.src})`);im.onerror=()=>tryExt(n+1);im.src=`cardbacks/${b.id}.${exts[n]}`;};
+    tryExt(0);
+  }
+  const st=document.createElement('style');st.textContent=css.join('\n');document.head.appendChild(st);
+  if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>{for(const b of LOOKS.back.filter(b=>b.art)){const cur=getComputedStyle(document.documentElement).getPropertyValue('--back-'+b.id);if(cur.includes('data:'))document.documentElement.style.setProperty('--back-'+b.id,`url(${backPlaceholder(b.name)})`);}});
+}
 function initArt(){
+  try{loadBackArt();}catch(e){}
   const root=document.documentElement.style;
   const set=(k,url)=>root.setProperty(k,`url(${url})`);
   try{
@@ -2820,7 +2880,7 @@ function start(data){
   else screen=(data&&data.screen)||'home';
   if(screen==='match'&&!G)screen='home';
   achSilent=true;const retro=checkState();achSilent=false;
-  if(retro>0)setTimeout(()=>toast({name:`${retro} achievement${retro>1?'s':''} from past play`,desc:'Open Achievements to see them.'}),900);if(screen==='hub')screen='road';
+  if(retro>0){save();setTimeout(()=>toast({name:`${retro} achievement${retro>1?'s':''} from past play`,desc:'Open Achievements to see them.'}),900);}if(screen==='hub')screen='road';
   if(G&&!G.rules)G.rules=baseRules();
   applyLook();if(!window.__art){window.__art=1;initArt();try{loadPortraitFiles();}catch(e){}}drawSky();render();
   if(screen==='match'&&G&&!G.over&&G.turn==='a'){busy=true;render();setTimeout(aiTurn,600);}
