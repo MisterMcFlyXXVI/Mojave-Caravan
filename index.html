@@ -308,6 +308,15 @@ body[data-screen="match"]{background:radial-gradient(ellipse at 50% 30%, #000000
 #dustfx{position:fixed;inset:0;width:100%;height:100%;z-index:2;pointer-events:none}
 .fanline{position:relative;z-index:1;max-width:760px;margin:0 auto;padding:6px 16px calc(18px + env(safe-area-inset-bottom));text-align:center;font-size:11px;line-height:1.5;color:#a8957c99}
 .overlay{z-index:6}
+.rulebook{max-width:68ch;margin-top:8px}
+.rulebook h4{font-family:var(--display);font-weight:400;font-size:18px;color:var(--neon);margin:18px 0 6px}
+.rulebook p{margin:0 0 8px;font-size:14px;color:var(--bone);line-height:1.55}
+.rulebook ul{padding-left:18px;margin:0 0 8px;display:grid;gap:8px;font-size:14px}
+.rulebook .ex{background:#0004;border-left:3px solid var(--sage);border-radius:6px;padding:8px 10px;color:var(--muted)}
+.rulebook .ex b{color:var(--bone);font-weight:400}
+.ex-in{display:block;margin-top:3px;color:var(--muted);font-size:13px}
+.ic{display:inline-block;padding:0 4px;border-radius:3px;background:#efe2c4;color:#2a1e18;font-family:var(--card-font);font-size:.92em;line-height:1.3;white-space:nowrap}
+.ic.s-H,.ic.s-D{color:#c8442f}
 .deckrow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:2px 6px}
 .deckrow.top{padding-bottom:8px;margin-bottom:6px;border-bottom:1px solid #ffffff10}
 .deckrow.bottom{padding-top:8px;margin-top:6px;border-top:1px solid #ffffff10}
@@ -912,15 +921,25 @@ const BASIC_STEPS=[
    move:{t:'num',key:'7H',lane:0},ai:{t:'num',key:'8S',lane:0}},
   {title:'Opening',say:'Now open caravan II with the 5♠.',why:'A low opener leaves lots of room. Almost any card can follow a 5, so caravan II stays easy to build.',move:{t:'num',key:'5S',lane:1},ai:{t:'num',key:'6D',lane:1}},
   {title:'Opening',say:'And caravan III with the 9♣. Once all three are open, you draw back up to five cards after each play.',why:'A high opener gets a caravan near the sell range fast. Mixing high and low openers gives you different ways to reach 21.',move:{t:'num',key:'9C',lane:2},ai:{t:'num',key:'4C',lane:2}},
+  {title:'Reading the table',info:true,say:'All three of your caravans are open. The big number above each caravan is its total. Once a caravan has two cards, an arrow shows its direction (▲ climbing, ▼ falling), and the small suit symbol shows its current suit. Tags like SOLD, OUTBID and BUST appear as totals change.',
+   why:'Your caravans are on the bottom row and Ezra’s are on top. Each of yours faces the one directly above it: your I against his I, and so on.'},
   {title:'Direction',say:'The second card sets a caravan’s direction. Put the 10♦ on caravan I: 7 then 10 climbs, so the next card there has to be higher. A card matching the caravan’s current suit can break that rule. You can never play the same value twice in a row.',
    why:'7 + 10 is 17 in one move, just short of 21. The catch: nothing is higher than a 10, so this caravan can now only grow with a diamond or a face card. That’s fine, because you’re holding a King.',
    move:{t:'num',key:'10D',lane:0},ai:{t:'num',key:'9S',lane:0}},
+  {title:'Direction, step by step',info:true,say:'Your caravan I is 7 then 10, so it’s climbing: the next number must be higher than 10. Ezra’s caravan I is 8 then 9, also climbing, so he needs a 10 next. If a caravan went 7 then 6 instead, it would be falling, and the next card would have to be lower than 6.',
+   why:'Two exceptions. A card of the same suit as the top card can always be played, and it resets the direction: Ezra could put 3♠ on his 9♠, and his caravan would be falling from then on. And you can never play the same value as the top card, so no 9 on a 9.'},
   {title:'Kings',say:'Caravan I is at 17. A King doubles the card it sits on. Put the K♦ on your 7♥: it counts as 14, the caravan hits 24, and you’re in the sell range.',
    why:'A King adds the value of the card it sits on. On the 7 it adds 7 and lands you at 24, safely inside 21–26. On the 10 it would add 10 and bust you at 27. Always check which card you’re doubling.',
    move:{t:'face',key:'KD',side:'p',lane:0,idx:0},ai:{t:'face',key:'KC',side:'a',lane:0,idx:0}},
   {title:'Jacks',say:'Ezra answered with a King of his own. His caravan I is 25 and beats your 24. A Jack knocks a card out, along with anything stacked on it. Play your J♠ on his 8♠.',
    why:'Jacks hit hardest on a card carrying a King. Taking the 8♠ removes 16 points in one play: his caravan drops from 25 to 9, and your 24 is winning again.',
    move:{t:'face',key:'JS',side:'a',lane:0,idx:0},ai:{t:'num',key:'10S',lane:1}},
+  {title:'Queens',info:true,say:'A Queen goes on the top card of a caravan, yours or the dealer’s. It flips the direction and changes the caravan’s suit to the Queen’s. Ezra’s caravan II is 6 then 10, climbing. A Queen of hearts on that 10 would make it falling, and hearts would then be allowed against the direction.',
+   why:'Use a Queen to rescue one of your own caravans that got stuck, like one climbing from a 10, or to block the dealer’s plans.'},
+  {title:'Jokers',info:true,say:'A Joker on a 2–10 removes every other card of that value from the whole table, both sides. On an Ace, it removes every other number card of that Ace’s suit. The card the Joker sits on stays put.',
+   why:'Jokers hit your own caravans too. Before playing one, count how many matching cards you’d lose compared with the dealer.'},
+  {title:'Selling and winning',info:true,say:'A caravan sells at 21–26 if it beats the one facing it. Your 23 against their 25: theirs sells. Your 23 against their 28: yours sells, since 28 is a bust. A tie like 24 against 24 sells for nobody. The hand ends when all three matchups have a seller at the same time, and whoever sold two or three wins.',
+   why:'A caravan that’s selling can still be outbid or Jacked before the end, so keep an eye on all three matchups, not just your best one.'},
   {title:'Your hand now',say:'His King went with it, so your caravan I is ahead again. The rest is up to you. A Queen goes on a caravan’s top card, flips its direction and changes its suit to the Queen’s. A Joker on an Ace wipes every other card of that suit off the table; on 2–10 it wipes every other card of that value. Each turn you can play a card, discard one you can’t use, or disband a caravan that went bust. Sell two of three to win.',
    why:'Before each play, count both sides. Ask what your card does for you and what the dealer can do back. Save Jacks for big targets, and avoid pushing a caravan to 26 if a dealer King could bust it.',
    move:null},
@@ -982,7 +1001,7 @@ function playerLegal(){
   const all=legalMoves(G,'p');
   if(!tutActive())return all;
   const step=tutSteps()[G.tut.step];
-  if(!step||!step.move||step.move.t==='chem')return [];
+  if(!step||step.info||!step.move||step.move.t==='chem')return [];
   const want=resolveSpec(step.move,'p');
   return want?all.filter(m=>m.t===want.t&&m.ci===want.ci&&m.lane===want.lane&&m.side===want.side&&m.idx===want.idx):[];
 }
@@ -1032,16 +1051,50 @@ const capsHTML=n=>`<span class="pill num"><span class="cap"></span> ${n} caps</s
 const capN=n=>`<span class="cap"></span> ${n}`;
 
 // ---------- hub ----------
-const RULES_LIST=`
-  <li>You and the dealer each build three caravans that face each other. A caravan sells when its total is between <b>21 and 26</b> and beats the one across from it.</li>
-  <li>Sell at least two of the three matchups to win. The game ends once all three are settled at the same time.</li>
-  <li>Opening: your first three turns, put a number card on each empty caravan.</li>
-  <li>After that, each turn: play a card, discard one, or disband one of your caravans. You draw back up to 5.</li>
-  <li>The second card sets a caravan's direction, up or down. Later cards must follow it, unless they match the caravan's current suit. Never the same value twice in a row.</li>
-  <li><b>Jack</b> removes a card. <b>Queen</b> (top card only) flips direction and sets the suit. <b>King</b> doubles a card, and stacks. <b>Joker</b> on an Ace wipes that suit from the table; on 2–10 it wipes that value. Face cards can go on either side.</li>
-  <li>Decks hold at least 30 cards. You can’t have two of the same card from one set, but you can mix sets.</li>
-  <li>If a Jack or Joker leaves two equal cards side by side, the caravan keeps the direction it had.</li>
-  <li>Run out of cards before your caravans sell and you lose.</li>`;
+const ic=(r,su)=>`<span class="ic s-${su}">${r}${SUIT_CH[su]}</span>`;
+const RULES_HTML=`
+<h4>The goal</h4>
+<p>You and the dealer each build three caravans: piles of cards that face each other in three matchups. A caravan <b>sells</b> when its total is between <b>21 and 26</b> and beats the caravan facing it. Sell two of the three matchups to win the hand.</p>
+<p class="ex"><b>Example:</b> your caravan I totals 24 and theirs totals 22. Yours sells.</p>
+<h4>Card values</h4>
+<p>Aces count as 1, and 2 through 10 count as their number. Jacks, Queens, Kings and Jokers have no value of their own; they change the cards they’re played on.</p>
+<h4>Starting a hand</h4>
+<p>Each player is dealt 8 cards. For your first three turns you must put one number card (Ace through 10) on each of your three empty caravans. No face cards and no discarding during this opening. After that, you draw back up to 5 cards after every play.</p>
+<h4>Your turn</h4>
+<p>Do exactly one of these:</p>
+<ul><li><b>Play a card,</b> then draw.</li><li><b>Discard a card</b> you can’t use, then draw.</li><li><b>Disband</b> one of your caravans: all its cards are removed and it starts empty. You don’t draw.</li></ul>
+<h4>Direction: up or down</h4>
+<p>The first card just starts a caravan. The <b>second card sets its direction</b>: higher than the first means it’s <b>climbing ▲</b>, lower means it’s <b>falling ▼</b>. Every card after that must keep going the same way, compared with the <b>top card</b> (the last one played).</p>
+<p class="ex"><b>Climbing:</b> ${ic('7','H')} then ${ic('9','S')}. The next card must be higher than 9, so only a 10 fits.<br><b>Falling:</b> ${ic('7','H')} then ${ic('6','C')}. The next card must be lower than 6: a 5, 4, 3, 2 or Ace.<br><b>Keeps going:</b> ${ic('3','D')} → ${ic('5','C')} → ${ic('8','H')} → ${ic('10','S')} is fine, because each card is higher than the one before it.</p>
+<p class="ex"><b>Watch out:</b> a climbing caravan topped by a 10 can’t take any more number cards, except by the suit rule below. A falling caravan topped by an Ace is stuck the same way.</p>
+<h4>The suit rule</h4>
+<p>You can always play a card of the <b>same suit as the top card</b>, even if it goes the wrong way. When you do, it sets a new direction.</p>
+<p class="ex"><b>Example:</b> ${ic('4','H')} then ${ic('8','H')} is climbing. You can still play ${ic('2','H')}, because it’s a heart. Now the caravan is falling (8 → 2), so the next card must be lower than 2, or another heart.</p>
+<h4>No repeats</h4>
+<p>You can never play a card with the same value as the top card, whatever the suit.</p>
+<p class="ex"><b>Example:</b> on a ${ic('9','C')} you can’t play ${ic('9','D')} or another ${ic('9','C')}.</p>
+<h4>Face cards</h4>
+<p>Face cards attach to a number card on <b>any</b> caravan, yours or the dealer’s.</p>
+<ul>
+<li><b>King:</b> adds the value of the card it sits on again. Kings stack. <span class="ex-in">${ic('6','S')} + King = 12. ${ic('6','S')} + two Kings = 24.</span></li>
+<li><b>Jack:</b> removes the card it’s played on, plus any face cards attached to it. <span class="ex-in">A Jack on a ${ic('9','H')} with a King on it removes 18 points at once.</span></li>
+<li><b>Queen:</b> only on the <b>top</b> card of a caravan. It flips the direction and makes the Queen’s suit the caravan’s suit. <span class="ex-in">${ic('3','D')} → ${ic('5','C')} → ${ic('8','H')} is climbing. Put a Queen of spades on the 8 and it’s now falling, and spades can be played against the direction.</span></li>
+<li><b>Joker:</b> on a 2–10, it removes <b>every other card of that value</b> from the whole table, both sides. On an Ace, it removes every other number card of that Ace’s suit. The card the Joker sits on stays. <span class="ex-in">A Joker on ${ic('5','C')} removes every other 5 on the table, yours included.</span></li>
+</ul>
+<h4>Selling and winning</h4>
+<p>A caravan sells when its total is 21–26 <b>and</b> it beats the caravan facing it. Over 26 is a <b>bust</b> and can’t sell.</p>
+<p class="ex">Your 23 vs their 25: <b>theirs</b> sells.<br>Your 23 vs their 28: <b>yours</b> sells, because 28 is a bust.<br>Your 23 vs their 18: <b>yours</b> sells.<br>Your 24 vs their 24: a tie. Neither sells yet; keep playing.<br>Your 19 vs their 17: neither sells.</p>
+<p>The hand ends the moment <b>all three matchups have a seller at the same time</b>. Whoever sold two or three wins. Until then, a selling caravan can still be outbid, busted or knocked down.</p>
+<p class="ex"><b>Example:</b> you sell caravans I and III, the dealer sells II. All three are settled, so you win 2 to 1.</p>
+<h4>Fixing a bust</h4>
+<p>If a caravan goes over 26, play a Jack on one of its cards to bring it down, or disband it and start over. An empty caravan takes any number card.</p>
+<h4>Fine print</h4>
+<ul>
+<li>If you have no cards left in your hand or deck, you lose the hand.</li>
+<li>If a Jack or Joker leaves two cards of the same value side by side, the caravan keeps the direction it had.</li>
+<li>Decks hold at least 30 cards. You can’t have two of the same card from one set, but you can mix sets.</li>
+</ul>`;
+const RULES_LIST=RULES_HTML;
 const backBtn=(to,label)=>`<button class="btn" data-go="${to}">← ${label}</button>`;
 function tutRow(id,o,done,hot,data){
   return `<div class="stop${done?' beat':''}">
@@ -1473,6 +1526,15 @@ function laneHTML(side,l,lanes,selMoves,proj){
     <div class="stack" style="height:calc(var(--ch) + var(--off) * ${h})">${cv.length?entries:`<div class="slot">${ROMAN[l]}</div>`}</div>
   </div>`;
 }
+function whyNot(cv,c){
+  if(!cv.length)return null;
+  if(canPlayNum(cv,c,G.rules.color.p))return null;
+  const top=cv[cv.length-1].card,{dir,suit}=cvState(cv);
+  if(val(c)===val(top))return `can’t repeat a ${top.rank}`;
+  if(dir>0)return `climbing from ${top.rank}, so it needs higher than ${top.rank} or a ${SUIT_CH[suit]}`;
+  if(dir<0)return `falling from ${top.rank}, so it needs lower than ${top.rank} or a ${SUIT_CH[suit]}`;
+  return 'not allowed';
+}
 function hintText(selMoves){
   if(G.over)return '';
   if(G.turn!=='p')return `${OPP().name.split(' ').slice(-1)[0]} is thinking…`;
@@ -1485,7 +1547,12 @@ function hintText(selMoves){
   const c=G.p.hand[sel];
   const plays=selMoves.filter(m=>m.t!=='discard');
   if(G.rules.banned.includes(c.rank))return `${FACE_NAME[c.rank]}s are banned at this table. Discard it, or pick another card.`;
-  if(!plays.length)return setup?'Openings take number cards only.':`${cardName(c)} has nowhere legal to go. Discard it, or pick another.`;
+  if(isNum(c)&&!setup){
+    const blocked=[0,1,2].map(l=>{const r=whyNot(G.p.cv[l],c);return r?`${ROMAN[l]}: ${r}`:null;}).filter(Boolean);
+    if(!plays.length)return `${cardName(c)} can’t go anywhere. ${blocked.join('. ')}. Discard it, or pick another card.`;
+    return `Tap a glowing caravan to play it.${blocked.length?` Not ${blocked.join('. Not ')}.`:''}`;
+  }
+  if(!plays.length)return setup?'Openings take number cards only. Pick a number card.':`${cardName(c)} has nowhere legal to go. Discard it, or pick another.`;
   if(isNum(c))return 'Tap a glowing caravan to play it.';
   return {J:'Tap a card to knock it out, with anything stacked on it.',Q:'Tap the top card of a caravan to flip its direction.',K:`Tap a card to multiply it by ${G.rules.kingMult.p}.`,JK:'Tap a card. Ace wipes its suit, 2–10 wipes its value.'}[c.rank];
 }
@@ -1496,7 +1563,7 @@ function coachHTML(){
     <div class="k"><span>Lesson ${Math.min(n+1,S.length)} of ${S.length} · ${esc(step.title)}</span><button class="btn ghost" data-skiptut>Skip lessons</button></div>
     <div>${waiting?`${esc(OPP().name)} is making a move…`:esc(step.say)}</div>
     ${!waiting&&step.why?`<p class="why"><b>${step.move?'Why':'Tip'}:</b> ${esc(step.why)}</p>`:''}
-    ${!step.move&&!waiting?'<button class="btn hot go" data-skiptut>Play out the hand</button>':''}
+    ${step.info&&!waiting?'<button class="btn hot go" data-tutnext>Next</button>':!step.move&&!waiting?'<button class="btn hot go" data-skiptut>Play out the hand</button>':''}
   </div>`;
 }
 function rulesBar(){
@@ -1515,7 +1582,7 @@ function chemBar(myTurn){
   if(isClassicish()||G.opp===-1)return '';
   const pouch=chemPouch();
   let owned=Object.keys(CHEMS).filter(id=>pouch[id]>0);
-  if(tutActive()){const st=tutSteps()[G.tut.step];if(!st.move||st.move.t!=='chem')return '';owned=[st.move.id];}
+  if(tutActive()){const st=tutSteps()[G.tut.step];if(!st||!st.move||st.move.t!=='chem')return '';owned=[st.move.id];}
   if(!owned.length)return '';
   const ok=myTurn&&G.setupLeft.p===0&&!G.chemTurn;
   return `<div class="chems">${owned.map(id=>{
@@ -1886,6 +1953,7 @@ app.addEventListener('click',e=>{
     render();return;
   }
   if(screen!=='match'||!G)return;
+  if('tutnext' in d){if(G.tut&&tutSteps()[G.tut.step]&&tutSteps()[G.tut.step].info){G.tut.step++;save();render();}return;}
   if('skiptut' in d){if(G.tut){G.tut.done=true;sel=null;save();render();}return;}
   if('fold' in d){
     if(G.over)return;
@@ -2106,7 +2174,7 @@ function renderHelp(){
   <section class="panel">
     <h2 style="font-size:28px">Rules &amp; help</h2>
     <div class="hubbtns"><button class="btn" data-cplay="-1">Replay basics tutorial</button><button class="btn" data-play="-2">Replay Road tutorial</button></div>
-    <details class="rules" open><summary>How Caravan works</summary><ul>${RULES_LIST}</ul></details>
+    <details class="rules" open><summary>How Caravan works</summary><div class="rulebook">${RULES_HTML}</div></details>
     <details class="rules"><summary>The Road</summary><ul>${ROAD_RULES}</ul></details>
     <details class="rules"><summary>Classic campaign</summary><ul>
       <li>Start with one full 54-card set and ${CAMP_START} caps. Beat eight dealers in order.</li>
