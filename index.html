@@ -1,0 +1,1468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mojave Caravan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Limelight&family=Special+Elite&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* Mojave night: dusk-dark ground, bone cards, one amber neon accent. Layout: single column table, 3 lanes per side facing each other. */
+  --night:#17110f;
+  --dust:#2a1f1a;
+  --dust-2:#3b2b23;
+  --bone:#eee0c1;
+  --ink:#2a1e18;
+  --neon:#ffa449;
+  --blood:#c8442f;
+  --sage:#a9c08b;
+  --muted:#a8957c;
+  --display:'Limelight', Georgia, serif;
+  --body:'Special Elite', 'Courier New', monospace;
+  --cw:clamp(46px, 11.5vw, 66px);
+  --ch:calc(var(--cw) * 1.4);
+  --off:calc(var(--cw) * 0.42);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{
+  background:var(--night);
+  color:var(--bone);
+  font-family:var(--body);
+  font-size:15px;
+  line-height:1.45;
+  -webkit-tap-highlight-color:transparent;
+}
+button{font-family:var(--body);font-size:14px;color:inherit;cursor:pointer}
+button:focus-visible,.card-btn:focus-visible{outline:2px solid var(--neon);outline-offset:2px}
+h1,h2,h3{font-family:var(--display);font-weight:400;text-wrap:balance;margin:0}
+.num{font-variant-numeric:tabular-nums}
+
+#sky{position:fixed;inset:0;width:100%;height:100%;z-index:0;display:block}
+#app{position:relative;z-index:1;max-width:760px;margin:0 auto;padding:16px 16px 28px;min-height:100%}
+
+/* ---------- shared bits ---------- */
+.cap{display:inline-block;width:1em;height:1em;border-radius:50%;vertical-align:-0.12em;
+  background:radial-gradient(circle at 50% 50%, #e4d9c4 0 38%, #8b7f6b 40% 52%, transparent 54%),
+             repeating-conic-gradient(#c7bba3 0 12deg, #7a6f5d 12deg 24deg);
+  box-shadow:0 0 0 1px #00000055}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;background:#00000055;border:1px solid #ffffff1a}
+.btn{background:var(--dust-2);border:1px solid #ffffff22;border-radius:6px;padding:9px 14px;transition:background .15s, border-color .15s}
+.btn:hover:not(:disabled){border-color:var(--neon)}
+.btn:disabled{opacity:.4;cursor:default}
+.btn.hot{background:var(--neon);color:var(--ink);border-color:var(--neon)}
+.btn.ghost{background:transparent}
+.btn.armed{background:var(--blood);border-color:var(--blood);color:#fff}
+
+/* ---------- cards ---------- */
+.card{
+  position:relative;width:var(--cw);height:calc(var(--cw) * 1.4);border-radius:5px;
+  background:linear-gradient(160deg,#f6ead0,var(--bone) 55%,#d9c8a3);
+  color:var(--ink);box-shadow:0 1px 0 #00000040, 0 3px 8px #00000066;
+  border:1px solid #b9a581;overflow:hidden;flex:none;
+}
+.card.red{color:var(--blood)}
+.card .r,.card .r2{position:absolute;font-family:var(--display);font-size:calc(var(--cw)*0.27);line-height:1;display:flex;flex-direction:column;align-items:center}
+.card .r{top:3px;left:4px;flex-direction:row;gap:1px;align-items:baseline}
+.card .r2{bottom:3px;right:4px;transform:rotate(180deg)}
+.card .r i,.card .r2 i{font-style:normal;font-size:.8em}
+.card .pip{position:absolute;inset:0;display:grid;place-items:center;font-size:calc(var(--cw)*0.5);font-family:var(--display)}
+.card.face{background:linear-gradient(160deg,#f3e2bb,#e7cf9c 60%,#cfae74)}
+.card.face .pip{font-size:calc(var(--cw)*0.56);text-shadow:0 1px 0 #ffffff88}
+.card.face::after{content:"";position:absolute;inset:4px;border:1px solid currentColor;border-radius:3px;opacity:.35}
+.card.joker{background:linear-gradient(160deg,#2b1d2b,#4a2532);color:var(--neon)}
+.card.joker .pip{font-size:calc(var(--cw)*0.26);letter-spacing:.06em;text-shadow:0 0 8px #ffa44999}
+.card.back{
+  background:
+    radial-gradient(circle at 50% 50%, var(--neon) 0 9%, transparent 10%),
+    repeating-conic-gradient(from 0deg at 50% 50%, #5a2a1f 0 10deg, #3a1b16 10deg 20deg);
+  border-color:#6d3a28;
+}
+.card-btn{background:none;border:0;padding:0;border-radius:5px;transition:transform .15s}
+
+/* ---------- hub ---------- */
+.hero{text-align:center;padding:28px 0 18px}
+.neon{
+  font-family:var(--display);font-size:clamp(46px,14vw,92px);letter-spacing:.08em;line-height:1;
+  color:#ffe4bf;
+  text-shadow:0 0 4px #fff3, 0 0 12px var(--neon), 0 0 28px #ff7a2a, 0 0 56px #ff5a1a88;
+  animation:flicker 7s infinite;
+}
+.neon .dim{animation:buzz 3.3s infinite}
+@keyframes flicker{0%,93%,100%{opacity:1}94%{opacity:.55}95%{opacity:1}97%{opacity:.7}}
+@keyframes buzz{0%,61%,100%{opacity:1}62%{opacity:.25}64%{opacity:1}66%{opacity:.4}67%{opacity:1}}
+.tagline{color:var(--muted);margin-top:10px;letter-spacing:.04em}
+.hubbar{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin:6px 0 22px}
+.panel{background:#1d1513e6;border:1px solid #ffffff14;border-radius:10px;padding:16px;backdrop-filter:blur(3px)}
+.road{display:grid;gap:10px;margin-top:12px}
+.stop{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;padding:12px;border-radius:8px;background:var(--dust);border:1px solid #ffffff10}
+.stop .mile{font-family:var(--display);font-size:22px;color:var(--neon);width:2.2ch;text-align:center}
+.stop .place{font-family:var(--display);font-size:19px}
+.stop .who{color:var(--muted);font-size:13px}
+.stop.locked{opacity:.45}
+.stop .terms{font-size:12px;color:var(--neon);margin-top:3px;opacity:.9}
+.stop .btn{min-width:6.5em}
+.coach{border:1px solid #ffa44955;border-left:4px solid var(--neon);background:#ffa44914;border-radius:8px;padding:10px 12px;margin:10px 0;font-size:14px}
+.coach .k{display:flex;justify-content:space-between;gap:8px;font-family:var(--display);color:var(--neon);font-size:14px;margin-bottom:4px}
+.coach .k button{font-size:12px;padding:3px 8px}
+.coach .go{margin-top:10px}
+.hand.tut .card-btn:disabled{opacity:.4}
+.stop.beat .mile{color:var(--sage)}
+.sect-h{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.sect-h h2{font-size:22px}
+details.rules{margin-top:14px}
+details.rules summary{cursor:pointer;font-family:var(--display);font-size:20px}
+details.rules ul{padding-left:18px;margin:10px 0 0;display:grid;gap:6px;max-width:65ch}
+
+/* ---------- match ---------- */
+.mbar{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px}
+.mbar .opp h2{font-size:18px}
+.mbar .opp small{color:var(--muted)}
+.table{
+  border-radius:12px;padding:10px 8px;
+  background:
+    radial-gradient(ellipse at 50% 50%, #4a3326 0%, #2e2019 70%),
+    var(--dust);
+  border:1px solid #ffffff12;box-shadow:inset 0 0 40px #00000088;
+}
+.side{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.lane{border-radius:8px;padding:6px 4px 8px;min-width:0;border:1px dashed transparent;transition:border-color .15s, background .15s}
+.lane.can{border-color:var(--neon);background:#ffa4491a;cursor:pointer}
+.lane.flash{animation:flash .9s}
+@keyframes flash{0%{background:#ffa44944}100%{background:transparent}}
+.lhead{display:flex;align-items:baseline;gap:6px;min-height:26px;padding:0 2px;flex-wrap:wrap}
+.lhead .v{font-family:var(--display);font-size:20px;line-height:1}
+.lhead .v.ok{color:var(--sage)}
+.lhead .v.bust{color:var(--blood)}
+.lhead .dir{font-size:12px;color:var(--muted)}
+.tag{font-size:10px;letter-spacing:.08em;padding:1px 5px;border-radius:3px;background:var(--sage);color:var(--ink)}
+.tag.lose{background:#ffffff1f;color:var(--muted)}
+.stack{position:relative;margin-top:4px}
+.slot{width:var(--cw);height:var(--ch);border-radius:5px;border:1px dashed #ffffff30;display:grid;place-items:center;color:#ffffff40;font-size:11px;text-align:center}
+.entry{position:absolute;left:0;right:0}
+.entry.can .card{box-shadow:0 0 0 2px var(--neon), 0 0 14px #ffa449aa;cursor:pointer}
+.chip{position:absolute;top:2px;width:17px;height:19px;border-radius:3px;background:#e7cf9c;color:var(--ink);font-family:var(--display);
+  font-size:10px;letter-spacing:-1px;display:grid;place-items:center;box-shadow:0 1px 3px #0008}
+.chip.red{color:var(--blood)}
+.chip.jk{background:#4a2532;color:var(--neon)}
+.mid{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 6px;margin:6px 0;border-top:1px solid #ffffff14;border-bottom:1px solid #ffffff14;font-size:13px}
+.mid .turn{font-family:var(--display);font-size:15px;white-space:nowrap}
+.mid .turn.mine{color:var(--neon)}
+.mid .log{color:var(--muted);text-align:right}
+.hint{text-align:center;color:var(--muted);font-size:13px;margin:10px 0 8px;min-height:1.4em}
+.hand{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;padding:4px 0 10px}
+.hand .card-btn.sel{transform:translateY(-10px)}
+.hand .card-btn.sel .card{box-shadow:0 0 0 2px var(--neon),0 6px 16px #000a}
+.hand .card-btn:disabled{cursor:default}
+.actions{display:flex;justify-content:center;gap:10px;flex-wrap:wrap}
+.backs{display:inline-flex;margin-left:6px;vertical-align:middle}
+.backs .card{--cw:12px;border-radius:2px;margin-left:-5px;box-shadow:none}
+
+.overlay{position:fixed;inset:0;z-index:5;display:grid;place-items:center;padding:16px;background:#0b0807cc;backdrop-filter:blur(3px)}
+.result{max-width:380px;width:100%;text-align:center;padding:26px 20px}
+.result h2{font-size:34px;color:var(--neon);text-shadow:0 0 18px #ff7a2a88}
+.result h2.lost{color:var(--muted);text-shadow:none}
+.result p{color:var(--muted)}
+.result .gain{font-family:var(--display);font-size:28px;color:var(--bone);margin:10px 0 18px}
+
+/* ---------- shop ---------- */
+.tabs{display:flex;gap:6px;margin:14px 0}
+.tabs .btn[aria-pressed="true"]{background:var(--neon);color:var(--ink);border-color:var(--neon)}
+.offers{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px}
+.offer{display:grid;justify-items:center;gap:8px;padding:12px 8px;border-radius:8px;background:var(--dust);border:1px solid #ffffff10;text-align:center}
+.offer .what{font-size:12px;color:var(--muted);min-height:2.8em}
+.offer.sold{opacity:.35}
+.deckgrid{display:flex;flex-wrap:wrap;gap:6px}
+.deckgrid .card{--cw:40px}
+.deckgrid .card-btn:hover .card{box-shadow:0 0 0 2px var(--blood)}
+.note{color:var(--muted);font-size:13px;margin:6px 0 12px;max-width:65ch}
+
+@media (prefers-reduced-motion: reduce){
+  .neon,.neon .dim,.lane.flash{animation:none}
+  .card-btn,.lane{transition:none}
+}
+.stop .house{font-size:12px;color:#e7b98a;margin-top:3px}
+.stop .bty{font-size:12px;color:var(--sage);margin-top:3px}
+.spoils{display:grid;gap:8px;margin-top:10px;text-align:left}
+.spoil{display:grid;gap:3px;padding:12px;border-radius:8px;background:var(--dust-2);border:1px solid #ffa44955;text-align:left}
+.spoil:hover{border-color:var(--neon)}
+.spoil b{font-family:var(--display);font-weight:400;font-size:17px;color:var(--bone)}
+.spoil span{font-size:13px;color:var(--muted)}
+h3.sub{font-family:var(--display);font-size:18px;margin:16px 0 8px}
+.plist{display:grid;gap:8px}
+.prow{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:10px 12px;border-radius:8px;background:var(--dust);border:1px solid #ffffff10}
+.prow.on{border-color:#ffa44966}
+.prow b{display:block;font-family:var(--display);font-weight:400;font-size:16px}
+.prow span{font-size:13px;color:var(--muted)}
+.prow .btn{white-space:nowrap}
+.rulesbar{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px}
+.rb{font-size:11px;padding:3px 7px;border-radius:4px;background:#ffffff12;color:var(--muted)}
+.house-chip{background:#7a3a2240;color:#e7b98a}
+.perk-chip{background:#ffa44922;color:var(--neon)}
+.bounty-chip{background:#a9c08b22;color:var(--sage)}
+.peek{display:flex;align-items:center;gap:10px;margin:0 0 8px;font-size:12px;color:var(--muted)}
+.peek .deckgrid .card{--cw:30px}
+.peek .deckgrid .card .r2{display:none}
+.chems{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;align-items:center;margin:0 0 10px}
+.chem{font-size:12px;padding:6px 10px;border-color:#a9c08b55}
+.chem-note{font-size:12px;color:var(--muted)}
+.result{max-height:92vh;overflow:auto}
+.hero.small{padding:10px 0 14px}
+.neon.sm{font-size:clamp(30px,9vw,54px);letter-spacing:.04em}
+.modes{display:grid;gap:12px}
+@media (min-width:640px){.modes{grid-template-columns:1fr 1fr}}
+.mode{display:grid;gap:6px;text-align:left;padding:18px;border-radius:12px;background:#1d1513ee;border:1px solid #ffa44944;transition:border-color .15s, transform .15s}
+.mode:hover{border-color:var(--neon);transform:translateY(-2px)}
+.mode .mk{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--neon)}
+.mode .mt{font-family:var(--display);font-size:26px;line-height:1.1;color:var(--bone)}
+.mode .md{font-size:14px;color:var(--muted)}
+.mode .ms{font-size:12px;color:var(--sage)}
+.mile.lvl{font-size:16px}
+.presets{display:grid;gap:8px;margin:6px 0 4px}
+@media (min-width:640px){.presets{grid-template-columns:repeat(3,1fr)}}
+.bgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(62px,1fr));gap:10px 6px}
+.btile{display:grid;justify-items:center;gap:3px}
+.btile .bcard{position:relative}
+.btile .card{--cw:40px}
+.btile.have .card{box-shadow:0 0 0 2px var(--neon)}
+.btile .cnt{position:absolute;right:-6px;top:-6px;background:var(--neon);color:var(--ink);font-size:11px;border-radius:999px;padding:0 5px;font-family:var(--body)}
+.btile .pr{font-size:11px;color:var(--muted)}
+.btile .pm{display:flex;gap:4px}
+.btile .pm .btn{padding:2px 9px;font-size:15px;line-height:1.2}
+.buildbar{position:sticky;bottom:0;z-index:3;display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;justify-content:space-between;margin-top:12px;padding:12px 14px;border-radius:10px;background:#120d0bf2;border:1px solid #ffa44955;backdrop-filter:blur(4px)}
+.buildbar .why{color:var(--blood);font-size:13px;flex:1 1 140px}
+
+.bets{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.bets .btn{padding:6px 10px;font-size:13px}
+</style>
+</head>
+<body>
+<canvas id="sky" aria-hidden="true"></canvas>
+<main id="app"></main>
+
+<script>
+// ================= ENGINE START =================
+const SUITS=['S','H','D','C'];
+const SUIT_CH={S:'♠',H:'♥',D:'♦',C:'♣'};
+const NUM_RANKS=['A','2','3','4','5','6','7','8','9','10'];
+const ROMAN=['I','II','III'];
+const FACE_NAME={J:'Jack',Q:'Queen',K:'King',JK:'Joker'};
+
+const isNum=c=>!(c.rank in FACE_NAME);
+const val=c=>c.rank==='A'?1:parseInt(c.rank,10);
+const isRed=s=>s==='H'||s==='D';
+const cardName=c=>c.rank==='JK'?'Joker':c.rank+SUIT_CH[c.suit];
+const clone=o=>JSON.parse(JSON.stringify(o));
+const other=s=>s==='p'?'a':'p';
+let _uid=0;
+const mk=(rank,suit)=>({id:'c'+(++_uid)+'_'+Math.random().toString(36).slice(2,6),rank,suit});
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+function buildDeck(spec){return shuffle(spec.map(s=>mk(s.rank,s.suit)));}
+function baseNumbers(){const out=[];for(const s of SUITS)for(const r of NUM_RANKS)out.push({rank:r,suit:s});return out;}
+function addFaces(spec,extra){
+  for(const [rank,n] of Object.entries(extra)){
+    for(let i=0;i<n;i++)spec.push({rank,suit:rank==='JK'?null:SUITS[(i+spec.length)%4]});
+  }
+  return spec;
+}
+// Rules can differ per side (perks for you, house rules for the table).
+function baseRules(){
+  return {range:{p:[21,26],a:[21,26]},kingMult:{p:2,a:2},hand:{p:5,a:5},deal:{p:8,a:8},
+    color:{p:false,a:false},jackproof:{p:false,a:false},freeDisband:{p:false,a:false},banned:[],hideOpp:false};
+}
+const RULES=g=>g.rules||baseRules();
+
+function cvValue(cv){
+  return cv.reduce((s,e)=>s+val(e.card)*e.faces.reduce((m,f)=>f.rank==='K'?m*(f.m||2):m,1),0);
+}
+function cvState(cv){
+  let dir=0,suit=null;
+  for(let i=0;i<cv.length;i++){
+    const e=cv[i];
+    // Equal neighbours can only appear after a Jack/Joker removal; direction then stays as it was.
+    if(i>0){const d=val(e.card)-val(cv[i-1].card);if(d!==0)dir=d>0?1:-1;}
+    suit=e.card.suit;
+    for(const f of e.faces){if(f.rank==='Q'){dir=-dir;suit=f.suit;}}
+  }
+  return {dir,suit};
+}
+function canPlayNum(cv,card,colorMatch){
+  if(cv.length===0)return true;
+  const last=cv[cv.length-1];
+  if(val(card)===val(last.card))return false;
+  const {dir,suit}=cvState(cv);
+  if(card.suit===suit||(colorMatch&&isRed(card.suit)===isRed(suit)))return true;
+  if(dir===0)return true;
+  return dir>0?val(card)>val(last.card):val(card)<val(last.card);
+}
+function canPlayFace(cv,idx,card){
+  const e=cv[idx]; if(!e)return false;
+  if(card.rank==='J')return true;
+  if(card.rank==='Q')return idx===cv.length-1;
+  return true;
+}
+const inR=(v,r)=>v>=r[0]&&v<=r[1];
+function laneWinner(pv,av,R){
+  const pi=inR(pv,R.range.p),ai=inR(av,R.range.a);
+  if(pi&&(!ai||pv>av))return 'p';
+  if(ai&&(!pi||av>pv))return 'a';
+  return null;
+}
+function lanesResult(g){const R=RULES(g);return [0,1,2].map(l=>laneWinner(cvValue(g.p.cv[l]),cvValue(g.a.cv[l]),R));}
+function winnerOf(g){
+  if(g.setupLeft.p>0||g.setupLeft.a>0)return null;
+  const r=lanesResult(g); if(r.some(x=>!x))return null;
+  return r.filter(x=>x==='p').length>=2?'p':'a';
+}
+function legalMoves(g,side){
+  const R=RULES(g),me=g[side],moves=[],setup=g.setupLeft[side]>0;
+  me.hand.forEach((c,ci)=>{
+    if(isNum(c)){
+      for(let l=0;l<3;l++){
+        const cv=me.cv[l];
+        if(setup){if(cv.length===0)moves.push({t:'num',ci,lane:l});}
+        else if(canPlayNum(cv,c,R.color[side]))moves.push({t:'num',ci,lane:l});
+      }
+    }else if(!setup&&!R.banned.includes(c.rank)){
+      for(const s of ['p','a']){
+        if(c.rank==='J'&&s!==side&&R.jackproof[s])continue;
+        for(let l=0;l<3;l++){
+          const cv=g[s].cv[l];
+          for(let i=0;i<cv.length;i++)if(canPlayFace(cv,i,c))moves.push({t:'face',ci,side:s,lane:l,idx:i});
+        }
+      }
+    }
+  });
+  if(!setup){
+    me.hand.forEach((c,ci)=>moves.push({t:'discard',ci}));
+    for(let l=0;l<3;l++)if(me.cv[l].length)moves.push({t:'disband',lane:l});
+  }else if(!moves.length){
+    me.hand.forEach((c,ci)=>moves.push({t:'discard',ci}));
+  }
+  return moves;
+}
+function drawTo(g,side,n){const me=g[side];while(me.hand.length<n&&me.deck.length)me.hand.push(me.deck.pop());}
+function applyMove(g,side,m,sim){
+  const R=RULES(g),me=g[side];
+  if(m.t==='disband'){me.cv[m.lane]=[];return;}
+  const wasSetup=g.setupLeft[side]>0;
+  const card=me.hand.splice(m.ci,1)[0];
+  if(m.t==='num'){
+    me.cv[m.lane].push({card,faces:[]});
+    if(wasSetup)g.setupLeft[side]--;
+  }else if(m.t==='face'){
+    const cv=g[m.side].cv[m.lane],e=cv[m.idx];
+    if(card.rank==='J'){cv.splice(m.idx,1);}
+    else if(card.rank==='JK'){
+      e.faces.push(card);
+      const tv=val(e.card),ts=e.card.suit;
+      for(const s of ['p','a'])for(let l=0;l<3;l++){
+        g[s].cv[l]=g[s].cv[l].filter(x=>x===e||!(tv===1?x.card.suit===ts:val(x.card)===tv));
+      }
+    }else{
+      if(card.rank==='K')card.m=R.kingMult[side];
+      e.faces.push(card);
+    }
+  }
+  if(sim)return;
+  if(m.t==='discard'){if(me.deck.length)me.hand.push(me.deck.pop());}
+  else if(!(m.t==='num'&&wasSetup))drawTo(g,side,R.hand[side]);
+}
+// AI heuristics
+function laneScore(v,r){
+  const [lo,hi]=r;
+  if(v===0)return 0;
+  if(v<lo)return v*2*21/lo;
+  if(v<=hi)return 62+(v-lo)*2;
+  return 8-(v-hi)*4;
+}
+function evalState(g,side){
+  const w=winnerOf(g);
+  if(w)return w===side?100000:-100000;
+  const R=RULES(g),os=other(side),me=g[side],op=g[os];
+  let s=0;
+  for(let l=0;l<3;l++){
+    const mv=cvValue(me.cv[l]),ov=cvValue(op.cv[l]);
+    s+=laneScore(mv,R.range[side])-laneScore(ov,R.range[os])*0.8;
+    if(inR(mv,R.range[side])&&inR(ov,R.range[os]))s+=mv>ov?25:mv<ov?-25:0;
+    const st=cvState(me.cv[l]);
+    if(me.cv[l].length>1&&mv<R.range[side][0]){
+      const last=val(me.cv[l][me.cv[l].length-1].card);
+      if((st.dir>0&&last>=10)||(st.dir<0&&last<=1))s-=6;
+    }
+  }
+  return s;
+}
+const KEEP={J:7,Q:2,K:6,JK:12};
+function moveCost(g,side,m){
+  if(m.t==='disband')return 3;
+  const c=g[side].hand[m.ci];
+  if(m.t==='discard')return isNum(c)?2+(val(c)>=9?0:1):KEEP[c.rank]+4;
+  if(m.t==='face')return KEEP[c.rank];
+  return 0;
+}
+function chooseAIMove(g,side,noise){
+  const moves=legalMoves(g,side);
+  if(!moves.length)return null;
+  let best=null,bs=-Infinity;
+  for(const m of moves){
+    const g2=clone(g); applyMove(g2,side,m,true);
+    const sc=evalState(g2,side)-moveCost(g,side,m)+Math.random()*noise;
+    if(sc>bs){bs=sc;best=m;}
+  }
+  return best;
+}
+function newMatch(playerSpec,oppSpec,oppIndex,rules){
+  const R=rules||baseRules();
+  const g={p:{deck:buildDeck(playerSpec),hand:[],cv:[[],[],[]]},a:{deck:buildDeck(oppSpec),hand:[],cv:[[],[],[]]},
+    turn:'p',setupLeft:{p:3,a:3},log:[],over:null,opp:oppIndex,fx:null,rules:R};
+  for(let i=0;i<R.deal.p;i++)g.p.hand.push(g.p.deck.pop());
+  for(let i=0;i<R.deal.a;i++)g.a.hand.push(g.a.deck.pop());
+  return g;
+}
+// ================= ENGINE END =================
+const HOUSE={
+  tight:{name:'Tight range',desc:'Caravans sell at 22–25.',apply:R=>{R.range.p=[22,25];R.range.a=[22,25];}},
+  royal:{name:'Royal court',desc:'Kings triple instead of double.',apply:R=>{R.kingMult.p=3;R.kingMult.a=3;}},
+  sand:{name:'Sandstorm',desc:'You can’t see the dealer’s totals.',apply:R=>{R.hideOpp=true;}},
+  nojk:{name:'No Jokers',desc:'Jokers can’t be played.',apply:R=>{R.banned.push('JK');}},
+  long:{name:'Long haul',desc:'Caravans sell at 24–30.',apply:R=>{R.range.p=[24,30];R.range.a=[24,30];}},
+  stacked:{name:'Stacked house',desc:'The dealer holds 6 cards.',apply:R=>{R.hand.a=6;}},
+  iron:{name:'Iron house',desc:'Your Jacks can’t touch the dealer’s cards.',apply:R=>{R.jackproof.a=true;}},
+};
+const ROAD=[
+  {place:'Goodsprings',name:'Dusty Rita',blurb:'Plays loose. Learns slow.',noise:30,extra:{J:2,Q:1,K:1},house:[],buyin:0,win:15,bonus:10},
+  {place:'Jean',name:'Tobias Crane',blurb:'Deals fast, talks faster.',noise:24,extra:{J:2,Q:2,K:2},house:[],buyin:5,win:12,bonus:10},
+  {place:'Primm',name:'One-Ace Hollis',blurb:'Lost an ace in a bet. Still bitter.',noise:18,extra:{J:3,Q:2,K:2,JK:1},house:['tight'],buyin:10,win:20,bonus:15},
+  {place:'Searchlight',name:'Marigold Vance',blurb:'Counts every card twice.',noise:14,extra:{J:3,Q:2,K:3,JK:1},house:['royal'],buyin:15,win:25,bonus:20},
+  {place:'Nelson',name:'Gus the Prospector',blurb:'Dug his deck out of a ghost mine.',noise:10,extra:{J:4,Q:2,K:3,JK:1},house:['sand'],buyin:20,win:35,bonus:25},
+  {place:'Boulder City',name:'The Dam Keeper',blurb:'Patient as concrete.',noise:7,extra:{J:4,Q:3,K:3,JK:2},house:['nojk'],buyin:30,win:45,bonus:35},
+  {place:'Henderson',name:'Ida Mae Sorrell',blurb:'Never folds. Never blinks.',noise:5,extra:{J:4,Q:3,K:4,JK:2},house:['long'],buyin:40,win:60,bonus:45},
+  {place:'North Las Vegas',name:'Two-Bit Carver',blurb:'Always holds one more card than you.',noise:3,extra:{J:5,Q:3,K:4,JK:2},house:['stacked'],buyin:50,win:80,bonus:60},
+  {place:'Fremont Street',name:'Velvet Moreno',blurb:'Old Vegas. Older tricks.',noise:1.5,extra:{J:5,Q:3,K:5,JK:2},house:['iron'],buyin:65,win:130,bonus:80},
+  {place:'The Strip',name:'Silver Lou',blurb:'House always wins. Prove it doesn’t.',noise:0.5,extra:{J:5,Q:4,K:5,JK:3},house:['stacked','tight'],buyin:80,win:160,bonus:150},
+];
+
+const TUTORS={
+  '-1':{place:'Practice table',name:'Old Ezra',blurb:'Teaches the rules of Caravan, one card at a time.',noise:40,extra:{J:1,Q:1,K:1},house:[],buyin:0,win:10,bonus:15},
+  '-2':{place:'Practice table',name:'Lucky Jo',blurb:'Shows you how the road works: house rules, perks, chems and bounties.',noise:30,extra:{J:2,Q:1,K:1},house:['royal'],buyin:0,win:10,bonus:20},
+};
+const TUTOR=TUTORS['-1'];
+const CLASSIC_DEALERS=[
+  {level:'Easy',name:'Sunday Sal',place:'Classic table',blurb:'Plays for the company.',noise:30,extra:{J:2,Q:1,K:1}},
+  {level:'Normal',name:'Hank Delgado',place:'Classic table',blurb:'Knows the game. Knows you don’t.',noise:12,extra:{J:2,Q:2,K:2,JK:1}},
+  {level:'Hard',name:'Rosa Quill',place:'Classic table',blurb:'Never wastes a Jack.',noise:4,extra:{J:3,Q:2,K:3,JK:2}},
+  {level:'Expert',name:'The Cardsharp',place:'Classic table',blurb:'Nobody’s seen him lose.',noise:0.5,extra:{J:3,Q:3,K:3,JK:2}},
+];
+const OPP=()=>G.opp<0?TUTORS[G.opp]:G.mode==='classic'?CLASSIC_DEALERS[G.opp]:G.mode==='campaign'?CAMP_DEALERS[G.opp]:ROAD[G.opp];
+const isClassicish=()=>G.mode==='classic'||G.mode==='campaign';
+
+// Starter decks: pick one to start the Road, or as a preset in the classic card buy.
+const nums=(skip=[])=>baseNumbers().filter(c=>!skip.includes(c.rank));
+const STARTERS={
+  standard:{name:'Mojave Standard',desc:'Every number card plus a few of each face. Steady and forgiving.',build:()=>addFaces(nums(),{J:2,Q:2,K:2,JK:1})},
+  royal:{name:'High Roller',desc:'No Aces, 2s or 3s. Four Kings. Hits the sell range fast, busts if you’re careless.',build:()=>addFaces(nums(['A','2','3']),{J:2,Q:1,K:4,JK:1})},
+  saboteur:{name:'Saboteur',desc:'No Aces, five Jacks and two Jokers. Wins by wrecking the other side.',build:()=>addFaces(nums(['A']),{J:5,Q:1,K:1,JK:2})},
+};
+// Classic card buy
+// New Vegas rule: no two copies of a card from the same set. A set is 52 cards + 2 Jokers.
+const SETS=4, CL_BUDGET=160;
+const capFor=k=>k==='JK'?2*SETS:SETS;
+function clPrice(rank){
+  if(rank==='JK')return 8; if(rank==='K')return 6; if(rank==='J')return 5; if(rank==='Q')return 3;
+  const v=rank==='A'?1:+rank; return v<=4?2:v<=7?3:4;
+}
+const keyOf=c=>c.rank+(c.suit||'');
+const fromKeyC=k=>k==='JK'?{rank:'JK',suit:null}:{rank:k.slice(0,-1),suit:k.slice(-1)};
+const specToCounts=spec=>{const m={};for(const c of spec){const k=keyOf(c);m[k]=Math.min(capFor(k),(m[k]||0)+1);}return m;};
+const ALL_KEYS=[...SUITS.flatMap(su=>[...NUM_RANKS,'J','Q','K'].map(r=>r+su)),'JK'];
+const fullSetCounts=()=>{const m={};for(const k of ALL_KEYS)m[k]=k==='JK'?2:1;return m;};
+const countsToSpec=m=>Object.entries(m).flatMap(([k,n])=>Array.from({length:n},()=>fromKeyC(k)));
+const countsCost=m=>Object.entries(m).reduce((s,[k,n])=>s+clPrice(fromKeyC(k).rank)*n,0);
+const countsSize=m=>Object.values(m).reduce((a,b)=>a+b,0);
+let buildDraft=null;
+
+const PERKS={
+  wide:{name:'Wide Margin',desc:'Your caravans sell one point lower and one higher (20–27 at a normal table).',price:70},
+  royal:{name:'Royal Blood',desc:'Your Kings multiply one step more: ×3 instead of ×2.',price:80},
+  steady:{name:'Steady Hands',desc:'You draw back up to 6 cards instead of 5.',price:65},
+  shark:{name:'Card Shark',desc:'You’re dealt 9 cards to open instead of 8.',price:40},
+  lead:{name:'Lead Lined',desc:'The dealer’s Jacks can’t touch your caravans.',price:90},
+  twotone:{name:'Two-Tone',desc:'Any card of the same color counts as matching suit for you.',price:45},
+  cool:{name:'Cool Head',desc:'Disbanding a caravan doesn’t use up your turn.',price:35},
+  scav:{name:'Scavenger',desc:'+5 caps after every hand, win or lose.',price:50},
+  roller:{name:'High Roller',desc:'Table winnings pay 50% more.',price:75},
+  insure:{name:'Insured',desc:'Lose a hand and get half your buy-in back.',price:40},
+  hunter:{name:'Bounty Hunter',desc:'Bounties pay double.',price:55},
+};
+const CHEMS={
+  spy:{name:'Spyglass',desc:'See the dealer’s hand for the rest of the hand.',price:12},
+  coffee:{name:'Black Coffee',desc:'Your next play doesn’t end your turn.',price:18},
+  fresh:{name:'Fresh Deal',desc:'Shuffle your hand back in and draw a new one.',price:10},
+  shoe:{name:'Horseshoe',desc:'Draw 2 extra cards right now.',price:14},
+};
+const BOUNTIES={
+  p26:{name:'Perfect 26',desc:'Win with a sold caravan at exactly 26.'},
+  clean:{name:'Clean hands',desc:'Win without playing a face card.'},
+  sweep:{name:'Clean sweep',desc:'Win by selling all three caravans.'},
+  wild:{name:'Wild card',desc:'Win after playing a Joker.'},
+  calm:{name:'No regrets',desc:'Win without discarding or disbanding.'},
+  kings:{name:'Kingmaker',desc:'Win after playing two or more Kings.'},
+};
+const CHEM_MAX=3, START_CAPS=50, MIN_DECK=30, MIN_NUMS=24, SAVE_KEY='mojave-caravan-v1';
+
+function starterDeck(){return addFaces(baseNumbers(),{J:3,Q:2,K:2,JK:1});}
+function priceOf(c){
+  if(c.rank==='JK')return 55; if(c.rank==='K')return 30; if(c.rank==='J')return 20; if(c.rank==='Q')return 12;
+  return 3+val(c);
+}
+const sellPrice=c=>isNum(c)?1:Math.floor(priceOf(c)/2);
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const perkSlots=()=>2+(meta.beaten.length>=4?1:0)+(meta.beaten.length>=8?1:0);
+const has=id=>meta.equipped.includes(id);
+const chemTotal=()=>Object.values(meta.chems).reduce((a,b)=>a+b,0);
+
+function tableRules(i,withPerks){
+  const R=baseRules();
+  if(i>=0)for(const h of ROAD[i].house)HOUSE[h].apply(R);
+  if(withPerks&&i>=0){
+    if(has('wide'))R.range.p=[R.range.p[0]-1,R.range.p[1]+1];
+    if(has('royal'))R.kingMult.p+=1;
+    if(has('steady'))R.hand.p+=1;
+    if(has('shark'))R.deal.p+=1;
+    if(has('lead'))R.jackproof.p=true;
+    if(has('twotone'))R.color.p=true;
+    if(has('cool'))R.freeDisband.p=true;
+  }
+  return R;
+}
+const rangeTxt=r=>`${r[0]}–${r[1]}`;
+const bountyPay=i=>Math.max(10,Math.round(ROAD[i].win*0.5))*(has('hunter')?2:1);
+function rollBounties(){
+  return ROAD.map((o,i)=>{
+    const R=tableRules(i,false);
+    const pool=Object.keys(BOUNTIES).filter(b=>!(b==='wild'&&R.banned.includes('JK'))&&!(b==='p26'&&(R.range.p[1]<26||R.range.p[0]>26)));
+    return pick(pool);
+  });
+}
+function rollStock(){
+  const pool=[];
+  for(let i=0;i<6;i++){
+    const r=Math.random();let rank;
+    if(r<.12)rank='JK';else if(r<.32)rank='K';else if(r<.48)rank='J';else if(r<.58)rank='Q';
+    else rank=pick(['10','10','9','9','8','7','6','5','A']);
+    pool.push({rank,suit:rank==='JK'?null:pick(SUITS),sold:false});
+  }
+  return pool;
+}
+function rollPerkStock(){
+  const left=shuffle(Object.keys(PERKS).filter(p=>!meta.perks.includes(p)));
+  return left.slice(0,2);
+}
+function restock(){meta.stock=rollStock();meta.perkStock=rollPerkStock();meta.bounties=rollBounties();}
+
+// ---------- guided tutorial ----------
+const BASIC_STEPS=[
+  {title:'Opening',say:'You and Ezra each build three caravans. A caravan sells when its total lands between 21 and 26 and beats the one facing it. Every caravan opens with a number card (Aces count as 1). You can’t discard during the opening. Tap the 7♥, then tap your caravan I.',
+   move:{t:'num',key:'7H',lane:0},ai:{t:'num',key:'8S',lane:0}},
+  {title:'Opening',say:'Now open caravan II with the 5♠.',move:{t:'num',key:'5S',lane:1},ai:{t:'num',key:'6D',lane:1}},
+  {title:'Opening',say:'And caravan III with the 9♣. Once all three are open, you draw back up to five cards after each play.',move:{t:'num',key:'9C',lane:2},ai:{t:'num',key:'4C',lane:2}},
+  {title:'Direction',say:'The second card sets a caravan’s direction. Put the 10♦ on caravan I: 7 then 10 climbs, so the next card there has to be higher. A card matching the caravan’s current suit can break that rule. You can never play the same value twice in a row.',
+   move:{t:'num',key:'10D',lane:0},ai:{t:'num',key:'9S',lane:0}},
+  {title:'Kings',say:'Caravan I is at 17. A King doubles the card it sits on. Put the K♦ on your 7♥: it counts as 14, the caravan hits 24, and you’re in the sell range.',
+   move:{t:'face',key:'KD',side:'p',lane:0,idx:0},ai:{t:'face',key:'KC',side:'a',lane:0,idx:0}},
+  {title:'Jacks',say:'Ezra answered with a King of his own. His caravan I is 25 and beats your 24. A Jack knocks a card out, along with anything stacked on it. Play your J♠ on his 8♠.',
+   move:{t:'face',key:'JS',side:'a',lane:0,idx:0},ai:{t:'num',key:'10S',lane:1}},
+  {title:'Your hand now',say:'His King went with it, so your caravan I is ahead again. The rest is up to you. A Queen goes on a caravan’s top card, flips its direction and changes its suit to the Queen’s. A Joker on an Ace wipes every other card of that suit off the table; on 2–10 it wipes every other card of that value. Each turn you can play a card, discard one you can’t use, or disband a caravan that went bust. Sell two of three to win.',
+   move:null},
+];
+const ROAD_STEPS=[
+  {title:'House rules',say:'Out on the road, most tables bend the rules. This practice table plays Royal court: Kings triple instead of double. Look at the chips above the table. Put your K♦ on your 6♥ in caravan I: 6 × 3 makes 18.',
+   move:{t:'face',key:'KD',side:'p',lane:0,idx:0},ai:{t:'num',key:'5S',lane:0}},
+  {title:'Perks',say:'Jo matched suit to reach 22. You have a perk equipped: Wide Margin, so your caravans sell anywhere from 20 to 27. Play the 9♣ on caravan I. 27 would bust anyone else; for you it sells, and it beats Jo’s 22.',
+   move:{t:'num',key:'9C',lane:0},ai:{t:'num',key:'10D',lane:1}},
+  {title:'Chems',say:'Chems are one-use boosts, one per turn, after the opening. Using one doesn’t end your turn. Tap Spyglass below your hand to see what Jo is holding.',
+   move:{t:'chem',id:'spy'}},
+  {title:'Bounties',say:'Now you can see Jo’s hand, and she’s holding a Jack. Every table also posts a bounty for extra caps. This one is Kingmaker: win after playing two Kings. Put your K♠ on your 6♠ in caravan II: 3 + 18 makes 21.',
+   move:{t:'face',key:'KS',side:'p',lane:1,idx:1},ai:{t:'face',key:'JH',side:'p',lane:0,idx:1}},
+  {title:'On your own',say:'Jo spent the Jack you spotted on your 9♣. Now you’ve seen the road: tables cost a buy-in and pay back more, house rules change by table, perks and chems come from the trading post, and your first win at each table earns a pick of spoils. Finish the hand any way you like.',
+   move:null},
+];
+const TUTS={basics:BASIC_STEPS,road:ROAD_STEPS};
+const tutSteps=()=>TUTS[(G.tut&&G.tut.kind)||'basics'];
+function newRoadTutorial(){
+  const fromKey=k=>mk(k.slice(0,-1),k.slice(-1));
+  const E=k=>({card:fromKey(k),faces:[]});
+  const pBoard=[['6H'],['3S','6S'],['10C']], aBoard=[['7S','10S'],['4D','8D'],['2C','9H']];
+  const pHand=['KD','9C','KS','5H','2D'], aHand=['5S','JH','10D','6C','3H'];
+  const usedP=new Set([...pBoard.flat(),...pHand]), usedA=new Set([...aBoard.flat(),...aHand]);
+  const R=baseRules(); HOUSE.royal.apply(R); R.range.p=[R.range.p[0]-1,R.range.p[1]+1];
+  return {p:{deck:buildDeck(addFaces(baseNumbers().filter(c=>!usedP.has(keyOf(c))),{J:2,Q:1,K:1})),hand:pHand.map(fromKey),cv:pBoard.map(l=>l.map(E))},
+    a:{deck:buildDeck(addFaces(baseNumbers().filter(c=>!usedA.has(keyOf(c))),{J:1,Q:1,K:1})),hand:aHand.map(fromKey),cv:aBoard.map(l=>l.map(E))},
+    turn:'p',setupLeft:{p:0,a:0},log:['Lucky Jo set up a hand already in progress.'],over:null,opp:-2,fx:null,rules:R,mode:'road',
+    tut:{step:0,done:false,kind:'road'},perks:['wide'],bounty:'kings',bountyPay:10,
+    stats:{faces:0,jokers:0,kings:0,discards:0,disbands:0},localChems:{spy:1,coffee:0,fresh:0,shoe:0}};
+}
+function newTutorial(mode){
+  const key=c=>c.rank+(c.suit||'');
+  const pHand=['7H','5S','9C','10D','KD','JS','6H','QC'], pDraws=['4S','3H','8C'];
+  const aHand=['8S','6D','4C','9S','10S','KC','2H','3D'];
+  const fromKey=k=>mk(k.slice(0,-1),k.slice(-1));
+  const usedP=new Set([...pHand,...pDraws]), usedA=new Set(aHand);
+  const pDeck=buildDeck(addFaces(baseNumbers().filter(c=>!usedP.has(key(c))),{J:2,Q:1,K:1,JK:1}));
+  pDraws.forEach(k=>pDeck.push(fromKey(k)));
+  const aDeck=buildDeck(addFaces(baseNumbers().filter(c=>!usedA.has(key(c))),{J:1,Q:1,K:1}));
+  return {p:{deck:pDeck,hand:pHand.map(fromKey),cv:[[],[],[]]},a:{deck:aDeck,hand:aHand.map(fromKey),cv:[[],[],[]]},
+    turn:'p',setupLeft:{p:3,a:3},log:[],over:null,opp:-1,fx:null,rules:baseRules(),mode:mode||'road',tut:{step:0,done:false,kind:'basics'}};
+}
+const tutActive=()=>G&&G.tut&&!G.tut.done&&!G.over;
+function resolveSpec(spec,side){
+  const ci=G[side].hand.findIndex(c=>c.rank+(c.suit||'')===spec.key);
+  if(ci<0)return null;
+  const m={t:spec.t,ci,lane:spec.lane};
+  if(spec.t==='face'){m.side=spec.side;m.idx=spec.idx;}
+  return m;
+}
+function playerLegal(){
+  if(G.turn!=='p'||G.over||busy)return [];
+  const all=legalMoves(G,'p');
+  if(!tutActive())return all;
+  const step=tutSteps()[G.tut.step];
+  if(!step||!step.move||step.move.t==='chem')return [];
+  const want=resolveSpec(step.move,'p');
+  return want?all.filter(m=>m.t===want.t&&m.ci===want.ci&&m.lane===want.lane&&m.side===want.side&&m.idx===want.idx):[];
+}
+
+// ---------- state ----------
+let meta=null, G=null, screen='home', sel=null, disbandMode=false, busy=false, shopTab='buy', armedFold=false, armedCut=null;
+
+function freshMeta(){
+  meta={v:2,caps:START_CAPS,deck:starterDeck(),beaten:[],wins:0,losses:0,tutorialDone:false,match:null,
+    perks:[],equipped:[],chems:{spy:1,coffee:0,fresh:0,shoe:0},draft:null,roadTutDone:false,starter:null,
+    classic:{deck:null,wins:0,losses:0,rec:{},camp:null}};
+  restock();
+  return meta;
+}
+function save(){meta.match=G&&!G.over?G:null;try{localStorage.setItem(SAVE_KEY,JSON.stringify(meta));}catch(e){}}
+function load(){try{const s=localStorage.getItem(SAVE_KEY);if(s)return JSON.parse(s);}catch(e){}return null;}
+function migrate(m){
+  if(!m.v){ // first version had 5 tables
+    const map={0:0,1:2,2:3,3:5,4:9};
+    m.beaten=(m.beaten||[]).map(i=>map[i]).filter(i=>i!=null);
+    if(m.match){m.match.opp=m.match.opp<0?-1:map[m.match.opp]??0;}
+    m.v=2;
+  }
+  m.perks=m.perks||[];m.equipped=m.equipped||[];m.chems=Object.assign({spy:0,coffee:0,fresh:0,shoe:0},m.chems||{});
+  if(m.tutorialDone==null)m.tutorialDone=false;
+  if(m.roadTutDone==null)m.roadTutDone=false;
+  if(m.starter===undefined)m.starter=(m.wins||m.losses||(m.beaten&&m.beaten.length))?'legacy':null;
+  m.classic=Object.assign({deck:null,wins:0,losses:0,rec:{},camp:null},m.classic||{});
+  if(typeof m.caps!=='number'||m.caps<0)m.caps=0;
+  if(m.match&&!m.match.rules)m.match.rules=baseRules();
+  return m;
+}
+
+const $=s=>document.querySelector(s);
+const app=$('#app');
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+function cardHTML(c){
+  if(c.rank==='JK')return `<div class="card joker"><span class="pip">JOKER</span></div>`;
+  const red=isRed(c.suit), s=SUIT_CH[c.suit], num=isNum(c);
+  return `<div class="card${red?' red':''}${num?'':' face'}"><span class="r">${c.rank}<i>${s}</i></span><span class="pip">${num?s:c.rank}</span><span class="r2">${c.rank}<i>${s}</i></span></div>`;
+}
+const capsHTML=n=>`<span class="pill num"><span class="cap"></span> ${n} caps</span>`;
+const capN=n=>`<span class="cap"></span> ${n}`;
+
+// ---------- hub ----------
+const RULES_LIST=`
+  <li>You and the dealer each build three caravans that face each other. A caravan sells when its total is between <b>21 and 26</b> and beats the one across from it.</li>
+  <li>Sell at least two of the three matchups to win. The game ends once all three are settled at the same time.</li>
+  <li>Opening: your first three turns, put a number card on each empty caravan.</li>
+  <li>After that, each turn: play a card, discard one, or disband one of your caravans. You draw back up to 5.</li>
+  <li>The second card sets a caravan's direction, up or down. Later cards must follow it, unless they match the caravan's current suit. Never the same value twice in a row.</li>
+  <li><b>Jack</b> removes a card. <b>Queen</b> (top card only) flips direction and sets the suit. <b>King</b> doubles a card, and stacks. <b>Joker</b> on an Ace wipes that suit from the table; on 2–10 it wipes that value. Face cards can go on either side.</li>
+  <li>Decks hold at least 30 cards. You can’t have two of the same card from one set, but you can mix sets.</li>
+  <li>If a Jack or Joker leaves two equal cards side by side, the caravan keeps the direction it had.</li>
+  <li>Run out of cards before your caravans sell and you lose.</li>`;
+const backBtn=(to,label)=>`<button class="btn" data-go="${to}">← ${label}</button>`;
+function tutRow(id,o,done,hot,data){
+  return `<div class="stop${done?' beat':''}">
+    <div class="mile">${done?'✓':'★'}</div>
+    <div><div class="place">${esc(o.place)}</div><div class="who">${esc(o.name)} · ${esc(o.blurb)}</div>${data.terms?`<div class="terms num">${data.terms}</div>`:''}</div>
+    <button class="btn${hot?' hot':''}" ${data.attr}>${done?'Replay':'Learn'}</button>
+  </div>`;
+}
+
+// ---------- home: pick a mode ----------
+function renderHome(){
+  app.innerHTML=`
+  <section class="hero">
+    <div class="neon" aria-label="Caravan">CAR<span class="dim">A</span>VAN</div>
+    <p class="tagline">The Mojave’s card game. Pick how you want to play.</p>
+  </section>
+  <div class="modes">
+    <button class="mode" data-go="classic">
+      <span class="mk">Classic</span>
+      <span class="mt">Caravan never changes</span>
+      <span class="md">Straight Caravan, the way it’s dealt in the Mojave. Buy your deck with a fixed budget, pick a dealer, play. No perks, no tricks.</span>
+      <span class="ms num">Record ${meta.classic.wins}W · ${meta.classic.losses}L${meta.classic.deck?` · deck ${meta.classic.deck.length}`:' · no deck yet'}</span>
+    </button>
+    <button class="mode" data-go="road">
+      <span class="mk">Roguelite</span>
+      <span class="mt">The Road</span>
+      <span class="md">Ten tables from Goodsprings to the Strip. Buy in with caps, grow your deck, and bend the rules with perks, chems, house rules and bounties.</span>
+      <span class="ms num">${meta.caps} caps · ${meta.beaten.length}/10 tables</span>
+    </button>
+  </div>
+  <section class="panel" style="margin-top:16px">
+    <details class="rules"><summary>How Caravan works</summary><ul>${RULES_LIST}</ul></details>
+    <p class="note" style="margin-top:16px">Progress for both modes saves in this browser. <button class="btn ghost" data-reset style="padding:4px 8px;font-size:12px">${armedFold?'Tap again to wipe everything':'Start over'}</button></p>
+  </section>`;
+}
+
+// ---------- classic: single game + campaign ----------
+const CAMP_DEALERS=[
+  {name:'Wes Harlan',place:'Mesa Rest Stop',blurb:'Truckers’ game. Friendly, mostly.',max:25,noise:30,extra:{J:2,Q:1,K:1}},
+  {name:'June Calloway',place:'Red Rock Station',blurb:'Plays tight, bets tighter.',max:50,noise:22,extra:{J:2,Q:2,K:2}},
+  {name:'Ollie Banks',place:'Copper Canyon Camp',blurb:'Loves a Joker more than his mule.',max:75,noise:16,extra:{J:2,Q:1,K:2,JK:2}},
+  {name:'Sister Mae',place:'The Long Bar',blurb:'Deals with a prayer and a grudge.',max:100,noise:11,extra:{J:3,Q:2,K:2,JK:1}},
+  {name:'Dutch Ferro',place:'The Gilded Spur',blurb:'Stacks Kings like he stacks debts.',max:150,noise:7,extra:{J:2,Q:2,K:5,JK:1}},
+  {name:'Lena Vasquez',place:'The Lucky Horseshoe',blurb:'Never plays the same deck twice.',max:200,noise:4,extra:{J:3,Q:3,K:3,JK:2}},
+  {name:'Mr. Pell',place:'The Desert Palace',blurb:'House dealer. House rules: none.',max:300,noise:2,extra:{J:4,Q:2,K:4,JK:2}},
+  {name:'The Old Man',place:'The High Table',blurb:'Taught half the Mojave to play.',max:500,noise:0.5,extra:{J:4,Q:3,K:4,JK:2}},
+];
+const CAMP_START=100, SET_PRICE=150, BET_STEPS=[0,10,25,50,75,100,150,200,300,500];
+const singlePrice=k=>clPrice(fromKeyC(k).rank)*2;
+let campPick=null, buildMode='quick';
+function freshCamp(){
+  const coll=fullSetCounts();
+  return {started:true,caps:CAMP_START,coll,deck:{...coll},beaten:[],stock:rollCampStock(coll),wins:0,losses:0,rec:{},done:false,lastBet:{}};
+}
+function rollCampStock(coll){
+  const pool=shuffle(ALL_KEYS.filter(k=>(coll[k]||0)<capFor(k)));
+  return pool.slice(0,8).map(k=>({k,sold:false}));
+}
+const campOpen=i=>i===0||meta.classic.camp.beaten.includes(i-1);
+function campDeckSpec(){return countsToSpec(meta.classic.camp.deck);}
+
+function renderClassic(){
+  const C=meta.classic, d=C.deck, cp=C.camp;
+  app.innerHTML=`
+  <div class="mbar">${backBtn('home','Modes')}<span class="pill num">${C.wins}W · ${C.losses}L</span></div>
+  <section class="hero small">
+    <div class="neon sm">Caravan never changes</div>
+    <p class="tagline">New Vegas rules, nothing added. Play one hand, or work the whole circuit.</p>
+  </section>
+  <section class="panel">
+    <div class="road">
+      ${tutRow(-1,TUTOR,meta.tutorialDone,!meta.tutorialDone,{attr:'data-cplay="-1"',terms:'Guided hand · about 5 minutes'})}
+    </div>
+  </section>
+  <section class="panel" style="margin-top:14px">
+    <div class="sect-h"><h2>Classic campaign</h2>${cp?`<span class="pill num">${capN(cp.caps)}</span>`:''}</div>
+    <p class="note">Start with a single 54-card deck and ${CAMP_START} caps. Bet against eight dealers, each with their own deck and a table limit. Win caps, buy cards, build a better deck, and beat them in order. Like the original, you bet caps on every game. You can always play a friendly game for nothing, so you’re never stuck.</p>
+    <div class="road"><div class="stop${cp&&cp.done?' beat':''}">
+      <div class="mile">${cp?(cp.done?'✓':cp.beaten.length+'/8'):'★'}</div>
+      <div><div class="place">${cp?(cp.done?'Circuit beaten':'Next: '+esc(CAMP_DEALERS[Math.min(cp.beaten.length,7)].place)):'Not started'}</div>
+        <div class="who">${cp?`${cp.wins}W · ${cp.losses}L · deck ${countsSize(cp.deck)} cards`:'Eight dealers, from a rest stop to the high table.'}</div></div>
+      <button class="btn hot" data-go="campaign">${cp?'Continue':'Start'}</button>
+    </div></div>
+  </section>
+  <section class="panel" style="margin-top:14px">
+    <div class="sect-h"><h2>Single game</h2></div>
+    <p class="note">One hand, no stakes. Buy a deck with a fixed budget, then pick a dealer.</p>
+    <div class="road">
+      <div class="stop">
+        <div class="mile">${d?d.length:'–'}</div>
+        <div><div class="place">Your deck</div>
+          <div class="who">${d?`${d.length} cards · ${d.filter(isNum).length} numbers, ${d.filter(c=>!isNum(c)).length} faces`:'Spend a '+CL_BUDGET+'-cap budget on at least 30 cards, or start from a ready-made deck.'}</div></div>
+        <button class="btn${!d&&meta.tutorialDone?' hot':''}" data-build="quick">${d?'Edit deck':'Buy a deck'}</button>
+      </div>
+      ${CLASSIC_DEALERS.map((o,i)=>{const r=C.rec[i]||{w:0,l:0};return `<div class="stop">
+        <div class="mile lvl">${['I','II','III','IV'][i]}</div>
+        <div><div class="place">${esc(o.level)}</div><div class="who">${esc(o.name)} · ${esc(o.blurb)}</div><div class="terms num">Your record ${r.w}W · ${r.l}L</div></div>
+        <button class="btn" data-cplay="${i}" ${d?'':'disabled'}>${d?'Deal':'Need a deck'}</button>
+      </div>`;}).join('')}
+    </div>
+    <details class="rules"><summary>Rules</summary><ul>${RULES_LIST}</ul></details>
+  </section>`;
+}
+
+function renderCampaign(){
+  const cp=meta.classic.camp;
+  const deckN=countsSize(cp.deck), deckOK=deckN>=MIN_DECK;
+  app.innerHTML=`
+  <div class="mbar">${backBtn('classic','Classic')}${capsHTML(cp.caps)}</div>
+  <section class="hero small"><div class="neon sm">The circuit</div>
+    <p class="tagline">${cp.done?'You beat the circuit. The tables are still open.':`${cp.beaten.length} of 8 dealers beaten.`}</p></section>
+  <div class="hubbar">
+    <button class="btn" data-build="camp">Build deck (${deckN})</button>
+    <button class="btn" data-go="vendor">Card vendor</button>
+  </div>
+  ${deckOK?'':`<p class="hint" style="color:var(--blood)">Your deck needs at least ${MIN_DECK} cards. Build it before you play.</p>`}
+  <section class="panel">
+    <p class="note">Pick a dealer, then your bet. Win and they pay your bet; lose and you pay it. Each dealer has a table limit. A friendly game risks nothing.</p>
+    <div class="road">
+      ${CAMP_DEALERS.map((o,i)=>{
+        const open=campOpen(i), beat=cp.beaten.includes(i), r=cp.rec[i]||{w:0,l:0};
+        const picking=campPick===i;
+        const bets=BET_STEPS.filter(b=>b<=o.max&&b<=cp.caps);
+        return `<div class="stop${beat?' beat':''}${open?'':' locked'}">
+          <div class="mile">${beat?'✓':i+1}</div>
+          <div><div class="place">${esc(o.place)}</div><div class="who">${esc(o.name)} · ${esc(o.blurb)}</div>
+            <div class="terms num">Table limit ${o.max} · record ${r.w}W · ${r.l}L</div>
+            ${picking?`<div class="bets" role="group" aria-label="Choose your bet">${bets.map(b=>`<button class="btn${b===(cp.lastBet[i]??Math.min(25,o.max))?' hot':''}" data-bet="${b}">${b?capN(b):'Friendly'}</button>`).join('')}</div>`:''}</div>
+          <button class="btn${open&&!picking&&!beat&&deckOK&&i===cp.beaten.length?' hot':''}" data-pick="${i}" ${open&&deckOK?'':'disabled'}>${!open?'Locked':picking?'Cancel':beat?'Play again':'Play'}</button>
+        </div>`;}).join('')}
+    </div>
+  </section>`;
+}
+
+function renderVendor(){
+  const cp=meta.classic.camp;
+  const canSet=ALL_KEYS.some(k=>(cp.coll[k]||0)<capFor(k));
+  const sellable=ALL_KEYS.filter(k=>(cp.coll[k]||0)>(cp.deck[k]||0));
+  app.innerHTML=`
+  <div class="mbar">${backBtn('campaign','The circuit')}${capsHTML(cp.caps)}</div>
+  <section class="panel">
+    <h2 style="font-size:28px">Card vendor</h2>
+    <p class="note">You can own up to ${SETS} of any card, one from each set (Jokers come two to a set). New stock after every game.</p>
+    <div class="prow"><div><b>Full card set</b><span>A complete 54-card set: one of every card plus 2 Jokers. Cards you already have ${SETS} of are skipped.</span></div>
+      <button class="btn${canSet&&cp.caps>=SET_PRICE?' hot':''}" data-buyset ${canSet&&cp.caps>=SET_PRICE?'':'disabled'}>${capN(SET_PRICE)}</button></div>
+    <h3 class="sub">Single cards</h3>
+    <div class="offers">${cp.stock.map((o,i)=>{const c=fromKeyC(o.k),pr=singlePrice(o.k),full=(cp.coll[o.k]||0)>=capFor(o.k);return `<div class="offer${o.sold?' sold':''}">
+      ${cardHTML(c)}<div class="what">${c.rank==='JK'?'Joker':isNum(c)?cardName(c):FACE_NAME[c.rank]+' '+SUIT_CH[c.suit]} · own ${cp.coll[o.k]||0}</div>
+      <button class="btn${!o.sold&&!full&&cp.caps>=pr?' hot':''}" data-cbuy="${i}" ${o.sold||full||cp.caps<pr?'disabled':''}>${o.sold?'Sold':full?'Maxed':capN(pr)}</button></div>`;}).join('')}</div>
+    <h3 class="sub">Sell spare cards</h3>
+    <p class="note">Cards not in your deck sell for half the vendor price. Take a card out of your deck first to sell it.</p>
+    ${sellable.length?`<div class="deckgrid">${sellable.map(k=>{const c=fromKeyC(k);return `<button class="card-btn" data-csell="${k}" aria-label="Sell ${cardName(c)}" style="${armedCut===k?'transform:translateY(-6px)':''}">${cardHTML(c)}</button>`;}).join('')}</div>
+      <p class="hint" style="text-align:left">${armedCut&&typeof armedCut==='string'?`Tap ${cardName(fromKeyC(armedCut))} again to sell it for ${Math.floor(singlePrice(armedCut)/2)} caps.`:''}</p>`:'<p class="note">Every card you own is in your deck.</p>'}
+  </section>`;
+}
+
+function renderBuild(){
+  const camp=buildMode==='camp', cp=meta.classic.camp;
+  if(!buildDraft)buildDraft=camp?{...cp.deck}:specToCounts(meta.classic.deck||[]);
+  const m=buildDraft, cost=countsCost(m), size=countsSize(m), left=CL_BUDGET-cost;
+  const nNums=Object.entries(m).filter(([k])=>isNum(fromKeyC(k))).reduce((a,[,n])=>a+n,0);
+  const limit=k=>camp?(cp.coll[k]||0):capFor(k);
+  const problem=size<MIN_DECK?`Add ${MIN_DECK-size} more card${MIN_DECK-size>1?'s':''} (30 minimum).`:(!camp&&left<0)?`Over budget by ${-left}.`:'';
+  const tile=k=>{const c=fromKeyC(k),n=m[k]||0,pr=clPrice(c.rank),lim=limit(k);
+    if(camp&&!lim)return '';
+    const canAdd=n<lim&&(camp||pr<=left);
+    return `<div class="btile${n?' have':''}">
+      <div class="bcard">${cardHTML(c)}${n?`<span class="cnt">×${n}</span>`:''}</div>
+      <div class="pr num">${camp?`own ${lim}`:pr+'c'}</div>
+      <div class="pm"><button class="btn" data-dec="${k}" ${n?'':'disabled'} aria-label="Remove one ${cardName(c)}">−</button><button class="btn" data-inc="${k}" ${canAdd?'':'disabled'} aria-label="Add one ${cardName(c)}">+</button></div>
+    </div>`;};
+  const ranks=[...NUM_RANKS,'J','Q','K'];
+  const groups=SUITS.map(su=>{const tiles=ranks.map(r=>tile(r+su)).join('');return tiles?`<h3 class="sub">${SUIT_CH[su]} ${({S:'Spades',H:'Hearts',D:'Diamonds',C:'Clubs'})[su]}</h3><div class="bgrid">${tiles}</div>`:'';}).join('');
+  const jt=tile('JK');
+  app.innerHTML=`
+  <div class="mbar">${backBtn(camp?'campaign':'classic','Back')}${camp?`<span class="pill num">${size} in deck</span>`:`<span class="pill num"><span class="cap"></span> ${left} of ${CL_BUDGET} left</span>`}</div>
+  <section class="panel">
+    <h2 style="font-size:28px">${camp?'Build your deck':'Card buy'}</h2>
+    ${camp?`<p class="note">Choose cards from your collection: at least ${MIN_DECK}. Changes are free, just like the original. Buy more cards from the vendor.</p>
+      <div class="presets"><button class="btn ghost" data-preset="all">Use every card I own</button><button class="btn ghost" data-preset="clear">Clear all</button></div>`
+    :`<p class="note">Build your deck with a ${CL_BUDGET}-cap budget: at least ${MIN_DECK} cards. As in New Vegas, you can’t have two of the same card from one set; you can mix up to ${SETS} sets, so up to ${SETS} of any card (Jokers come two per set). Start from a ready-made deck and tweak it, or buy card by card. This budget is separate from the Road.</p>
+    <div class="presets">${Object.entries(STARTERS).map(([id,s])=>`<button class="spoil" data-preset="${id}"><b>${s.name}</b><span>${s.desc} ${countsCost(specToCounts(s.build()))} caps.</span></button>`).join('')}
+      <button class="btn ghost" data-preset="clear">Clear all</button></div>`}
+    ${groups}
+    ${jt?`<h3 class="sub">Jokers</h3><div class="bgrid">${jt}</div>`:''}
+  </section>
+  <div class="buildbar">
+    <span class="num"><b>${size}</b> cards · ${nNums} numbers${camp?'':` · ${left} caps left`}</span>
+    <span class="why">${esc(problem)}</span>
+    <button class="btn hot" data-savedeck ${problem?'disabled':''}>Save deck</button>
+  </div>`;
+}
+function startCamp(i,bet){
+  const cp=meta.classic.camp,o=CAMP_DEALERS[i];
+  if(!campOpen(i)||bet>cp.caps||bet>o.max||countsSize(cp.deck)<MIN_DECK)return;
+  cp.caps-=bet; cp.lastBet[i]=bet; campPick=null;
+  G=newMatch(campDeckSpec(),addFaces(baseNumbers(),o.extra),i,baseRules());
+  G.mode='campaign'; G.stake=bet;
+  enterMatch();
+}
+
+// ---------- road ----------
+function renderPick(){
+  app.innerHTML=`
+  <div class="mbar">${backBtn('home','Modes')}${capsHTML(meta.caps)}</div>
+  <section class="panel">
+    <h2 style="font-size:28px">Pick your starting deck</h2>
+    <p class="note">This is the deck you take down the road. You can buy cards, sell cards and swap perks later at the trading post.</p>
+    <div class="presets">${Object.entries(STARTERS).map(([id,s])=>{const sp=s.build();return `<button class="spoil" data-starter="${id}"><b>${s.name}</b><span>${s.desc}</span><span class="num">${sp.length} cards · ${sp.filter(isNum).length} numbers · ${sp.filter(c=>c.rank==='K').length} Kings · ${sp.filter(c=>c.rank==='J').length} Jacks · ${sp.filter(c=>c.rank==='JK').length} Joker${sp.filter(c=>c.rank==='JK').length>1?'s':''}</span></button>`;}).join('')}</div>
+  </section>`;
+}
+function renderRoad(){
+  const next=ROAD.findIndex((_,i)=>!meta.beaten.includes(i));
+  const slots=perkSlots();
+  const T2=TUTORS['-2'];
+  app.innerHTML=`
+  <div class="mbar">${backBtn('home','Modes')}<button class="btn" data-go="shop">Trading post</button></div>
+  <section class="hero small">
+    <div class="neon sm">The Road</div>
+    <p class="tagline">Ten tables from Goodsprings to the Strip. Win hands, earn caps, bend the rules.</p>
+  </section>
+  <div class="hubbar">
+    ${capsHTML(meta.caps)}
+    <span class="pill num">Deck ${meta.deck.length}</span>
+    <span class="pill num">Perks ${meta.equipped.length}/${slots}</span>
+    <span class="pill num">Chems ${chemTotal()}/${CHEM_MAX}</span>
+    <span class="pill num">${meta.beaten.length}/10 tables</span>
+  </div>
+  ${meta.draft?`<section class="panel" style="margin-bottom:14px">${draftHTML()}</section>`:''}
+  <section class="panel">
+    <div class="sect-h"><h2>The road to Vegas</h2></div>
+    <p class="note">Buy into a table, win it back plus the pot. Losing costs only the buy-in. Goodsprings is always free, so you can always play your way back. Each table has a bounty for extra caps, and the far tables bend the rules.</p>
+    <div class="road">
+      ${tutRow(-2,T2,meta.roadTutDone,!meta.roadTutDone,{attr:'data-play="-2"',terms:`Free · Win +${T2.win}${meta.roadTutDone?'':` (+${T2.bonus} first time)`}`})}
+      ${tutRow(-1,{...TUTOR,place:'Rules refresher'},meta.tutorialDone,false,{attr:'data-play="-1"',terms:`New to Caravan? Start here. Free · Win +${TUTOR.win}${meta.tutorialDone?'':` (+${TUTOR.bonus} first time)`}`})}
+      ${ROAD.map((o,i)=>{
+        const beat=meta.beaten.includes(i), open=i===0||meta.beaten.includes(i-1), afford=meta.caps>=o.buyin;
+        const label=!open?'Locked':!afford?`Need ${o.buyin}`:beat?'Rematch':'Deal in';
+        const b=BOUNTIES[meta.bounties[i]];
+        return `<div class="stop${beat?' beat':''}${open?'':' locked'}">
+          <div class="mile">${beat?'✓':i+1}</div>
+          <div><div class="place">${esc(o.place)}</div><div class="who">${esc(o.name)} · ${esc(o.blurb)}</div>
+            <div class="terms num">${o.buyin?`Buy-in ${o.buyin}`:'Free'} · Win +${winFor(i)}${beat?'':` (+${o.bonus} first time)`}</div>
+            ${o.house.map(h=>`<div class="house"><b>${HOUSE[h].name}:</b> ${HOUSE[h].desc}</div>`).join('')}
+            ${open&&b?`<div class="bty">Bounty · ${b.name}: ${b.desc} +${bountyPay(i)}</div>`:''}</div>
+          <button class="btn${open&&afford&&meta.roadTutDone&&!meta.draft&&i===next?' hot':''}" data-play="${i}" ${open&&afford&&!meta.draft?'':'disabled'} aria-label="Play ${esc(o.name)} at ${esc(o.place)}">${label}</button>
+        </div>`;}).join('')}
+    </div>
+    <details class="rules">
+      <summary>How the Road works</summary>
+      <ul>
+        <li>Each table has a buy-in. Win and you get it back plus the table’s winnings. Lose and you lose only the buy-in. Your first win at a table pays a bonus and gives you a pick of spoils.</li>
+        <li><b>House rules</b> change the game at most tables past Jean. Read them before you deal in.</li>
+        <li><b>Perks</b> are permanent rule-benders you equip at the trading post. You start with 2 slots, get a third after 4 tables and a fourth after 8.</li>
+        <li><b>Chems</b> are one-use boosts during a hand, one per turn, after the opening. You can carry ${CHEM_MAX}.</li>
+        <li><b>Bounties</b> pay extra caps for winning a particular way. They change after every hand.</li>
+        ${RULES_LIST}
+      </ul>
+    </details>
+  </section>`;
+}
+const winFor=i=>Math.round(ROAD[i].win*(has('roller')?1.5:1));
+
+function optLabel(o){
+  if(o.k==='perk')return {t:`Perk: ${PERKS[o.id].name}`,d:PERKS[o.id].desc};
+  if(o.k==='card')return {t:`Card: ${o.rank==='JK'?'Joker':FACE_NAME[o.rank]+' '+SUIT_CH[o.suit]}`,d:'Goes straight into your deck.'};
+  if(o.k==='chem')return {t:`Chems: ${o.n}× ${CHEMS[o.id].name}`,d:CHEMS[o.id].desc+(chemTotal()>=CHEM_MAX?' (Your pouch is full, so extras are lost.)':'')};
+  return {t:`${o.n} caps`,d:'Cash in hand.'};
+}
+function draftHTML(){
+  return `<h2 style="font-size:24px;color:var(--neon)">Spoils: pick one</h2>
+    <p class="note">You cleared ${esc(ROAD[meta.draft.table].place)} for the first time.</p>
+    <div class="spoils">${meta.draft.options.map((o,i)=>{const l=optLabel(o);return `<button class="spoil" data-draft="${i}"><b>${esc(l.t)}</b><span>${esc(l.d)}</span></button>`;}).join('')}</div>`;
+}
+function makeDraft(i){
+  const opts=[];
+  const freeP=Object.keys(PERKS).filter(p=>!meta.perks.includes(p));
+  if(freeP.length)opts.push({k:'perk',id:pick(freeP)});
+  const r=pick(['K','K','JK','J']);
+  opts.push({k:'card',rank:r,suit:r==='JK'?null:pick(SUITS)});
+  opts.push(Math.random()<.5?{k:'chem',id:pick(Object.keys(CHEMS)),n:2}:{k:'caps',n:Math.round(ROAD[i].win*0.75)});
+  if(opts.length<3)opts.push({k:'caps',n:Math.round(ROAD[i].win*0.75)});
+  return {table:i,options:opts};
+}
+function takeDraft(idx){
+  const o=meta.draft.options[idx]; if(!o)return;
+  if(o.k==='perk'){meta.perks.push(o.id);if(meta.equipped.length<perkSlots())meta.equipped.push(o.id);meta.perkStock=meta.perkStock.filter(p=>p!==o.id);}
+  else if(o.k==='card')meta.deck.push({rank:o.rank,suit:o.suit});
+  else if(o.k==='chem')meta.chems[o.id]+=Math.max(0,Math.min(o.n,CHEM_MAX-chemTotal()));
+  else meta.caps+=o.n;
+  meta.draft=null; save();
+}
+
+// ---------- shop ----------
+function sortSpec(a,b){
+  const order=r=>r==='A'?1:r==='J'?11:r==='Q'?12:r==='K'?13:r==='JK'?14:parseInt(r,10);
+  return order(a.rank)-order(b.rank)||String(a.suit).localeCompare(String(b.suit));
+}
+function canSell(c){
+  if(meta.deck.length<=MIN_DECK)return false;
+  if(isNum(c)&&meta.deck.filter(isNum).length<=MIN_NUMS)return false;
+  return true;
+}
+function shopBody(){
+  if(shopTab==='buy')return `
+    <p class="note">New stock comes in after every hand you play.</p>
+    <div class="offers">
+      ${meta.stock.map((c,i)=>`<div class="offer${c.sold?' sold':''}">
+        ${cardHTML(c)}
+        <div class="what">${c.rank==='JK'?'Joker':isNum(c)?cardName(c):FACE_NAME[c.rank]+' '+SUIT_CH[c.suit]}</div>
+        <button class="btn${!c.sold&&meta.caps>=priceOf(c)?' hot':''}" data-buy="${i}" ${c.sold||meta.caps<priceOf(c)?'disabled':''}>
+          ${c.sold?'Sold':capN(priceOf(c))}</button>
+      </div>`).join('')}
+    </div>`;
+  if(shopTab==='perks'){
+    const slots=perkSlots();
+    return `
+    <p class="note">Perks bend the rules your way. You can run ${slots} at once${slots<4?`. Another slot opens after you beat ${slots===2?4:8} tables`:''}. Swap them freely between hands.</p>
+    <h3 class="sub">Yours</h3>
+    ${meta.perks.length?`<div class="plist">${meta.perks.map(id=>{const on=has(id),full=!on&&meta.equipped.length>=slots;return `<div class="prow${on?' on':''}"><div><b>${PERKS[id].name}</b><span>${PERKS[id].desc}</span></div>
+      <button class="btn${on?' hot':''}" data-equip="${id}" ${full?'disabled':''} aria-pressed="${on}">${on?'Equipped':full?'Slots full':'Equip'}</button></div>`;}).join('')}</div>`:'<p class="note">None yet. Buy one below, or pick one as spoils when you clear a table.</p>'}
+    <h3 class="sub">For sale</h3>
+    ${meta.perkStock.length?`<div class="plist">${meta.perkStock.map(id=>`<div class="prow"><div><b>${PERKS[id].name}</b><span>${PERKS[id].desc}</span></div>
+      <button class="btn${meta.caps>=PERKS[id].price?' hot':''}" data-buyperk="${id}" ${meta.caps>=PERKS[id].price?'':'disabled'}>${capN(PERKS[id].price)}</button></div>`).join('')}</div>`:'<p class="note">You own every perk.</p>'}`;
+  }
+  if(shopTab==='chems'){
+    const full=chemTotal()>=CHEM_MAX;
+    return `
+    <p class="note">One-use boosts. Use one per turn during a hand, after the opening. You can carry ${CHEM_MAX} in all (carrying ${chemTotal()}).</p>
+    <div class="plist">${Object.entries(CHEMS).map(([id,c])=>`<div class="prow"><div><b>${c.name}${meta.chems[id]?` ×${meta.chems[id]}`:''}</b><span>${c.desc}</span></div>
+      <button class="btn${!full&&meta.caps>=c.price?' hot':''}" data-buychem="${id}" ${full||meta.caps<c.price?'disabled':''}>${full?'Pouch full':capN(c.price)}</button></div>`).join('')}</div>`;
+  }
+  const deck=meta.deck.map((c,i)=>({...c,i})).sort(sortSpec);
+  return `
+    <p class="note">Sell cards to thin your deck, so your best ones come up more often. Face cards sell for half what they cost; number cards for 1 cap. Decks keep at least ${MIN_DECK} cards, ${MIN_NUMS} of them number cards.</p>
+    <div class="deckgrid">
+      ${deck.map(c=>{const ok=canSell(c);return `<button class="card-btn" data-cut="${c.i}" aria-label="Sell ${cardName(c)} for ${sellPrice(c)} caps" ${ok?'':'disabled'} style="${armedCut===c.i?'transform:translateY(-6px)':''}${ok?'':';opacity:.45'}">${cardHTML(c)}</button>`;}).join('')}
+    </div>
+    <p class="hint" style="text-align:left">${armedCut!=null?`Tap ${cardName(meta.deck[armedCut])} again to sell it for ${sellPrice(meta.deck[armedCut])} cap${sellPrice(meta.deck[armedCut])>1?'s':''}.`:meta.deck.length<=MIN_DECK?'Your deck is at the minimum size.':''}</p>`;
+}
+function renderShop(){
+  const tab=(id,label)=>`<button class="btn" data-tab="${id}" aria-pressed="${shopTab===id}">${label}</button>`;
+  app.innerHTML=`
+  <div class="mbar"><button class="btn" data-go="road">← Back to the road</button>${capsHTML(meta.caps)}</div>
+  <section class="panel">
+    <h2 style="font-size:28px">Trading post</h2>
+    <div class="tabs" role="group" aria-label="Shop section">
+      ${tab('buy','Cards')}${tab('perks',`Perks (${meta.equipped.length}/${perkSlots()})`)}${tab('chems',`Chems (${chemTotal()})`)}${tab('deck',`Your deck (${meta.deck.length})`)}
+    </div>
+    ${shopBody()}
+  </section>`;
+}
+
+// ---------- match ----------
+function laneHTML(side,l,lanes,selMoves){
+  const R=G.rules, cv=G[side].cv[l], v=cvValue(cv), st=cvState(cv), w=lanes[l], r=R.range[side];
+  const hide=R.hideOpp&&side==='a'&&!G.over;
+  const vcls=hide?'':v>r[1]?'bust':inR(v,r)?'ok':'';
+  const arrow=cv.length<2&&!cv.some(e=>e.faces.some(f=>f.rank==='Q'))?'':st.dir>0?'▲':st.dir<0?'▼':'•';
+  let tag='';
+  if(!R.hideOpp||G.over)tag=w?(w===side?'<span class="tag">SOLD</span>':'<span class="tag lose">OUTBID</span>'):(v>r[1]?'<span class="tag lose">BUST</span>':'');
+  else if(side==='p')tag=v>r[1]?'<span class="tag lose">BUST</span>':inR(v,r)?'<span class="tag">IN RANGE</span>':'';
+  let can=false;
+  if(side==='p'){
+    if(disbandMode&&cv.length)can=true;
+    if(selMoves.some(m=>m.t==='num'&&m.lane===l))can=true;
+  }
+  const flash=G.fx&&G.fx.side===side&&G.fx.lane===l?' flash':'';
+  const entries=cv.map((e,i)=>{
+    const ce=selMoves.some(m=>m.t==='face'&&m.side===side&&m.lane===l&&m.idx===i);
+    return `<div class="entry${ce?' can':''}" data-side="${side}" data-lane="${l}" data-idx="${i}" style="top:calc(var(--off) * ${i})">${cardHTML(e.card)}${
+      e.faces.map((f,k)=>`<span class="chip${f.rank==='JK'?' jk':isRed(f.suit)?' red':''}" style="left:calc(var(--cw) + 3px + ${(k%3)*18}px);top:${2+Math.floor(k/3)*21}px">${f.rank==='JK'?'★':f.rank+SUIT_CH[f.suit]}</span>`).join('')}</div>`;
+  }).join('');
+  const h=Math.max(0,cv.length-1);
+  return `<div class="lane${can?' can':''}${flash}" data-side="${side}" data-lane="${l}" ${can?'role="button" tabindex="0"':''} aria-label="${side==='p'?'Your':'Their'} caravan ${ROMAN[l]}${hide?'':`, value ${v}`}">
+    <div class="lhead"><b class="v num ${vcls}">${hide&&cv.length?'??':v}</b><span class="dir">${arrow}${st.suit&&cv.length?SUIT_CH[st.suit]:''}</span>${tag}</div>
+    <div class="stack" style="height:calc(var(--ch) + var(--off) * ${h})">${cv.length?entries:`<div class="slot">${ROMAN[l]}</div>`}</div>
+  </div>`;
+}
+function hintText(selMoves){
+  if(G.over)return '';
+  if(G.turn!=='p')return `${OPP().name.split(' ').slice(-1)[0]} is thinking…`;
+  const setup=G.setupLeft.p>0;
+  if(disbandMode)return 'Tap one of your caravans to disband it. Tap Disband again to cancel.';
+  if(sel==null){
+    if(setup)return `Opening: put a number card on each empty caravan (${3-G.setupLeft.p}/3).`;
+    return G.extra?'Black Coffee: you get another play after this one.':'Pick a card from your hand.';
+  }
+  const c=G.p.hand[sel];
+  const plays=selMoves.filter(m=>m.t!=='discard');
+  if(G.rules.banned.includes(c.rank))return `${FACE_NAME[c.rank]}s are banned at this table. Discard it, or pick another card.`;
+  if(!plays.length)return setup?'Openings take number cards only.':`${cardName(c)} has nowhere legal to go. Discard it, or pick another.`;
+  if(isNum(c))return 'Tap a glowing caravan to play it.';
+  return {J:'Tap a card to knock it out, with anything stacked on it.',Q:'Tap the top card of a caravan to flip its direction.',K:`Tap a card to multiply it by ${G.rules.kingMult.p}.`,JK:'Tap a card. Ace wipes its suit, 2–10 wipes its value.'}[c.rank];
+}
+function coachHTML(){
+  const S=tutSteps(), n=G.tut.step, step=S[n];
+  const waiting=G.turn!=='p';
+  return `<div class="coach" aria-live="polite">
+    <div class="k"><span>Lesson ${Math.min(n+1,S.length)} of ${S.length} · ${esc(step.title)}</span><button class="btn ghost" data-skiptut>Skip lessons</button></div>
+    <div>${waiting?`${esc(OPP().name)} is making a move…`:esc(step.say)}</div>
+    ${!step.move&&!waiting?'<button class="btn hot go" data-skiptut>Play out the hand</button>':''}
+  </div>`;
+}
+function rulesBar(){
+  if(isClassicish()||G.opp===-1)return '';
+  const o=OPP(), R=G.rules, bits=[];
+  const rp=rangeTxt(R.range.p), ra=rangeTxt(R.range.a);
+  bits.push(`<span class="rb">Sell ${rp===ra?rp:`you ${rp} · them ${ra}`}</span>`);
+  for(const h of o.house)bits.push(`<span class="rb house-chip">${HOUSE[h].name}</span>`);
+  for(const p of (G.perks||[]))bits.push(`<span class="rb perk-chip">${PERKS[p].name}</span>`);
+  if(G.bounty){const b=BOUNTIES[G.bounty];bits.push(`<span class="rb bounty-chip">Bounty: ${b.name} +${G.bountyPay}</span>`);}
+  return `<div class="rulesbar">${bits.join('')}</div>`;
+}
+function chemBar(myTurn){
+  if(isClassicish()||G.opp===-1)return '';
+  const pouch=chemPouch();
+  let owned=Object.keys(CHEMS).filter(id=>pouch[id]>0);
+  if(tutActive()){const st=tutSteps()[G.tut.step];if(!st.move||st.move.t!=='chem')return '';owned=[st.move.id];}
+  if(!owned.length)return '';
+  const ok=myTurn&&G.setupLeft.p===0&&!G.chemTurn;
+  return `<div class="chems">${owned.map(id=>{
+    const off=!ok||(id==='spy'&&G.peek)||(id==='coffee'&&G.extra)||((id==='shoe')&&!G.p.deck.length);
+    return `<button class="btn chem" data-chem="${id}" ${off?'disabled':''} title="${esc(CHEMS[id].desc)}">${CHEMS[id].name} ×${pouch[id]}</button>`;}).join('')}
+    <span class="chem-note">${G.setupLeft.p>0?'Chems unlock after the opening.':G.chemTurn?'One chem per turn.':''}</span></div>`;
+}
+function renderMatch(){
+  const o=OPP(), lanes=lanesResult(G), tut=tutActive();
+  const myTurn=G.turn==='p'&&!G.over&&!busy;
+  const legal=playerLegal();
+  const selMoves=sel==null?[]:legal.filter(m=>m.ci===sel);
+  const canDiscard=selMoves.some(m=>m.t==='discard');
+  const canDisband=legal.some(m=>m.t==='disband');
+  const backs=Math.min(G.a.hand.length,8);
+  const handOK=i=>myTurn&&(!tut||legal.some(m=>m.ci===i));
+  app.innerHTML=`
+  <div class="mbar">
+    <div class="opp"><h2>${esc(o.name)}</h2><small>${esc(o.place)}${G.stake?` · buy-in ${G.stake}`:''} · hand ${G.a.hand.length}<span class="backs">${'<div class="card back"></div>'.repeat(backs)}</span> · deck ${G.a.deck.length}</small></div>
+    <button class="btn ghost${armedFold?' armed':''}" data-fold>${armedFold?(G.stake?`Fold, lose ${G.stake}`:'Tap to fold'):'Fold'}</button>
+  </div>
+  ${rulesBar()}
+  ${G.peek&&!G.over?`<div class="peek"><span>Their hand</span><div class="deckgrid">${G.a.hand.map(cardHTML).join('')}</div></div>`:''}
+  <div class="table">
+    <div class="side">${[0,1,2].map(l=>laneHTML('a',l,lanes,selMoves)).join('')}</div>
+    <div class="mid"><span class="turn${G.turn==='p'?' mine':''}">${G.over?'Hand over':G.turn==='p'?'Your move':'Their move'}</span><span class="log">${esc(G.log[0]||'Sell two caravans in range to win.')}</span></div>
+    <div class="side">${[0,1,2].map(l=>laneHTML('p',l,lanes,selMoves)).join('')}</div>
+  </div>
+  ${tut?coachHTML():`<p class="hint" aria-live="polite">${esc(hintText(selMoves))}</p>`}
+  <div class="hand${tut?' tut':''}">${G.p.hand.map((c,i)=>`<button class="card-btn${sel===i?' sel':''}" data-hand="${i}" ${handOK(i)?'':'disabled'} aria-label="${cardName(c)}" aria-pressed="${sel===i}">${cardHTML(c)}</button>`).join('')}</div>
+  ${chemBar(myTurn)}
+  <div class="actions">
+    <button class="btn" data-discard ${canDiscard?'':'disabled'}>Discard</button>
+    <button class="btn${disbandMode?' armed':''}" data-disband ${canDisband||disbandMode?'':'disabled'}>Disband${G.rules.freeDisband.p?' (free)':''}</button>
+    <span class="pill num" style="font-size:13px">Your deck ${G.p.deck.length}</span>
+  </div>
+  ${G.over?resultHTML():''}`;
+}
+function resultHTML(){
+  const ov=G.over, won=ov.winner==='p';
+  const lines=[];
+  if(won){
+    if(ov.stake)lines.push(`${ov.stake} buy-in back`);
+    lines.push(`${ov.win} winnings`);
+    if(ov.bonus)lines.push(`${ov.bonus} first-win bonus`);
+  }else if(ov.stake)lines.push(`lost the ${ov.stake}-cap buy-in`);
+  if(ov.bountyWon)lines.push(`${ov.bountyWon} bounty (${BOUNTIES[ov.bounty].name})`);
+  if(ov.refund)lines.push(`${ov.refund} back from Insured`);
+  if(ov.scav)lines.push(`${ov.scav} from Scavenger`);
+  const delta=ov.delta;
+  const broke=!won&&ROAD.some((o,i)=>o.buyin>meta.caps&&(i===0||meta.beaten.includes(i-1)))&&meta.caps<20;
+  const missed=ov.bounty&&won&&!ov.bountyWon?`<p>Bounty missed: ${BOUNTIES[ov.bounty].desc}</p>`:'';
+  return `<div class="overlay"><div class="panel result">
+    <h2 class="${won?'':'lost'}">${won?'Caravans sold':'Outbid'}</h2>
+    <p>${esc(ov.reason)}</p>
+    ${ov.mode==='campaign'?`<div class="gain num">${ov.delta>0?`+${capN(ov.delta)}`:ov.delta<0?`−${capN(-ov.delta)}`:'Friendly game'}</div>
+      <p>You have ${meta.classic.camp.caps} caps.${ov.firstBeat?` ${esc(OPP().place)} is beaten.`:''}${ov.campDone?' That’s the whole circuit. Well played.':''}</p>`
+    :ov.mode==='classic'?`<p>Classic record: ${meta.classic.wins}W · ${meta.classic.losses}L</p>`:`<div class="gain num">${delta>0?`+${capN(delta)}`:delta<0?`−${capN(-delta)}`:'No caps lost'}</div>`}
+    ${ov.mode==='road'&&lines.length?`<p style="margin-top:-8px">${esc(lines.join(' · '))}</p>`:''}
+    ${missed}
+    ${ov.mode==='road'?`<p>You have ${meta.caps} caps.</p>`:''}
+    ${broke?'<p>Short on caps? Dusty Rita’s table in Goodsprings is always free.</p>':''}
+    ${ov.tutorial?`<p>${ov.mode==='classic'?'Lessons done. Build a deck and pick a dealer when you’re ready.':'Lessons done. Head for Goodsprings when you’re ready.'}</p>`:''}
+    ${ov.mode==='campaign'
+      ?`<button class="btn hot" data-rebet="${G.opp}">Play again (${ov.stake?ov.stake+' caps':'friendly'})</button> <button class="btn" data-go="campaign" style="margin-left:6px">Back to the circuit</button>`
+      :ov.mode==='classic'
+      ?(G.opp>=0?`<button class="btn hot" data-cplay="${G.opp}">Deal again</button> <button class="btn" data-go="classic" style="margin-left:6px">Back to the table</button>`
+        :`<button class="btn hot" data-go="classic">Back to the table</button>`)
+      :meta.draft?draftHTML():`<button class="btn hot" data-go="road">Back to the road</button>
+    <button class="btn" data-go="shop" style="margin-left:6px">Trading post</button>`}
+  </div></div>`;
+}
+
+function render(){
+  document.getElementById('sky').style.display=screen==='match'?'none':'block';
+  const R={home:renderHome,road:renderRoad,shop:renderShop,classic:renderClassic,build:renderBuild,pickdeck:renderPick,match:renderMatch,campaign:renderCampaign,vendor:renderVendor};
+  (R[screen]||renderHome)();
+}
+
+// ---------- flow ----------
+function enterMatch(){sel=null;disbandMode=false;busy=false;armedFold=false;screen='match';save();render();window.scrollTo(0,0);}
+function startMatch(i){
+  if(i===-2){G=newRoadTutorial();G.stake=0;enterMatch();return;}
+  const o=i<0?TUTOR:ROAD[i];
+  if(!o||meta.caps<o.buyin||meta.draft)return;
+  if(i>0&&!meta.beaten.includes(i-1))return;
+  meta.caps-=o.buyin;
+  if(i<0)G=newTutorial('road');
+  else{
+    G=newMatch(meta.deck,addFaces(baseNumbers(),o.extra),i,tableRules(i,true));
+    G.mode='road';
+    G.perks=[...meta.equipped];
+    G.bounty=meta.bounties[i]; G.bountyPay=bountyPay(i);
+    G.stats={faces:0,jokers:0,kings:0,discards:0,disbands:0};
+  }
+  G.stake=o.buyin;
+  enterMatch();
+}
+function startClassic(i){
+  if(i<0){G=newTutorial('classic');G.stake=0;enterMatch();return;}
+  const d=CLASSIC_DEALERS[i]; if(!d||!meta.classic.deck)return;
+  G=newMatch(meta.classic.deck,addFaces(baseNumbers(),d.extra),i,baseRules());
+  G.mode='classic';G.stake=0;
+  enterMatch();
+}
+function describe(side,m){
+  const who=side==='p'?'You':OPP().name.split(' ').slice(-1)[0];
+  const whose=s=>s==='p'?'your':'their';
+  if(m.t==='disband')return `${who} disbanded ${side==='p'?'your':'their'} caravan ${ROMAN[m.lane]}.`;
+  const c=G[side].hand[m.ci];
+  if(m.t==='discard')return `${who} discarded ${side==='p'?cardName(c):'a card'}.`;
+  if(m.t==='num')return `${who} played ${cardName(c)} on caravan ${ROMAN[m.lane]}.`;
+  const t=G[m.side].cv[m.lane][m.idx].card;
+  return `${who} played ${cardName(c)} on ${whose(m.side)} ${G.rules.hideOpp&&m.side==='a'&&side==='a'?'caravan':cardName(t)}.`;
+}
+function bountyMet(id,lanes){
+  const s=G.stats;
+  if(id==='p26')return [0,1,2].some(l=>lanes[l]==='p'&&cvValue(G.p.cv[l])===26);
+  if(id==='clean')return s.faces===0;
+  if(id==='sweep')return lanes.every(x=>x==='p');
+  if(id==='wild')return s.jokers>0;
+  if(id==='calm')return s.discards===0&&s.disbands===0;
+  if(id==='kings')return s.kings>=2;
+  return false;
+}
+function finish(winner,reason){
+  const o=OPP(), tutorial=G.opp<0, stake=G.stake||0;
+  const ov={winner,reason,stake,win:0,bonus:0,tutorial,bounty:G.bounty||null,bountyWon:0,refund:0,scav:0,delta:0,mode:G.mode||'road'};
+  if(G.mode==='campaign'){
+    const cp=meta.classic.camp, r=cp.rec[G.opp]||{w:0,l:0};
+    if(winner==='p'){cp.caps+=stake*2;cp.wins++;r.w++;
+      if(!cp.beaten.includes(G.opp)){cp.beaten.push(G.opp);ov.firstBeat=true;}
+      if(cp.beaten.length===CAMP_DEALERS.length&&!cp.done){cp.done=true;ov.campDone=true;}
+    }else{cp.losses++;r.l++;}
+    cp.rec[G.opp]=r; cp.stock=rollCampStock(cp.coll);
+    ov.delta=winner==='p'?stake:-stake;
+    G.over=ov; save(); return;
+  }
+  if(G.mode==='classic'){
+    if(winner==='p')meta.classic.wins++;else meta.classic.losses++;
+    if(G.opp>=0){const r=meta.classic.rec[G.opp]||{w:0,l:0};winner==='p'?r.w++:r.l++;meta.classic.rec[G.opp]=r;}
+    if(tutorial)meta.tutorialDone=true;
+    G.over=ov; save(); return;
+  }
+  const before=meta.caps+stake, lanes=lanesResult(G);
+  const doneKey=G.opp===-1?'tutorialDone':G.opp===-2?'roadTutDone':null;
+  if(winner==='p'){
+    const first=doneKey?!meta[doneKey]:!meta.beaten.includes(G.opp);
+    ov.win=tutorial?o.win:Math.round(o.win*(G.perks&&G.perks.includes('roller')?1.5:1));
+    ov.bonus=first?o.bonus:0;
+    if(G.bounty&&bountyMet(G.bounty,lanes))ov.bountyWon=G.bountyPay;
+    meta.caps+=stake+ov.win+ov.bonus+ov.bountyWon; meta.wins++;
+    if(!tutorial&&first){meta.beaten.push(G.opp);meta.draft=makeDraft(G.opp);}
+  }else{
+    meta.losses++;
+    if(G.perks&&G.perks.includes('insure')&&stake){ov.refund=Math.floor(stake/2);meta.caps+=ov.refund;}
+  }
+  if(!tutorial&&G.perks&&G.perks.includes('scav')){ov.scav=5;meta.caps+=5;}
+  if(doneKey)meta[doneKey]=true;
+  ov.delta=meta.caps-before;
+  if(!tutorial)restock();
+  G.over=ov;
+  save();
+}
+function doMove(side,m){
+  const d=describe(side,m);
+  if(side==='p'&&G.stats){
+    if(m.t==='discard')G.stats.discards++;
+    else if(m.t==='disband')G.stats.disbands++;
+    else if(m.t==='face'){const c=G.p.hand[m.ci];G.stats.faces++;if(c.rank==='JK')G.stats.jokers++;if(c.rank==='K')G.stats.kings++;}
+  }
+  applyMove(G,side,m,false);
+  G.log.unshift(d);
+  G.fx={side:m.t==='face'?m.side:side,lane:m.t==='discard'?-1:m.lane};
+  const w=winnerOf(G);
+  if(w){
+    const r=lanesResult(G),n=r.filter(x=>x==='p').length;
+    finish(w,w==='p'?`You sold ${n} of 3 caravans against ${OPP().name}.`:`${OPP().name} sold ${3-n} of 3 caravans.`);
+    render(); return;
+  }
+  // free actions keep the turn
+  let keep=false;
+  if(side==='p'&&m.t==='disband'&&G.rules.freeDisband.p)keep=true;
+  else if(side==='p'&&G.extra&&m.t!=='disband'){G.extra=false;keep=true;}
+  if(!keep){G.turn=other(side);if(G.turn==='p')G.chemTurn=false;}
+  if(!G[G.turn].hand.length){
+    finish(other(G.turn),G.turn==='p'?'You ran out of cards.':`${OPP().name} ran out of cards.`);
+    render(); return;
+  }
+  save();
+  if(G.turn==='a'){busy=true;render();setTimeout(aiTurn,tutActive()?1100:750);}
+  else render();
+}
+function aiTurn(){
+  if(!G||G.over||screen!=='match'){busy=false;return;}
+  let m=null;
+  if(tutActive()){
+    const step=tutSteps()[G.tut.step];
+    if(step&&step.ai){m=resolveSpec(step.ai,'a');G.tut.step++;}
+  }
+  if(!m)m=chooseAIMove(G,'a',OPP().noise);
+  busy=false;
+  if(!m){finish('p',`${OPP().name} has no move left.`);render();return;}
+  doMove('a',m);
+}
+const chemPouch=()=>G&&G.localChems?G.localChems:meta.chems;
+function useChem(id){
+  const pouch=chemPouch();
+  if(!pouch[id]||G.chemTurn||G.setupLeft.p>0||G.turn!=='p'||busy||G.over)return;
+  const me=G.p;
+  if(id==='spy'){if(G.peek)return;G.peek=true;G.log.unshift('You used a Spyglass.');}
+  else if(id==='coffee'){if(G.extra)return;G.extra=true;G.log.unshift('You drank Black Coffee: two plays this turn.');}
+  else if(id==='fresh'){const n=me.hand.length;me.deck.push(...me.hand);me.hand=[];shuffle(me.deck);while(me.hand.length<n&&me.deck.length)me.hand.push(me.deck.pop());G.log.unshift('You took a Fresh Deal.');}
+  else if(id==='shoe'){if(!me.deck.length)return;for(let i=0;i<2&&me.deck.length;i++)me.hand.push(me.deck.pop());G.log.unshift('Horseshoe: you drew 2 cards.');}
+  pouch[id]--; G.chemTurn=true; sel=null;
+  if(tutActive()){const st=tutSteps()[G.tut.step];if(st.move&&st.move.t==='chem')G.tut.step++;}
+  save(); render();
+}
+
+// ---------- input ----------
+app.addEventListener('click',e=>{
+  const t=e.target.closest('button,[data-lane]');
+  if(!t)return;
+  const d=t.dataset;
+  if(!('fold' in d)&&screen==='match')armedFold=false;
+  if('draft' in d){takeDraft(+d.draft);render();return;}
+  if('go' in d){
+    screen=d.go;sel=null;armedCut=null;armedFold=false;if(G&&G.over)G=null;
+    if(screen==='road'&&!meta.starter)screen='pickdeck';
+    if(screen==='campaign'&&!meta.classic.camp){meta.classic.camp=freshCamp();save();}
+    if(screen!=='campaign')campPick=null;
+    render();window.scrollTo(0,0);return;
+  }
+  if('play' in d){startMatch(+d.play);return;}
+  if('cplay' in d){startClassic(+d.cplay);return;}
+  if('starter' in d){const st=STARTERS[d.starter];if(st){meta.deck=st.build();meta.starter=d.starter;save();screen='road';render();window.scrollTo(0,0);}return;}
+  if('build' in d){buildMode=d.build;buildDraft=null;screen='build';render();window.scrollTo(0,0);return;}
+  if('preset' in d){buildDraft=d.preset==='clear'?{}:d.preset==='all'?{...meta.classic.camp.coll}:specToCounts(STARTERS[d.preset].build());render();return;}
+  if('inc' in d){const k=d.inc,n=buildDraft[k]||0;
+    if(buildMode==='camp'){if(n<(meta.classic.camp.coll[k]||0))buildDraft[k]=n+1;}
+    else if(n<capFor(k)&&countsCost(buildDraft)+clPrice(fromKeyC(k).rank)<=CL_BUDGET)buildDraft[k]=n+1;
+    render();return;}
+  if('pick' in d){const i=+d.pick;campPick=campPick===i?null:i;render();return;}
+  if('bet' in d){if(campPick!=null)startCamp(campPick,+d.bet);return;}
+  if('rebet' in d){const i=+d.rebet,cp=meta.classic.camp;const bet=Math.min(cp.lastBet[i]||0,cp.caps);G=null;startCamp(i,bet);return;}
+  if('buyset' in d){const cp=meta.classic.camp;if(cp.caps>=SET_PRICE){cp.caps-=SET_PRICE;for(const k of ALL_KEYS)cp.coll[k]=Math.min(capFor(k),(cp.coll[k]||0)+(k==='JK'?2:1));cp.stock=cp.stock.map(o=>({...o}));save();}render();return;}
+  if('cbuy' in d){const cp=meta.classic.camp,o=cp.stock[+d.cbuy],pr=singlePrice(o.k);if(!o.sold&&cp.caps>=pr&&(cp.coll[o.k]||0)<capFor(o.k)){cp.caps-=pr;cp.coll[o.k]=(cp.coll[o.k]||0)+1;o.sold=true;save();}render();return;}
+  if('csell' in d){const cp=meta.classic.camp,k=d.csell;if(armedCut===k){if((cp.coll[k]||0)>(cp.deck[k]||0)){cp.coll[k]--;if(!cp.coll[k])delete cp.coll[k];cp.caps+=Math.floor(singlePrice(k)/2);save();}armedCut=null;}else armedCut=k;render();return;}
+  if('dec' in d){const k=d.dec;if(buildDraft[k]){buildDraft[k]--;if(!buildDraft[k])delete buildDraft[k];}render();return;}
+  if('savedeck' in d){const m=buildDraft;
+    if(buildMode==='camp'){if(countsSize(m)>=MIN_DECK){meta.classic.camp.deck={...m};buildDraft=null;save();screen='campaign';render();window.scrollTo(0,0);}return;}
+    if(countsSize(m)>=MIN_DECK&&countsCost(m)<=CL_BUDGET){meta.classic.deck=countsToSpec(m);buildDraft=null;save();screen='classic';render();window.scrollTo(0,0);}return;}
+  if('reset' in d){if(armedFold){freshMeta();save();armedFold=false;}else armedFold=true;render();return;}
+  if('tab' in d){shopTab=d.tab;armedCut=null;render();return;}
+  if('buy' in d){
+    const c=meta.stock[+d.buy];
+    if(!c.sold&&meta.caps>=priceOf(c)){meta.caps-=priceOf(c);c.sold=true;meta.deck.push({rank:c.rank,suit:c.suit});save();}
+    render();return;
+  }
+  if('buyperk' in d){
+    const id=d.buyperk,p=PERKS[id];
+    if(p&&!meta.perks.includes(id)&&meta.caps>=p.price){meta.caps-=p.price;meta.perks.push(id);meta.perkStock=meta.perkStock.filter(x=>x!==id);if(meta.equipped.length<perkSlots())meta.equipped.push(id);save();}
+    render();return;
+  }
+  if('equip' in d){
+    const id=d.equip;
+    if(has(id))meta.equipped=meta.equipped.filter(x=>x!==id);
+    else if(meta.equipped.length<perkSlots())meta.equipped.push(id);
+    save();render();return;
+  }
+  if('buychem' in d){
+    const id=d.buychem,c=CHEMS[id];
+    if(c&&chemTotal()<CHEM_MAX&&meta.caps>=c.price){meta.caps-=c.price;meta.chems[id]++;save();}
+    render();return;
+  }
+  if('cut' in d){
+    const i=+d.cut, c=meta.deck[i];
+    if(armedCut===i){if(c&&canSell(c)){meta.deck.splice(i,1);meta.caps+=sellPrice(c);save();}armedCut=null;}
+    else armedCut=i;
+    render();return;
+  }
+  if(screen!=='match'||!G)return;
+  if('skiptut' in d){if(G.tut){G.tut.done=true;sel=null;save();render();}return;}
+  if('fold' in d){
+    if(G.over)return;
+    if(armedFold){finish('a','You folded the hand.');armedFold=false;render();}
+    else{armedFold=true;render();}
+    return;
+  }
+  if(G.over||G.turn!=='p'||busy)return;
+  if('chem' in d){useChem(d.chem);return;}
+  const legal=playerLegal();
+  if('hand' in d){const i=+d.hand;sel=sel===i?null:i;disbandMode=false;render();return;}
+  if('discard' in d){const m=legal.find(x=>x.t==='discard'&&x.ci===sel);if(m){sel=null;doMove('p',m);}return;}
+  if('disband' in d){disbandMode=!disbandMode;sel=null;render();return;}
+  const entry=e.target.closest('.entry'), lane=e.target.closest('.lane');
+  if(disbandMode&&lane&&lane.dataset.side==='p'){
+    const m=legal.find(x=>x.t==='disband'&&x.lane===+lane.dataset.lane);
+    if(m){disbandMode=false;doMove('p',m);}return;
+  }
+  if(sel==null)return;
+  if(entry){
+    const m=legal.find(x=>x.t==='face'&&x.ci===sel&&x.side===entry.dataset.side&&x.lane===+entry.dataset.lane&&x.idx===+entry.dataset.idx);
+    if(m){sel=null;doMove('p',m);return;}
+  }
+  if(lane&&lane.dataset.side==='p'){
+    const m=legal.find(x=>x.t==='num'&&x.ci===sel&&x.lane===+lane.dataset.lane);
+    if(m){sel=null;doMove('p',m);}
+  }
+});
+app.addEventListener('keydown',e=>{
+  if((e.key==='Enter'||e.key===' ')&&e.target.matches('.lane[role="button"]')){e.preventDefault();e.target.click();}
+});
+// ---------- backdrop ----------
+function drawSky(){
+  const c=$('#sky'),dpr=window.devicePixelRatio||1,w=window.innerWidth,h=window.innerHeight;
+  c.width=w*dpr;c.height=h*dpr;const x=c.getContext('2d');x.setTransform(dpr,0,0,dpr,0,0);
+  const g=x.createLinearGradient(0,0,0,h);
+  g.addColorStop(0,'#0c0910');g.addColorStop(.5,'#22121b');g.addColorStop(.78,'#5e2a20');g.addColorStop(.86,'#1b110e');g.addColorStop(1,'#120c0a');
+  x.fillStyle=g;x.fillRect(0,0,w,h);
+  let seed=7;const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
+  for(let i=0;i<220;i++){const sx=rnd()*w,sy=rnd()*h*.62,r=rnd()*1.2+.2;x.globalAlpha=.25+rnd()*.7;x.fillStyle='#fff6e6';x.fillRect(sx,sy,r,r);}
+  x.globalAlpha=1;
+  const hy=h*.8, cx=w*.7;
+  const glow=x.createRadialGradient(cx,hy,0,cx,hy,w*.45);
+  glow.addColorStop(0,'rgba(255,150,70,.55)');glow.addColorStop(.4,'rgba(255,110,50,.15)');glow.addColorStop(1,'rgba(255,110,50,0)');
+  x.fillStyle=glow;x.fillRect(0,0,w,h);
+  // distant skyline
+  x.fillStyle='#160d0c';
+  for(let bx=cx-w*.12;bx<cx+w*.12;bx+=6+rnd()*8){const bh=6+rnd()*rnd()*46;x.fillRect(bx,hy-bh,5+rnd()*6,bh);}
+  x.fillRect(cx-1.5,hy-h*.11,3,h*.11);x.beginPath();x.ellipse(cx,hy-h*.11,9,4,0,0,Math.PI*2);x.fill();
+  x.fillStyle='#ffb46a';
+  for(let i=0;i<60;i++){const wx=cx-w*.11+rnd()*w*.22,wy=hy-rnd()*30;if(rnd()<.5)x.fillRect(wx,wy,1.2,1.2);}
+  // mesas
+  x.fillStyle='#0f0a09';x.beginPath();x.moveTo(0,h);x.lineTo(0,hy-h*.05);
+  let px=0;const plates=[[.08,-.09],[.18,-.09],[.22,-.02],[.34,-.02],[.38,-.06],[.48,-.06],[.52,0],[.86,0],[.9,-.04],[1,-.04]];
+  for(const [fx,fy] of plates){px=fx*w;x.lineTo(px,hy+fy*h);}
+  x.lineTo(w,h);x.closePath();x.fill();
+}
+window.addEventListener('resize',()=>{if(screen!=='match')drawSky();});
+
+// ---------- boot ----------
+function start(data){
+  meta=migrate((data&&data.meta)||load()||freshMeta());
+  if(!meta.stock||!meta.perkStock||!meta.bounties||meta.bounties.length!==ROAD.length)restock();
+  if(data&&data.G){G=data.G;screen=data.screen||'home';}
+  else if(meta.match&&!meta.match.over){G=meta.match;screen='match';}
+  else screen=(data&&data.screen)||'home';
+  if(screen==='match'&&!G)screen='home';if(screen==='hub')screen='road';
+  if(G&&!G.rules)G.rules=baseRules();
+  drawSky();render();
+  if(screen==='match'&&G&&!G.over&&G.turn==='a'){busy=true;render();setTimeout(aiTurn,600);}
+}
+window.claude?.hot?.snapshot?.(()=>({meta,G,screen}));
+window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
+</script>
+</body>
+</html>
