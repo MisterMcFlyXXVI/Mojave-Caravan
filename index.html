@@ -486,6 +486,14 @@ body[data-screen="home"] .wordmark{visibility:hidden}
 .bets .btn{padding:6px 10px;font-size:13px}
 
 /* ---- The Road: runs ---- */
+.picker{max-height:90vh;overflow:auto}
+.pickgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:8px;margin:10px 0}
+.pickgrid.burn{grid-template-columns:repeat(auto-fill,minmax(48px,1fr))}.pickgrid.burn .card{--cw:42px}
+.pickcard{display:grid;justify-items:center;gap:2px;background:none;border:0;padding:4px;border-radius:8px;color:var(--muted);--cw:56px}
+.pickcard small{font-size:10px;min-height:12px}
+.pickcard.on{background:#ffa44926;box-shadow:0 0 0 2px var(--neon)}.pickcard.on .card{transform:translateY(-4px)}
+.pickgrid.burn .pickcard.on{background:#c0392b33;box-shadow:0 0 0 2px #e0602f}
+.pickcard:disabled{opacity:.45}
 .opt.packopt{cursor:default}.opt.packopt.owned{border-color:#a9c08b66}.opt.packopt.owned .req{color:var(--sage)}
 .packdots{display:flex;gap:2px;justify-content:center;flex-wrap:wrap;max-width:56px}
 .packdot{display:inline-block;width:9px;height:13px;border-radius:2px;background:var(--back-bg);border:1px solid var(--back-border,#0008);flex:none}
@@ -2303,7 +2311,9 @@ const ROAD_RULES=`
   <li>You can <b>skip</b> the Saloon or High Stakes table for a reward tag. The Boss table can’t be skipped.</li>
   <li><b>Bosses</b> bring random rules, and they get nastier the further you go. Read them on the map before you deal in.</li>
   <li>Every run starts with a <b>Plain deck</b> and a few caps. Win tables to earn caps, plus <b>interest</b>: 1 cap for every 5 you hold, up to 5.</li>
-  <li>Between tables, the <b>trading post</b> sells perks, cards, chems, crates, card upgrades and one voucher per stop. Reroll it if you don’t like what’s there.</li>
+  <li>Between tables, the <b>trading post</b> sells perks, single cards, chems, card upgrades and one voucher per stop. Reroll it if you don’t like what’s there.</li>
+  <li><b>Card bundles</b> show you several cards and let you keep some: a Saddlebag (keep 1 of 3), a Supply crate or Caravan haul (keep 2 of 5), or a themed bundle of one suit or of Kings and Queens. You can always take nothing.</li>
+  <li>The <b>Burn pile</b> removes up to 2 cards from your deck for good, once per visit. A thinner deck draws your best cards more often. Watch for free burn barrels on the road, too.</li>
   <li><b>Perks</b> come in four rarities. You start with 3 slots and get a 4th from Boulder City on. Sell a perk to make room.</li>
   <li><b>Card upgrades</b>: Steel can’t be Jacked, Gilded pays caps when it sells, Lucky draws an extra card, Glass is worth double but breaks, Wild matches any suit.</li>
   <li><b>Chems</b> are one-use boosts during a hand, one per turn, after the opening.</li>
@@ -3240,7 +3250,7 @@ const VOUCHERS={
 };
 const TAGS={
   caps:{name:'Cap Stash',desc:'+8 caps right now.'},
-  crate:{name:'Free Crate',desc:'A free card crate at the next shop.'},
+  crate:{name:'Free Bundle',desc:'A free Supply crate (see 5 cards, keep 2) at the next shop.'},
   chem:{name:'Pick-Me-Up',desc:'A free random chem right now.'},
   half:{name:'Clearance Sale',desc:'The next shop is half price.'},
   reroll:{name:'Rerolls',desc:'Two free rerolls at the next shop.'},
@@ -3397,18 +3407,48 @@ function runCardPrice(c){
 const perkRunPrice=id=>disc(RARITY_PRICE[PERK_RARITY[id]||'common']);
 const perkSellPrice=id=>Math.max(1,Math.floor(RARITY_PRICE[PERK_RARITY[id]||'common']/2));
 const chemRunPrice=id=>disc({spy:3,coffee:4,fresh:2,shoe:3}[id]);
-const CRATES={card:{name:'Card crate',desc:'Pick 1 of 3 cards. Some come upgraded.',price:4},perk:{name:'Perk crate',desc:'Pick 1 of 3 perks.',price:7},chem:{name:'Chem crate',desc:'Pick 1 of 3 chems.',price:3}};
+const SUIT_WORD={S:'Spades',H:'Hearts',D:'Diamonds',C:'Clubs'};
+const BUNDLES={
+  saddlebag:{name:'Saddlebag',desc:'See 3 cards, keep 1. Mostly number cards.',price:4,see:3,keep:1,w:38},
+  supply:{name:'Supply crate',desc:'See 5 cards, keep 2. Better odds of faces and upgrades.',price:7,see:5,keep:2,w:28},
+  haul:{name:'Caravan haul',desc:'See 5 cards, keep 2. Every card is a face card or an upgraded number.',price:11,see:5,keep:2,w:10},
+  suit:{name:'Suit bundle',desc:'See 5 number cards of one suit, keep 2. Some come upgraded.',price:6,see:5,keep:2,w:16},
+  royal:{name:'Royal bundle',desc:'See 5 Kings and Queens, keep 2.',price:9,see:5,keep:2,w:8},
+};
+const bundleName=b=>b.id==='suit'?`${SUIT_WORD[b.suit]} bundle`:BUNDLES[b.id].name;
+const bundleDesc=b=>b.id==='suit'?`See 5 ${SUIT_WORD[b.suit].toLowerCase()} number cards, keep 2. Some come upgraded.`:BUNDLES[b.id].desc;
+function rollBundle(){const tot=Object.values(BUNDLES).reduce((a,b)=>a+b.w,0);let x=Math.random()*tot;for(const [id,b] of Object.entries(BUNDLES)){x-=b.w;if(x<0)return id==='suit'?{id,suit:pick(SUITS)}:{id};}return {id:'saddlebag'};}
+function genBundleCards(b){
+  const out=[],key=c=>c.rank+(c.suit||'')+(c.mod||'');
+  const numRank=()=>pick(['A','2','3','4','5','6','7','8','9','10']);
+  const mod=()=>pick(Object.keys(MODS));
+  const make=()=>{
+    if(b.id==='royal')return {rank:pick(['K','Q','K']),suit:pick(SUITS)};
+    if(b.id==='suit'){const c={rank:numRank(),suit:b.suit};if(Math.random()<.3)c.mod=mod();return c;}
+    if(b.id==='haul'){if(Math.random()<.5){const r=Math.random();return r<.15?{rank:'JK',suit:null}:{rank:pick(['K','J','Q','K','J']),suit:pick(SUITS)};}return {rank:numRank(),suit:pick(SUITS),mod:mod()};}
+    const [face,up]=b.id==='supply'?[.3,.35]:[.15,.15];
+    if(Math.random()<face){const r=Math.random();return r<.12?{rank:'JK',suit:null}:{rank:pick(['K','J','Q','J','K']),suit:pick(SUITS)};}
+    const c={rank:numRank(),suit:pick(SUITS)};if(Math.random()<up)c.mod=mod();return c;
+  };
+  for(let k=0;k<60&&out.length<BUNDLES[b.id].see;k++){const c=make();if(!out.some(o=>key(o)===key(c)))out.push(c);}
+  return out;
+}
+function openBundle(b,free){run().picker={kind:'bundle',title:bundleName(b)+(free?' (free)':''),note:`Pick up to ${BUNDLES[b.id].keep} to add to your deck.`,options:genBundleCards(b),keep:BUNDLES[b.id].keep,sel:[]};}
+function openBurn(max,title,note){run().picker={kind:'burn',title,note,keep:max,sel:[]};}
+const burnRoom=()=>Math.max(0,meta.deck.length-MIN_DECK);
+const CRATES={perk:{name:'Perk crate',desc:'Pick 1 of 3 perks.',price:7},chem:{name:'Chem crate',desc:'Pick 1 of 3 chems.',price:3}};
 function rerollCost(){const r=run();return (runV('dice')?1:3)*(r.deck==='rust'?2:1)+(r.rerolls||0);}
 function openShop(){
   const r=run();
   r.offers={perks:rollPerkOffer(2),cards:[rollCard(true),rollCard(true)],chems:shuffle(Object.keys(CHEMS)).slice(0,2),
     upgrade:pick(Object.keys(MODS)),voucher:r.voucherStop===r.stop?null:pick(Object.keys(VOUCHERS).filter(v=>!r.vouchers.includes(v))),sold:{}};
-  r.rerolls=0;r.crate=null;r.workbench=null;r.sponsor=isChar('ronald')?1:0;
-  if(r.freeCrate){r.freeCrate=0;r.crate={kind:'card',options:[rollCard(true),rollCard(true),rollCard(true)],free:true};}
+  r.offers.bundles=[rollBundle(),rollBundle()];r.burnUsed=false;
+  r.rerolls=0;r.crate=null;r.workbench=null;r.picker=null;r.sponsor=isChar('ronald')?1:0;
+  if(r.freeCrate){r.freeCrate=0;openBundle({id:'supply'},true);}
 }
 function rerollShop(){
   const r=run();
-  r.offers.perks=rollPerkOffer(2);r.offers.cards=[rollCard(true),rollCard(true)];r.offers.chems=shuffle(Object.keys(CHEMS)).slice(0,2);r.offers.upgrade=pick(Object.keys(MODS));r.offers.sold={};
+  r.offers.perks=rollPerkOffer(2);r.offers.cards=[rollCard(true),rollCard(true)];r.offers.chems=shuffle(Object.keys(CHEMS)).slice(0,2);r.offers.upgrade=pick(Object.keys(MODS));r.offers.bundles=[rollBundle(),rollBundle()];r.offers.sold={};
 }
 function openCrate(kind){
   const opts=kind==='card'?[rollCard(true),rollCard(true),rollCard(true)]:kind==='perk'?rollPerkOffer(3):shuffle(Object.keys(CHEMS)).slice(0,3);
@@ -3523,6 +3563,8 @@ const EVENTS={
     choices:[{label:'Flip (10 caps)',cost:10,act:()=>{if(Math.random()<.5){meta.caps+=20;return 'Heads! You win 20 caps.';}return 'Tails. The stranger laughs and walks off with your caps.';}},{label:'Walk away',act:()=>'Probably wise.'}]},
   shrine:{title:'A Roadside Shrine',text:'An old shrine to a forgotten casino. Leaving an offering here thins your deck of the cards you least need.',
     choices:[{label:'Leave an offering',act:()=>{const lows=meta.deck.map((c,i)=>({c,i})).filter(o=>isNum(o.c)&&!o.c.mod&&val(o.c)<=3).slice(0,3).map(o=>o.i);if(meta.deck.length-lows.length>=MIN_DECK)meta.deck=meta.deck.filter((c,i)=>!lows.includes(i));else return 'Your deck is too thin to give anything up.';return `You removed ${lows.length} low cards from your deck.`;}},{label:'Move on',act:()=>'You tip your hat and keep going.'}]},
+  barrel:{title:'A Burn Barrel',text:'A barrel fire crackles by the roadside, and nobody’s watching it. A good place to get rid of cards you don’t want.',
+    choices:[{label:'Burn up to 3 cards (free)',act:()=>{openBurn(3,'Burn barrel','Pick up to 3 cards to burn. They’re gone for the rest of the run.');return null;}},{label:'Warm your hands and move on',act:()=>'You warm up and hit the road.'}]},
   medic:{title:'A Wandering Medic',text:'A medic offers chems from her bag at a fair price.',
     choices:[{label:'Buy a random chem (2 caps)',cost:2,act:()=>{if(chemTotal()<chemMax()){const id=pick(Object.keys(CHEMS));meta.chems[id]++;return `You got a ${CHEMS[id].name}.`;}return 'Your pouch is full. She keeps the caps anyway. Rude.';}},{label:'Decline',act:()=>'She nods and moves along.'}]},
 };
@@ -3530,7 +3572,7 @@ function eventChoose(i){
   const r=run(),ev=EVENTS[r.event];if(!ev)return;const ch=ev.choices[i];if(!ch)return;
   if(ch.cost&&meta.caps<ch.cost)return;
   if(ch.cost)meta.caps-=ch.cost;
-  r.eventResult=ch.act();save();
+  const res=ch.act();if(res!=null)r.eventResult=res;save();
 }
 function eventDone(){const r=run();r.event=null;r.eventResult=null;r.phase='shop';openShop();save();}
 
@@ -3703,7 +3745,8 @@ function renderEvent(){
     <p class="story">${esc(ev.text)}</p>
     ${r.eventResult?`<p class="ex">${esc(r.eventResult)}</p><button class="btn hot" data-eventdone>Continue to the shop</button>`:
       `<div class="spoils">${ev.choices.map((c,i)=>`<button class="spoil" data-eventpick="${i}" ${c.cost&&meta.caps<c.cost?'disabled':''}><b>${esc(c.label)}</b>${c.cost&&meta.caps<c.cost?'<span>Not enough caps.</span>':''}</button>`).join('')}</div>`}
-  </section>`;
+  </section>
+  ${r.picker?pickerHTML():''}`;
 }
 let runShopTab='shop', armedSell=null;
 function renderRunShop(){
@@ -3723,6 +3766,10 @@ function renderRunShop(){
     ${runShopTab==='shop'?`
       <h3 class="sub">Perks ${full?'<span class="note">· slots full, sell one first</span>':''}</h3>
       <div class="plist">${of.perks.map(perkRow).join('')||'<p class="note">No perks left to offer.</p>'}</div>
+      <h3 class="sub">Card bundles</h3>
+      <div class="plist">${of.bundles.map((b,i)=>`<div class="prow"><div><b>${esc(bundleName(b))}</b><span>${esc(bundleDesc(b))}</span></div>${buyBtn('bundle'+i,disc(BUNDLES[b.id].price))}</div>`).join('')}</div>
+      <h3 class="sub">Burn pile</h3>
+      <div class="prow"><div><b>Burn pile</b><span>Throw up to 2 cards from your deck into the fire. A thinner deck draws your best cards more often. Once per visit; your deck can’t go below ${MIN_DECK}.</span></div>${buyBtn('burn',disc(2),r.burnUsed||!burnRoom())}</div>
       <h3 class="sub">Crates</h3>
       <div class="plist">${Object.entries(CRATES).map(([k,c])=>`<div class="prow"><div><b>${c.name}</b><span>${c.desc}</span></div>${buyBtn('crate-'+k,disc(c.price),k==='perk'&&full)}</div>`).join('')}</div>
       <h3 class="sub">Cards</h3>
@@ -3734,14 +3781,29 @@ function renderRunShop(){
       ${of.voucher?`<h3 class="sub">Voucher <span class="note">· one per stop, lasts the whole run</span></h3><div class="prow"><div><b>${VOUCHERS[of.voucher].name}</b><span>${esc(VOUCHERS[of.voucher].desc)}</span></div>${buyBtn('voucher',disc(9))}</div>`:''}
       <div class="hubbtns"><button class="btn" data-rreroll ${r.sponsor||r.freeRerolls||meta.caps>=rerollCost()?'':'disabled'}>Reroll shop (${r.sponsor?'free, sponsored':r.freeRerolls?'free':capN(rerollCost())})</button></div>`
     :runShopTab==='deck'?`
-      <p class="note">Tap a card to sell it for 1 cap and thin your deck (at least ${MIN_DECK} cards). Upgraded cards show a tag.</p>
-      <div class="deckgrid">${deck.map(c=>`<button class="card-btn" data-rsell="${c.i}" ${meta.deck.length>MIN_DECK?'':'disabled'} style="${armedSell===c.i?'transform:translateY(-6px)':''}" aria-label="${cardName(c)}${c.mod?' '+MODS[c.mod].name:''}">${cardHTML(c)}</button>`).join('')}</div>
-      <p class="hint" style="text-align:left">${armedSell!=null&&meta.deck[armedSell]?`Tap ${cardName(meta.deck[armedSell])} again to sell it.`:''}</p>`
+      <p class="note">${deckSummary(meta.deck)} ${modCount()?`${modCount()} upgraded.`:''} To remove cards, use the Burn pile in the shop.</p>
+      <div class="deckgrid">${deck.map(c=>`<div class="card-btn" aria-label="${cardName(c)}${c.mod?' '+MODS[c.mod].name:''}">${cardHTML(c)}</div>`).join('')}</div>`
     :`
       <p class="note">You can run ${slots} perks. Sell one for half its price to make room.</p>
       <div class="plist">${meta.perks.map(id=>`<div class="prow"><div><b>${PERKS[id].name} <i class="rar rar-${PERK_RARITY[id]}">${PERK_RARITY[id]}</i></b><span>${esc(PERKS[id].desc)}</span></div><button class="btn${armedSell==='p:'+id?' armed':''}" data-rsellperk="${id}">${armedSell==='p:'+id?'Tap to sell':'Sell '+capN(perkSellPrice(id))}</button></div>`).join('')||'<p class="note">No perks yet.</p>'}</div>`}
   </section>
-  ${r.crate?crateHTML():''}${r.workbench?workbenchHTML():''}`;
+  ${r.crate?crateHTML():''}${r.workbench?workbenchHTML():''}${r.picker?pickerHTML():''}`;
+}
+function pickerHTML(){
+  const pk=run().picker,burn=pk.kind==='burn';
+  const items=burn?meta.deck.map((c,i)=>({c,i})).sort((a,b)=>sortSpec(a.c,b.c)):pk.options.map((c,i)=>({c,i}));
+  const cap=burn?Math.min(pk.keep,burnRoom()):pk.keep;
+  return `<div class="overlay"><div class="panel result picker" style="text-align:left"><h2 style="font-size:26px;color:var(--neon)">${esc(pk.title)}</h2><p>${esc(pk.note)}</p>
+    <div class="pickgrid${burn?' burn':''}">${items.map(({c,i})=>{const on=pk.sel.includes(i);return `<button class="pickcard${on?' on':''}" data-pickc="${i}" aria-pressed="${on}" ${!on&&pk.sel.length>=cap?'disabled':''}>${cardHTML(c)}<small>${c.mod?MODS[c.mod].name:'&nbsp;'}</small></button>`;}).join('')}</div>
+    ${!burn&&pk.options.some(c=>c.mod)?`<p class="note">${[...new Set(pk.options.filter(c=>c.mod).map(c=>c.mod))].map(m=>`<b>${MODS[m].name}:</b> ${esc(MODS[m].desc)}`).join(' ')}</p>`:''}
+    <div class="hubbtns"><button class="btn hot" data-pickdone ${pk.sel.length?'':'disabled'}>${burn?`Burn ${pk.sel.length}`:`Keep ${pk.sel.length} of ${cap}`}</button><button class="btn ghost" data-pickskip>${burn?'Burn nothing':'Take nothing'}</button></div>
+  </div></div>`;
+}
+function pickerDone(){
+  const r=run(),pk=r.picker;if(!pk)return;
+  if(pk.kind==='burn'){const set=new Set(pk.sel.slice(0,burnRoom()));meta.deck=meta.deck.filter((c,i)=>!set.has(i));if(r.phase==='event')r.eventResult=`You burned ${set.size} card${set.size===1?'':'s'}.`;}
+  else for(const i of pk.sel.slice(0,pk.keep))meta.deck.push({...pk.options[i]});
+  r.picker=null;if(modCount()>=5)unlock('tinker');save();
 }
 function crateHTML(){
   const c=run().crate;
@@ -3760,6 +3822,8 @@ function runShopBuy(key){
   const r=run(),of=r.offers;if(of.sold[key])return;
   const pay=n=>{if(meta.caps<n)return false;meta.caps-=n;return true;};
   if(key.startsWith('perk')){const id=of.perks[+key.slice(4)];if(meta.perks.length>=perkSlots())return;if(!pay(perkRunPrice(id)))return;meta.perks.push(id);meta.equipped=meta.perks;of.sold[key]=1;if(meta.perks.length>=5)unlock('loaded');}
+  else if(key.startsWith('bundle')){const b=of.bundles[+key.slice(6)];if(!pay(disc(BUNDLES[b.id].price)))return;of.sold[key]=1;openBundle(b,false);}
+  else if(key==='burn'){if(r.burnUsed||!burnRoom())return;if(!pay(disc(2)))return;r.burnUsed=true;of.sold[key]=1;openBurn(2,'Burn pile','Pick up to 2 cards to burn. They’re gone for the rest of the run.');}
   else if(key.startsWith('crate-')){const k=key.slice(6);if(!pay(disc(CRATES[k].price)))return;openCrate(k);}
   else if(key.startsWith('card')){const c=of.cards[+key.slice(4)];if(!pay(runCardPrice(c)))return;meta.deck.push({...c});of.sold[key]=1;}
   else if(key.startsWith('chem')){const id=of.chems[+key.slice(4)];if(chemTotal()>=chemMax())return;if(!pay(chemRunPrice(id)))return;meta.chems[id]++;}
@@ -3816,6 +3880,9 @@ function handleRunClick(d){
   if('rreroll' in d){if(r.sponsor){r.sponsor=0;}else if(r.freeRerolls){r.freeRerolls--;}else{const c=rerollCost();if(meta.caps<c)return true;meta.caps-=c;r.rerolls=(r.rerolls||0)+1;}rerollShop();save();render();return true;}
   if('cratepick' in d){takeCrate(+d.cratepick);render();return true;}
   if('crateskip' in d){r.crate=null;save();render();return true;}
+  if('pickc' in d){const pk=r.picker;if(pk){const i=+d.pickc,k=pk.sel.indexOf(i);if(k>=0)pk.sel.splice(k,1);else if(pk.sel.length<(pk.kind==='burn'?Math.min(pk.keep,burnRoom()):pk.keep))pk.sel.push(i);}render();return true;}
+  if('pickdone' in d){pickerDone();render();return true;}
+  if('pickskip' in d){if(r.picker&&r.picker.kind==='burn'&&r.phase==='event')r.eventResult='You leave the fire burning and move on.';r.picker=null;save();render();return true;}
   if('wbpick' in d){const c=meta.deck[+d.wbpick];if(c&&r.workbench){c.mod=r.workbench.mod;r.workbench=null;if(modCount()>=5)unlock('tinker');save();}render();return true;}
   if('wbcancel' in d){r.workbench=null;save();render();return true;}
   if('rsell' in d){const i=+d.rsell;if(armedSell===i){if(meta.deck.length>MIN_DECK){meta.deck.splice(i,1);meta.caps+=1;save();}armedSell=null;}else armedSell=i;render();return true;}
