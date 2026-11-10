@@ -486,6 +486,9 @@ body[data-screen="home"] .wordmark{visibility:hidden}
 .bets .btn{padding:6px 10px;font-size:13px}
 
 /* ---- The Road: runs ---- */
+html.matt{filter:grayscale(1) contrast(.92);transition:filter .6s}
+html{transition:filter .6s}
+.traits li.meh b{color:var(--muted)}
 .card::before{content:"";position:absolute;inset:0;background:var(--deck-tex,none) center/100% 100% no-repeat;mix-blend-mode:var(--deck-blend,multiply);pointer-events:none;z-index:2;border-radius:inherit}
 .card .mod{position:absolute;left:3px;bottom:3px;z-index:3;font:700 calc(var(--cw)*.14)/1 system-ui,sans-serif;letter-spacing:.05em;padding:1px 3px;border-radius:3px;color:#fff;background:#0009}
 .card.m-steel{outline:2px solid #a9b4bd;outline-offset:-2px}.card .mod.steel{background:#5d6873}
@@ -571,7 +574,7 @@ function buildDeck(spec){return shuffle(spec.map((s,i)=>{const c=mk(s.rank,s.sui
 function baseNumbers(){const out=[];for(const s of SUITS)for(const r of NUM_RANKS)out.push({rank:r,suit:s});return out;}
 function addFaces(spec,extra){
   for(const [rank,n] of Object.entries(extra)){
-    for(let i=0;i<n;i++)spec.push({rank,suit:rank==='JK'?null:SUITS[(i+spec.length)%4]});
+    for(let i=0;i<n;i++)spec.push({rank,suit:rank==='JK'?null:SUITS[i%4]});
   }
   return spec;
 }
@@ -868,12 +871,16 @@ const CHARS={
     traits:[['+','Chemist','Carry up to 5 chems, and brew a free one after every win.'],['+','Probability Theory','You always see the next card you’ll draw.'],['−','Impostor Syndrome','Table winnings are 20% lower. He undersells himself.']]},
   chevy:{name:'Chevy Ford',tag:'Vault engineer & mechanic',bio:'If it moves, he fixed it. If it shouldn’t, he built a turret.',
     traits:[['+','Auto-Turret','Once per hand, shoot the top card off one of the dealer’s caravans. Uses your turn.'],['+','Tinkerer','One extra perk slot.'],['−','Union Dues','10% of table winnings go to the union.']]},
-  greg:{name:'Greg',tag:'Big green mutant · gentle soul',bio:'Hulking, mustached and a little too friendly. Never goes anywhere without Alex, his doll and closest advisor.',locked:true,unlock:'Beat Greg at the Strip, playing as Vladmira, Nuke or Chevy.',
+  ronald:{name:'Ronald Raygun',tag:'Distiller & radio host · Richmond, VA',bio:'Cooks rotgut in an oil-drum still and sells it live on air between call-in segments. Never met a jug, or a microphone, he didn’t like.',
+    traits:[['+','Bootlegger','+3 caps after every table you win. The jug sells itself.'],['+','Sponsored Segment','Your first reroll at every trading post is free.'],['−','Sampling the Product','You open every hand with 7 cards instead of 8.']]},
+  matt:{name:'Matt',tag:'Matt',bio:'Matt is here. Matt plays Caravan. The molerats seem to like him. That’s about it.',
+    traits:[['=','Just Matt','No bonus. No drawback. Playing as Matt drains all the color out of the world.']]},
+  greg:{name:'Greg',tag:'Big green mutant · gentle soul',bio:'Hulking, mustached and a little too friendly. Never goes anywhere without Alex, his doll and closest advisor.',locked:true,unlock:'Beat Greg at the Strip, playing as any starting character.',
     traits:[['+','Big Hands','Hold 6 cards instead of 5.'],['+','Bear Hug','Once per hand, hug the dealer. They skip their next turn recovering.'],['−','Gentle Giant','Your Jacks can’t touch the dealer’s cards. He doesn’t like being mean.']]},
   jeanita:{name:'Jeanita',tag:'Ghoul concierge',bio:'Was taking a reservation when the bombs dropped. Still at her post. The pantsuit has seen better centuries.',locked:true,unlock:'Beat Jeanita at the Strip, playing as Greg.',
     traits:[['+','Party Line','The receivers fused to her head pick up everything: you always see the dealer’s hand.'],['+','Rad-Proof','Jokers can never remove your cards.']]},
 };
-const CHAR_ORDER=['vladmira','nuke','chevy','greg','jeanita'];
+const CHAR_ORDER=['vladmira','nuke','chevy','ronald','matt','greg','jeanita'];
 const CHAR_BIO={
   vladmira:{stats:[10,2,9,7,5],quote:'You want to arm-wrestle for it? No? Then deal.',
     story:'Born and raised in a sealed vault, Vladmira spent her teens hauling reactor coolant by hand. That explains the arms, and the faint green glow. When the doors finally opened she walked out first and hasn’t stopped talking since. Folks can’t say no to her, mostly because they can’t get a word in.'},
@@ -881,13 +888,17 @@ const CHAR_BIO={
     story:'Nuke ran the vault’s chemistry lab, mixing floor cleaner, cough syrup and the occasional explosive. He can calculate the odds of any card coming up, but not why anybody would want him at their table. Carries a flask of something green. Won’t say what.'},
   chevy:{stats:[6,7,5,9,4],quote:'If it ain’t broke, I ain’t been paid yet.',
     story:'Chevy spent twenty years keeping the vault’s generators alive with spit, wire and stubbornness. Out in the wasteland he’s never without a wrench, a toolbox and a folding turret he swears is for “home defense.” He plays cards like he fixes engines: patiently, then all at once.'},
+  ronald:{stats:[5,6,10,6,7],quote:'You’re listening to WRAY, the last signal on the James River. This hand is brought to you by Raygun’s Reserve.',
+    story:'Ronald Raygun stirs his mash in a rusted oil drum behind a collapsed tobacco warehouse on the James River, and broadcasts a pirate radio show out of the same shack. The Raygun Hour is mostly wasteland news, call-ins and ads for his own moonshine, which comes in a jug with a skull on it for legal reasons. He came west in the same battered hat and coat, chasing a bigger audience and a thirstier market. He found both at the card tables.'},
+  matt:{stats:[5,5,5,5,5],quote:'Yeah. Okay. Sure.',
+    story:'Matt grew up somewhere. He had a job, then a different job. Now he sits on a crate behind a scrap fence, holding a stick, while a family of molerats goes about its day around him. They’ve stopped noticing him. Most people have. When he walks into a room, the color quietly leaves it. Nobody knows why Matt is on the Road. Matt doesn’t really know either.'},
   greg:{stats:[10,4,8,10,6],quote:'Alex says you look like a good friend.',
     story:'Nobody’s sure where Greg came from, including Greg. He’s eight feet of green muscle with the manners of a church usher and a mustache he combs twice a day. Alex, a hand-stitched doll with yarn hair, offers advice on every hand. Greg always listens.'},
   jeanita:{stats:[3,8,6,10,9],quote:'Front desk, how may I direct your call? …Please hold.',
     story:'Jeanita was manning the front desk of a swanky hotel, a phone on each ear, when the bombs fell. The receivers fused to her head, the pantsuit held together (mostly), and she never left her post. Two centuries of overhearing every guest have made her the best-informed player in the wasteland. She staples her hair back on every morning before her shift.'},
 };
 const STAT_NAMES=['Strength','Smarts','Charm','Grit','Luck'];
-const ORIGINALS=['vladmira','nuke','chevy'];
+const ORIGINALS=['vladmira','nuke','chevy','ronald','matt'];
 // Rival roster: who you meet on the Road depends on who you play.
 function roster(cid){
   const r=ROAD.map(()=>null);
@@ -900,6 +911,8 @@ const RIVALS={
   vladmira:{blurb:'Arm-wrestles the dealer between hands. Wins those too.',rule:'Strong Back: her caravans sell up to 28.',fn:R=>{R.range.a=[R.range.a[0],R.range.a[1]+2];}},
   nuke:{blurb:'Mutters probabilities. Apologizes every time he wins.',rule:'Over-Prepared: holds one extra card.',fn:R=>{R.hand.a+=1;}},
   chevy:{blurb:'Bolted a turret to the card table. It’s “just for show.”',rule:'Turret Nest: your Jacks can’t touch his caravans.',fn:R=>{R.jackproof.a=true;}},
+  ronald:{blurb:'Brought his still to the table. Narrates the whole hand like it’s on the radio.',rule:'Rotgut Royalty: his Kings triple.',fn:R=>{R.kingMult.a=3;}},
+  matt:{blurb:'It’s Matt. A molerat is sitting in his lap. The room goes gray while you play him.',rule:'None. He’s just Matt.',fn:R=>{}},
   greg:{blurb:'The final table. Greg just wants to be friends. Alex is keeping score.',rule:'Big Hands: holds one extra card. Gentle Giant: his Jacks can’t touch yours.',fn:R=>{R.hand.a+=1;R.jackproof.p=true;}},
   jeanita:{blurb:'Her receivers crackle with every card you hold. She already knows.',rule:'Rad-Proof: Jokers can’t remove her cards. Party Line: holds one extra card.',fn:R=>{R.jokerproof.a=true;R.hand.a+=1;}},
 };
@@ -1397,7 +1410,7 @@ function charBioHTML(id){
     <p class="story">${esc(bio.story)}</p>
     <div class="stats">${STAT_NAMES.map((n,i)=>`<div class="stat"><span>${n}</span><i>${Array.from({length:10},(_,k)=>`<b class="${k<bio.stats[i]?'on':''}"></b>`).join('')}</i><em>${bio.stats[i]}</em></div>`).join('')}</div>
     <h3 class="sub">Abilities</h3>
-    <ul class="traits">${c.traits.map(([k,n,dsc])=>`<li class="${k==='+'?'pro':'con'}"><b>${k} ${esc(n)}</b> ${esc(dsc)}</li>`).join('')}</ul>
+    <ul class="traits">${c.traits.map(([k,n,dsc])=>`<li class="${k==='+'?'pro':k==='='?'meh':'con'}"><b>${k} ${esc(n)}</b> ${esc(dsc)}</li>`).join('')}</ul>
     <h3 class="sub">On the Road</h3>
     <p class="route">Rivals: ${roster(id).map((r,i)=>r?`${CHARS[r].name}${i===9?' (final)':''}`:null).filter(Boolean).join(', ')}${id==='jeanita'?' · Final: Silver Lou':''} · ${path}/10 tables</p>
     ${ok?'':`<p class="locknote">Locked. ${esc(c.unlock)}</p>`}
@@ -1415,7 +1428,7 @@ function renderPickChar(){
         <button class="cimg${ok?'':' shade'}" data-charinfo="${id}" aria-label="${esc(c.name)} bio"><img src="${portrait(id)}" alt="">${ok?'':'<span class="lockbadge" aria-hidden="true">🔒︎</span>'}</button>
         <div class="cbody"><h3>${esc(c.name)}${ok?'':' <span class="tag lose">LOCKED</span>'}</h3><div class="ctag">${esc(c.tag)}</div>
         <p class="cbio">${esc(c.bio)}</p>
-        <ul class="traits">${c.traits.map(([k,n,dsc])=>`<li class="${k==='+'?'pro':'con'}"><b>${k} ${esc(n)}</b> ${esc(dsc)}</li>`).join('')}</ul>
+        <ul class="traits">${c.traits.map(([k,n,dsc])=>`<li class="${k==='+'?'pro':k==='='?'meh':'con'}"><b>${k} ${esc(n)}</b> ${esc(dsc)}</li>`).join('')}</ul>
         ${ok?'':`<p class="locknote">${esc(c.unlock)}</p>`}
         <div class="hubbtns" style="margin-top:0">${ok?`<button class="btn${on?'':' hot'}" data-pickchar="${id}" ${on?'disabled':''}>${on?'Playing':'Play as '+esc(c.name.split(' ')[0])}</button>`:`<button class="btn" disabled>Locked</button>`}<button class="btn ghost" data-charinfo="${id}">Bio</button></div></div></div>`;}).join('')}</div>
   </section>
@@ -2247,7 +2260,7 @@ const ROAD_RULES=`
   <li><b>Perks</b> come in four rarities. You start with 3 slots and get a 4th from Boulder City on. Sell a perk to make room.</li>
   <li><b>Card upgrades</b>: Steel can’t be Jacked, Gilded pays caps when it sells, Lucky draws an extra card, Glass is worth double but breaks, Wild matches any suit.</li>
   <li><b>Chems</b> are one-use boosts during a hand, one per turn, after the opening.</li>
-  <li><b>Characters</b> each bend the rules and meet their own rivals. Beat Greg at the Strip as Vladmira, Nuke or Chevy to unlock him; beat Jeanita there as Greg to unlock her.</li>
+  <li><b>Characters</b> each bend the rules and meet their own rivals (except Matt, who is just Matt). Beat Greg at the Strip as any starting character to unlock him; beat Jeanita there as Greg to unlock her.</li>
   <li><b>Win a run</b> to unlock the next deck on the ladder (each has its own look and twist), new tokens, and the next difficulty: Silver, then Gold.</li>`;
 const FAQ=[
   ['Why can’t I play a card there?','A number card has to follow the caravan’s direction (higher if it’s climbing, lower if it’s falling) unless it matches the caravan’s current suit, and it can never repeat the value right before it. Tap a card and the places it can go will glow. If nothing glows, discard it.'],
@@ -3004,8 +3017,67 @@ function drawJeanita(x){
   receiver(76,124,.22);receiver(164,124,-.22);
   x.fillStyle='rgba(120,90,60,.6)';pEllipse(x,82,124,6,14,'rgba(120,95,60,.6)');pEllipse(x,158,124,6,14,'rgba(120,95,60,.6)');
 }
-const PORTRAIT_FN={vladmira:drawVladmira,nuke:drawNuke,chevy:drawChevy,greg:drawGreg,jeanita:drawJeanita};
-const PORTRAIT_BG={vladmira:'#4fa3a5',nuke:'#8a7cc8',chevy:'#d9763a',greg:'#86a843',jeanita:'#5aa58a'};
+function drawRonald(x){
+  pTorso(x,'#7a2e2e',4);
+  pPoly(x,[[92,212],[120,256],[100,300],[70,300],[80,236]],'#5e2020');pPoly(x,[[148,212],[120,256],[140,300],[170,300],[160,236]],'#5e2020');
+  x.fillStyle='#f1ead8';x.beginPath();x.moveTo(98,210);x.lineTo(120,250);x.lineTo(142,210);x.closePath();x.fill();
+  pPoly(x,[[104,222],[120,230],[104,238]],'#e0b23c');pPoly(x,[[136,222],[120,230],[136,238]],'#e0b23c');pEllipse(x,120,230,4,4,'#b8892c');
+  x.fillStyle='#e0b23c';x.font='10px Limelight, Georgia, serif';x.textAlign='center';
+  x.fillStyle='#f1ead8';rrect(x,150,236,30,14,2);x.fill();x.fillStyle='#7a2e2e';x.font='9px Special Elite, monospace';x.fillText('WRAY',165,246);
+  x.fillStyle='#e0b08a';rrect(x,102,170,36,48,10);x.fill();
+  // moonshine jug
+  x.save();x.translate(40,236);
+  pEllipse(x,0,30,26,28,'#d8c39a');x.fillStyle='#b89f70';x.fillRect(-26,30,52,30);pEllipse(x,0,58,26,6,'#a68d5e');
+  x.fillStyle='#d8c39a';x.fillRect(-8,-6,16,12);pEllipse(x,0,-6,9,4,'#6b4a2a');
+  x.strokeStyle='#b89f70';x.lineWidth=4;x.beginPath();x.arc(14,10,10,-1.4,1);x.stroke();
+  x.fillStyle='#3a2a1a';x.font='bold 16px Georgia, serif';x.textAlign='center';x.fillText('XXX',0,40);x.restore();
+  // ribbon mic
+  x.save();x.translate(196,250);
+  x.strokeStyle='#555';x.lineWidth=4;x.beginPath();x.moveTo(0,0);x.lineTo(0,50);x.stroke();
+  const mg=x.createLinearGradient(-16,0,16,0);mg.addColorStop(0,'#8a8f94');mg.addColorStop(.5,'#e8ecef');mg.addColorStop(1,'#6b7076');
+  x.fillStyle=mg;rrect(x,-16,-44,32,44,14);x.fill();x.strokeStyle='#4a4f54';x.lineWidth=1;for(let i=-36;i<-6;i+=4){x.beginPath();x.moveTo(-12,i);x.lineTo(12,i);x.stroke();}
+  x.restore();
+  pEllipse(x,120,126,44,52,'#e6b892');
+  pEllipse(x,76,132,8,12,'#dba984');pEllipse(x,164,132,8,12,'#dba984');
+  // pompadour
+  x.fillStyle='#2b1d14';x.beginPath();x.moveTo(76,120);x.quadraticCurveTo(66,56,124,52);x.quadraticCurveTo(176,50,168,104);x.quadraticCurveTo(164,86,148,84);x.quadraticCurveTo(110,96,84,94);x.quadraticCurveTo(78,104,76,120);x.fill();
+  x.fillStyle='rgba(255,255,255,.25)';x.beginPath();x.ellipse(116,64,26,6,-.15,0,7);x.fill();
+  x.fillStyle='#8f9aa3';x.fillRect(78,104,4,22);x.fillRect(158,104,4,22);
+  // headphones
+  x.strokeStyle='#2a2a2a';x.lineWidth=7;x.beginPath();x.moveTo(70,128);x.quadraticCurveTo(68,40,120,40);x.quadraticCurveTo(172,40,170,128);x.stroke();
+  for(const s2 of [-1,1]){pEllipse(x,120+s2*48,132,12,18,'#2a2a2a');pEllipse(x,120+s2*48,132,7,12,'#b5322a');}
+  x.strokeStyle='#2b1d14';x.lineWidth=4;x.lineCap='round';x.beginPath();x.moveTo(94,112);x.quadraticCurveTo(102,106,110,110);x.moveTo(130,110);x.quadraticCurveTo(138,106,146,112);x.stroke();
+  pEyes(x,124,17,'#3a6b3a',{w:7,h:4.5});
+  x.strokeStyle='#b07a5a';x.lineWidth=2;x.beginPath();x.moveTo(120,128);x.quadraticCurveTo(115,142,122,144);x.stroke();
+  // pencil mustache + grin
+  x.fillStyle='#2b1d14';x.beginPath();x.moveTo(102,152);x.quadraticCurveTo(120,146,138,152);x.quadraticCurveTo(120,150,102,152);x.fill();
+  x.fillStyle='#7a2a22';x.beginPath();x.moveTo(102,158);x.quadraticCurveTo(120,178,140,156);x.quadraticCurveTo(120,164,102,158);x.fill();
+  x.fillStyle='#fff';x.beginPath();x.moveTo(105,159);x.quadraticCurveTo(120,166,137,157);x.lineTo(135,161);x.quadraticCurveTo(120,168,107,162);x.closePath();x.fill();
+  pEllipse(x,98,144,8,5,'rgba(220,80,70,.4)');pEllipse(x,142,144,8,5,'rgba(220,80,70,.4)');
+  // radio waves
+  x.strokeStyle='rgba(181,50,42,.7)';x.lineWidth=2.5;for(let i=1;i<=3;i++){x.beginPath();x.arc(196,206,i*10,-1.1,-.2);x.stroke();}
+}
+function drawMatt(x){
+  pTorso(x,'#b9b2a2',0);
+  x.fillStyle='#a8a191';x.beginPath();x.moveTo(104,212);x.lineTo(120,234);x.lineTo(136,212);x.closePath();x.fill();
+  x.strokeStyle='#8f8878';x.lineWidth=2;x.beginPath();x.moveTo(120,234);x.lineTo(120,262);x.stroke();
+  pEllipse(x,120,242,2.2,2.2,'#8f8878');pEllipse(x,120,252,2.2,2.2,'#8f8878');
+  x.fillStyle='#ddb595';rrect(x,104,172,32,46,10);x.fill();
+  // coffee mug
+  x.save();x.translate(184,250);x.fillStyle='#e6e2d8';rrect(x,-16,-12,32,36,4);x.fill();
+  x.strokeStyle='#e6e2d8';x.lineWidth=5;x.beginPath();x.arc(18,6,8,-1.3,1.3);x.stroke();
+  x.fillStyle='#6b4a2a';x.fillRect(-14,-10,28,4);x.restore();
+  pEllipse(x,120,128,42,50,'#e2bc9c');
+  pEllipse(x,78,134,7,11,'#d9b292');pEllipse(x,162,134,7,11,'#d9b292');
+  x.fillStyle='#6b5440';x.beginPath();x.moveTo(78,116);x.quadraticCurveTo(80,72,120,72);x.quadraticCurveTo(160,72,162,116);x.quadraticCurveTo(150,96,120,94);x.quadraticCurveTo(92,96,78,116);x.fill();
+  x.strokeStyle='#6b5440';x.lineWidth=3.5;x.lineCap='round';x.beginPath();x.moveTo(96,116);x.lineTo(110,116);x.moveTo(130,116);x.lineTo(144,116);x.stroke();
+  pEyes(x,128,17,'#7a6a58',{w:6,h:3.2});
+  x.fillStyle='#e2bc9c';for(const s2 of [-1,1]){x.fillRect(120+s2*17-8,121,16,4);}
+  x.strokeStyle='#b8927a';x.lineWidth=2;x.beginPath();x.moveTo(120,134);x.lineTo(118,146);x.lineTo(122,147);x.stroke();
+  x.strokeStyle='#8a5a48';x.lineWidth=2.5;x.beginPath();x.moveTo(108,162);x.lineTo(132,162);x.stroke();
+}
+const PORTRAIT_FN={vladmira:drawVladmira,nuke:drawNuke,chevy:drawChevy,ronald:drawRonald,matt:drawMatt,greg:drawGreg,jeanita:drawJeanita};
+const PORTRAIT_BG={vladmira:'#4fa3a5',nuke:'#8a7cc8',chevy:'#d9763a',ronald:'#c4473a',matt:'#a39e94',greg:'#86a843',jeanita:'#5aa58a'};
 // Custom art: drop PNG, JPG or WebP images named after each character into a "portraits" folder next to index.html.
 const PORTRAIT_FILE={};
 function loadPortraitFiles(){
@@ -3162,13 +3234,14 @@ const tierIdx=id=>TIERS.findIndex(t=>t.id===id);
 const tierUnlocked=id=>tierIdx(id)<(meta.tiersUnlocked||1);
 function runRoster(cid){
   const r=RUN_STOPS.map(()=>null);
-  if(ORIGINALS.includes(cid)){const o=ORIGINALS.filter(x=>x!==cid);r[2]=o[0];r[5]=o[1];r[7]='greg';}
-  else if(cid==='greg'){r[2]='vladmira';r[4]='nuke';r[6]='chevy';r[7]='jeanita';}
-  else if(cid==='jeanita'){r[1]='vladmira';r[3]='nuke';r[5]='chevy';r[6]='greg';}
+  if(ORIGINALS.includes(cid)){const o=shuffle(ORIGINALS.filter(x=>x!==cid));r[2]=o[0];r[5]=o[1];r[7]='greg';}
+  else if(cid==='greg'){const o=shuffle(ORIGINALS.slice());r[1]=o[0];r[3]=o[1];r[5]=o[2];r[7]='jeanita';}
+  else if(cid==='jeanita'){const o=shuffle(ORIGINALS.slice());r[1]=o[0];r[3]=o[1];r[5]=o[2];r[6]='greg';}
   return r;
 }
+const rosterOf=()=>{const r=run();return r.roster||runRoster(r.char);};
 function bossDealer(s){
-  const rv=runRoster(run().char)[s];
+  const rv=rosterOf()[s];
   if(rv)return {name:CHARS[rv].name,blurb:RIVALS[rv].blurb,rival:rv};
   const o=ROAD[RUN_STOPS[s]];return {name:o.name,blurb:o.blurb,rival:null};
 }
@@ -3196,7 +3269,7 @@ function tableRuleIds(s,t){
 function runRules(s,t){
   const r=run(),R=baseRules();
   for(const id of tableRuleIds(s,t))BOSS_RULES[id]&&BOSS_RULES[id].apply(R);
-  if(t===2){const rv=runRoster(r.char)[s];if(rv)RIVALS[rv].fn(R);}
+  if(t===2){const rv=rosterOf()[s];if(rv)RIVALS[rv].fn(R);}
   if(has('wide'))R.range.p=[R.range.p[0]-1,R.range.p[1]+1];
   if(has('royal'))R.kingMult.p+=1;
   if(has('steady'))R.hand.p+=1;
@@ -3210,6 +3283,7 @@ function runRules(s,t){
   if(isChar('vladmira'))R.range.p=[R.range.p[0],R.range.p[1]+2];
   if(isChar('jeanita'))R.jokerproof.p=true;
   if(isChar('greg')){R.hand.p+=1;R.jackproof.a=true;}
+  if(isChar('ronald'))R.deal.p-=1;
   if(r.deck==='irradiated')R.deal.p-=1;
   if(r.deck==='bullet')R.deal.a+=1;
   return R;
@@ -3237,6 +3311,7 @@ function startRun(){
   const token=r0.token&&meta.tokens.includes(r0.token)?r0.token:null;
   meta.run={v:1,char:meta.char,deck,tier,token,stop:0,table:0,phase:'table',won:0,kings:0,skips:0,hands:0,vouchers:[],tags:[],nextRules:[],
     secondWind:(token==='second'?1:0),halfShop:false,freeRerolls:0,freeCrate:0,freeUpgrade:0,started:Date.now(),voucherStop:-1};
+  meta.run.roster=runRoster(meta.char);
   genRun();
   meta.caps=[10,7,5][tierIdx(tier)]+(token==='stash'?8:0);
   let d=plainDeck();
@@ -3280,7 +3355,7 @@ function openShop(){
   const r=run();
   r.offers={perks:rollPerkOffer(2),cards:[rollCard(true),rollCard(true)],chems:shuffle(Object.keys(CHEMS)).slice(0,2),
     upgrade:pick(Object.keys(MODS)),voucher:r.voucherStop===r.stop?null:pick(Object.keys(VOUCHERS).filter(v=>!r.vouchers.includes(v))),sold:{}};
-  r.rerolls=0;r.crate=null;r.workbench=null;
+  r.rerolls=0;r.crate=null;r.workbench=null;r.sponsor=isChar('ronald')?1:0;
   if(r.freeCrate){r.freeCrate=0;r.crate={kind:'card',options:[rollCard(true),rollCard(true),rollCard(true)],free:true};}
 }
 function rerollShop(){
@@ -3346,6 +3421,7 @@ function runFinish(winner,ov){
     if(has('nose')){const n=[0,1,2].filter(l=>lanes[l]==='p'&&cvValue(G.p.cv[l])===26).length;if(n){meta.caps+=4*n;extras.push(`${4*n} from Bloodhound`);}}
     if(has('collector')){meta.caps+=meta.perks.length;extras.push(`${meta.perks.length} from Collector`);}
     if(has('honest')&&G.stats&&!G.stats.faces){meta.caps+=6;extras.push('6 from Honest Work');}
+    if(G.char==='ronald'){meta.caps+=3;extras.push('3 from Bootlegger');}
     const intr=Math.min(interestCap(),Math.floor(before/5));if(intr>0){meta.caps+=intr;extras.push(`${intr} interest`);}
     if(G.char==='nuke'&&chemTotal()<chemMax()){const id=pick(Object.keys(CHEMS));meta.chems[id]++;ov.brewed=id;}
     r.won++;
@@ -3452,7 +3528,16 @@ function loadDeckTextures(){
     css.push(`[data-deck="${d.id}"]{--deck-tex:var(--dtex-${d.id});--deck-blend:${d.id==='irradiated'||d.id==='gold'?'screen':'multiply'}}`);}
   const st=document.createElement('style');st.textContent=css.join('\n');document.head.appendChild(st);
 }
+function mattMode(){
+  const r=run(),live=r&&r.phase!=='over';
+  let on=false;
+  if(screen==='match'&&G&&G.mode==='road')on=G.char==='matt'||!!(G.dealer&&G.dealer.rival==='matt');
+  else if(['road','shop'].includes(screen))on=live?r.char==='matt':meta.char==='matt';
+  else if(screen==='pickchar')on=meta.char==='matt';
+  document.documentElement.classList.toggle('matt',on);
+}
 function setDeckAttr(){
+  mattMode();
   const r=run();const on=r&&r.phase!=='over'&&(screen==='road'||screen==='shop'||(screen==='match'&&G&&G.run));
   document.documentElement.dataset.deck=on?r.deck:'';
 }
@@ -3599,7 +3684,7 @@ function renderRunShop(){
       <h3 class="sub">Chems</h3>
       <div class="plist">${of.chems.map((id,i)=>`<div class="prow"><div><b>${CHEMS[id].name}${meta.chems[id]?` ×${meta.chems[id]}`:''}</b><span>${esc(CHEMS[id].desc)}</span></div>${buyBtn('chem'+i,chemRunPrice(id),chemTotal()>=chemMax())}</div>`).join('')}</div>
       ${of.voucher?`<h3 class="sub">Voucher <span class="note">· one per stop, lasts the whole run</span></h3><div class="prow"><div><b>${VOUCHERS[of.voucher].name}</b><span>${esc(VOUCHERS[of.voucher].desc)}</span></div>${buyBtn('voucher',disc(9))}</div>`:''}
-      <div class="hubbtns"><button class="btn" data-rreroll ${r.freeRerolls||meta.caps>=rerollCost()?'':'disabled'}>Reroll shop (${r.freeRerolls?'free':capN(rerollCost())})</button></div>`
+      <div class="hubbtns"><button class="btn" data-rreroll ${r.sponsor||r.freeRerolls||meta.caps>=rerollCost()?'':'disabled'}>Reroll shop (${r.sponsor?'free, sponsored':r.freeRerolls?'free':capN(rerollCost())})</button></div>`
     :runShopTab==='deck'?`
       <p class="note">Tap a card to sell it for 1 cap and thin your deck (at least ${MIN_DECK} cards). Upgraded cards show a tag.</p>
       <div class="deckgrid">${deck.map(c=>`<button class="card-btn" data-rsell="${c.i}" ${meta.deck.length>MIN_DECK?'':'disabled'} style="${armedSell===c.i?'transform:translateY(-6px)':''}" aria-label="${cardName(c)}${c.mod?' '+MODS[c.mod].name:''}">${cardHTML(c)}</button>`).join('')}</div>
@@ -3680,7 +3765,7 @@ function handleRunClick(d){
   if('runnext' in d){r.phase='table';r.offers=null;r.halfShop=false;armedSell=null;runShopTab='shop';save();render();window.scrollTo(0,0);return true;}
   if('rtab' in d){runShopTab=d.rtab;armedSell=null;render();return true;}
   if('rbuy' in d){runShopBuy(d.rbuy);render();return true;}
-  if('rreroll' in d){if(r.freeRerolls){r.freeRerolls--;}else{const c=rerollCost();if(meta.caps<c)return true;meta.caps-=c;r.rerolls=(r.rerolls||0)+1;}rerollShop();save();render();return true;}
+  if('rreroll' in d){if(r.sponsor){r.sponsor=0;}else if(r.freeRerolls){r.freeRerolls--;}else{const c=rerollCost();if(meta.caps<c)return true;meta.caps-=c;r.rerolls=(r.rerolls||0)+1;}rerollShop();save();render();return true;}
   if('cratepick' in d){takeCrate(+d.cratepick);render();return true;}
   if('crateskip' in d){r.crate=null;save();render();return true;}
   if('wbpick' in d){const c=meta.deck[+d.wbpick];if(c&&r.workbench){c.mod=r.workbench.mod;r.workbench=null;if(modCount()>=5)unlock('tinker');save();}render();return true;}
