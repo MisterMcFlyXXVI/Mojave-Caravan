@@ -1659,7 +1659,6 @@ function renderMatch(){
     </div>
   </div>
   </div><div class="mg-side">
-  ${tut?coachHTML():`<p class="hint" aria-live="polite">${esc(hintText(selMoves))}</p>`}
   <div class="hand${tut?' tut':''}">${G.p.hand.map((c,i)=>`<button class="card-btn${sel===i?' sel':''}${dealt.has(c.id)&&!motionOn()?' dealt':''}" data-hand="${i}" data-cid="${c.id}" data-zone="hand" ${handOK(i)?'':'disabled'} aria-label="${cardName(c)}" aria-pressed="${sel===i}">${cardHTML(c)}</button>`).join('')}</div>
   ${chemBar(myTurn)}
   ${abilityBar(myTurn)}
@@ -1668,6 +1667,7 @@ function renderMatch(){
     <button class="btn${disbandMode?' armed':''}" data-disband ${canDisband||disbandMode?'':'disabled'}>Disband${G.rules.freeDisband.p?' (free)':''}</button>
     ${undoable()?`<button class="btn" data-undo ${myTurn&&undoStack.length?'':'disabled'}>Undo</button>`:''}
   </div>
+  ${tut?coachHTML():`<p class="hint" aria-live="polite">${esc(hintText(selMoves))}</p>`}
   </div></div>
   ${propsHTML()}
   ${G.over?resultHTML():''}`;
