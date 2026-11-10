@@ -484,6 +484,63 @@ body[data-screen="home"] .wordmark{visibility:hidden}
 
 .bets{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .bets .btn{padding:6px 10px;font-size:13px}
+
+/* ---- The Road: runs ---- */
+.card::before{content:"";position:absolute;inset:0;background:var(--deck-tex,none) center/100% 100% no-repeat;mix-blend-mode:var(--deck-blend,multiply);pointer-events:none;z-index:2;border-radius:inherit}
+.card .mod{position:absolute;left:3px;bottom:3px;z-index:3;font:700 calc(var(--cw)*.14)/1 system-ui,sans-serif;letter-spacing:.05em;padding:1px 3px;border-radius:3px;color:#fff;background:#0009}
+.card.m-steel{outline:2px solid #a9b4bd;outline-offset:-2px}.card .mod.steel{background:#5d6873}
+.card.m-gilded{outline:2px solid #e2b24c;outline-offset:-2px}.card .mod.gilded{background:#a8761c}
+.card.m-lucky{outline:2px solid #7fbf5a;outline-offset:-2px}.card .mod.lucky{background:#3f7a2a}
+.card.m-glass{outline:2px solid #9fd8ec;outline-offset:-2px}.card .mod.glass{background:#3f7f96}
+.card.m-glass::after{content:"";position:absolute;inset:0;background:linear-gradient(135deg,#ffffff00 30%,#ffffff66 45%,#ffffff00 60%);pointer-events:none;z-index:2}
+.card.m-wild{outline:2px solid #c98bd8;outline-offset:-2px}.card .mod.wild{background:linear-gradient(90deg,#9b3b3b,#3b5e9b,#3b9b59,#9b8a3b)}
+.stopmini{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:center;padding:8px 12px;border-radius:8px;background:var(--dust);border:1px solid #ffffff10;margin-bottom:6px;opacity:.75}
+.stopmini .mile{font-family:var(--display);font-size:18px;color:var(--neon);width:2.2ch;text-align:center}
+.stopmini.done .mile{color:var(--sage)}
+.stopmini b{font-family:var(--display);font-weight:400;font-size:17px;display:block}
+.stopmini span{font-size:12px;color:var(--muted)}
+.stopcur{margin:10px 0 14px;padding:10px;border-radius:10px;border:1px solid #ffa44966;background:#ffa4490d}
+.stopcur h3{font-family:var(--display);font-weight:400;font-size:22px;color:var(--neon);margin:0 0 8px}
+.rtable{padding:10px 12px;border-radius:8px;background:var(--dust);border:1px solid #ffffff12;margin-bottom:8px}
+.rtable.done{opacity:.5}.rtable.next{opacity:.8}
+.rtable.now{border-color:var(--neon);box-shadow:0 0 0 1px #ffa44955,0 0 14px #ffa44922}
+.rtable.boss{background:linear-gradient(180deg,#5a1f1640,#00000000),var(--dust)}
+.rt-head{display:flex;gap:10px;align-items:center}
+.rt-head small{display:block;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--neon)}
+.rt-head b{font-family:var(--display);font-weight:400;font-size:18px;display:block}
+.rt-head span{font-size:12px;color:var(--muted)}
+.rt-head .rivalimg{width:44px;height:44px;border-radius:50%;object-fit:cover;border:2px solid var(--neon);flex:none}
+.rtable .rulesbar{justify-content:flex-start;margin:8px 0 0}
+.ruledescs{display:grid;gap:2px;margin-top:6px;font-size:12px;color:#e7b98a}
+.ruledescs b{color:var(--bone);font-weight:600}
+.rt-foot{display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between;align-items:center;margin-top:8px;font-size:12px;color:var(--sage)}
+.rt-btns{display:flex;gap:6px;flex-wrap:wrap}
+.decklist{display:grid;gap:8px}
+.deckopt{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:center;text-align:left;padding:10px;border-radius:8px;background:var(--dust);border:1px solid #ffffff14;color:inherit}
+.deckopt.on{border-color:var(--neon);box-shadow:0 0 0 1px #ffa44966}
+.deckopt.locked{opacity:.5}
+.deckprev{position:relative;display:flex;--cw:40px}
+.deckprev .card+.card{margin-left:-16px;transform:rotate(6deg)}
+.deckopt.locked .deckprev .card{filter:grayscale(1) brightness(.5)}
+.lockbadge.sm{position:absolute;inset:0;display:grid;place-items:center;font-size:18px;font-style:normal}
+.dtxt b{font-family:var(--display);font-weight:400;font-size:17px;display:block}
+.dtxt span{font-size:12px;color:var(--muted)}
+.rar{font-style:normal;font-size:10px;letter-spacing:.08em;text-transform:uppercase;padding:1px 5px;border-radius:3px;margin-left:4px;vertical-align:2px;font-family:system-ui,sans-serif}
+.rar-common{background:#ffffff1f;color:var(--muted)}
+.rar-uncommon{background:#3f7a2a;color:#e6f5d8}
+.rar-rare{background:#2f5a96;color:#dbe8ff}
+.rar-legendary{background:#8a5a12;color:#ffe9b8}
+.perk-chip.rar-uncommon{box-shadow:inset 0 0 0 1px #7fbf5a88}
+.perk-chip.rar-rare{box-shadow:inset 0 0 0 1px #6f9be088}
+.perk-chip.rar-legendary{box-shadow:inset 0 0 0 1px #e2b24caa}
+.eventcard{text-align:center}
+.eventcard .story{font-size:15px;line-height:1.5;margin:8px 0 14px}
+.crateopt{display:flex;gap:10px;align-items:center;--cw:44px}
+.crateopt>span{display:grid;gap:2px}
+.hist{display:grid;gap:4px;font-size:12px}
+.hist div{padding:5px 8px;border-radius:6px;background:var(--dust)}
+.hist .won b{color:var(--sage)}.hist .lost b{color:#e08a7a}
+.runover .rivalhero{width:120px;height:120px;float:none;margin:0 auto 10px}
 </style>
 </head>
 <body>
@@ -510,7 +567,7 @@ let _uid=0;
 const mk=(rank,suit)=>({id:'c'+(++_uid)+'_'+Math.random().toString(36).slice(2,6),rank,suit});
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
 
-function buildDeck(spec){return shuffle(spec.map(s=>mk(s.rank,s.suit)));}
+function buildDeck(spec){return shuffle(spec.map((s,i)=>{const c=mk(s.rank,s.suit);if(s.mod)c.mod=s.mod;c.si=i;return c;}));}
 function baseNumbers(){const out=[];for(const s of SUITS)for(const r of NUM_RANKS)out.push({rank:r,suit:s});return out;}
 function addFaces(spec,extra){
   for(const [rank,n] of Object.entries(extra)){
@@ -521,30 +578,30 @@ function addFaces(spec,extra){
 // Rules can differ per side (perks for you, house rules for the table).
 function baseRules(){
   return {range:{p:[21,26],a:[21,26]},kingMult:{p:2,a:2},hand:{p:5,a:5},deal:{p:8,a:8},
-    color:{p:false,a:false},jackproof:{p:false,a:false},jokerproof:{p:false,a:false},freeDisband:{p:false,a:false},banned:[],hideOpp:false};
+    color:{p:false,a:false},jackproof:{p:false,a:false},jokerproof:{p:false,a:false},freeDisband:{p:false,a:false},noDiscard:{p:false,a:false},jackDraw:{p:false,a:false},discardDraw:{p:1,a:1},banned:[],hideOpp:false};
 }
 const RULES=g=>g.rules||baseRules();
 
 function cvValue(cv){
-  return cv.reduce((s,e)=>s+val(e.card)*e.faces.reduce((m,f)=>f.rank==='K'?m*(f.m||2):m,1),0);
+  return cv.reduce((s,e)=>s+val(e.card)*(e.card.mod==='glass'?2:1)*e.faces.reduce((m,f)=>f.rank==='K'?m*(f.m||2):m,1),0);
 }
 function cvState(cv){
-  let dir=0,suit=null;
+  let dir=0,suit=null,wild=false;
   for(let i=0;i<cv.length;i++){
     const e=cv[i];
     // Equal neighbours can only appear after a Jack/Joker removal; direction then stays as it was.
     if(i>0){const d=val(e.card)-val(cv[i-1].card);if(d!==0)dir=d>0?1:-1;}
-    suit=e.card.suit;
-    for(const f of e.faces){if(f.rank==='Q'){dir=-dir;suit=f.suit;}}
+    suit=e.card.suit;wild=e.card.mod==='wild';
+    for(const f of e.faces){if(f.rank==='Q'){dir=-dir;suit=f.suit;wild=false;}}
   }
-  return {dir,suit};
+  return {dir,suit,wild};
 }
 function canPlayNum(cv,card,colorMatch){
   if(cv.length===0)return true;
   const last=cv[cv.length-1];
   if(val(card)===val(last.card))return false;
-  const {dir,suit}=cvState(cv);
-  if(card.suit===suit||(colorMatch&&isRed(card.suit)===isRed(suit)))return true;
+  const {dir,suit,wild}=cvState(cv);
+  if(wild||card.mod==='wild'||card.suit===suit||(colorMatch&&isRed(card.suit)===isRed(suit)))return true;
   if(dir===0)return true;
   return dir>0?val(card)>val(last.card):val(card)<val(last.card);
 }
@@ -581,13 +638,13 @@ function legalMoves(g,side){
         if(c.rank==='J'&&s!==side&&R.jackproof[s])continue;
         for(let l=0;l<3;l++){
           const cv=g[s].cv[l];
-          for(let i=0;i<cv.length;i++)if(canPlayFace(cv,i,c))moves.push({t:'face',ci,side:s,lane:l,idx:i});
+          for(let i=0;i<cv.length;i++)if(canPlayFace(cv,i,c)&&!(c.rank==='J'&&cv[i].card.mod==='steel'))moves.push({t:'face',ci,side:s,lane:l,idx:i});
         }
       }
     }
   });
   if(!setup){
-    me.hand.forEach((c,ci)=>moves.push({t:'discard',ci}));
+    if(!(R.noDiscard&&R.noDiscard[side]))me.hand.forEach((c,ci)=>moves.push({t:'discard',ci}));
     for(let l=0;l<3;l++)if(me.cv[l].length)moves.push({t:'disband',lane:l});
   }else if(!moves.length){
     me.hand.forEach((c,ci)=>moves.push({t:'discard',ci}));
@@ -620,8 +677,9 @@ function applyMove(g,side,m,sim){
     }
   }
   if(sim)return;
-  if(m.t==='discard'){if(me.deck.length)me.hand.push(me.deck.pop());}
+  if(m.t==='discard'){const n=(R.discardDraw&&R.discardDraw[side])||1;for(let i=0;i<n&&me.deck.length;i++)me.hand.push(me.deck.pop());}
   else if(!(m.t==='num'&&wasSetup))drawTo(g,side,R.hand[side]);
+  if(me.deck.length&&((m.t==='num'&&card.mod==='lucky')||(m.t==='face'&&card.rank==='J'&&R.jackDraw&&R.jackDraw[side])))me.hand.push(me.deck.pop());
 }
 // AI heuristics
 function laneScore(v,r){
@@ -709,7 +767,7 @@ const CLASSIC_DEALERS=[
   {level:'Hard',name:'Rosa Quill',place:'Classic table',blurb:'Never wastes a Jack.',noise:4,extra:{J:3,Q:2,K:3,JK:2}},
   {level:'Expert',name:'The Cardsharp',place:'Classic table',blurb:'Nobody’s seen him lose.',noise:0.5,extra:{J:3,Q:3,K:3,JK:2}},
 ];
-const OPP=()=>G.opp<0?TUTORS[G.opp]:G.mode==='classic'?CLASSIC_DEALERS[G.opp]:G.mode==='campaign'?CAMP_DEALERS[G.opp]:{...ROAD[G.opp],...dealerAt(G.opp,G.char)};
+const OPP=()=>G.opp<0?TUTORS[G.opp]:G.mode==='classic'?CLASSIC_DEALERS[G.opp]:G.mode==='campaign'?CAMP_DEALERS[G.opp]:G.run?{...ROAD[G.opp],...G.dealer,house:[],noise:G.noise}:{...ROAD[G.opp],...dealerAt(G.opp,G.char)};
 const isClassicish=()=>G.mode==='classic'||G.mode==='campaign';
 
 // Starter decks: pick one to start the Road, or as a preset in the classic card buy.
@@ -854,8 +912,9 @@ const myPath=()=>(meta.path&&meta.char&&meta.path[meta.char])||[];
 const tableOpen=i=>i===0||myPath().includes(i-1);
 const charUnlocked=id=>id==='greg'?((meta.stripBy||[]).some(c=>ORIGINALS.includes(c)||c==='none')):id==='jeanita'?(meta.stripBy||[]).includes('greg'):true;
 const isChar=id=>meta&&meta.char===id;
-const chemMax=()=>isChar('nuke')?5:CHEM_MAX;
-const disc=n=>isChar('vladmira')?Math.ceil(n*0.8):n;
+const chemMax=()=>(isChar('nuke')?5:CHEM_MAX)+(runLive()&&runV('pouch')?2:0);
+const disc=n=>{let m=isChar('vladmira')?0.8:1;if(runLive()){const r=meta.run;if(runV('haggle'))m*=0.75;if(r.halfShop)m*=0.5;if(r.tier==='gold')m*=1.25;}return Math.max(1,Math.ceil(n*m));};
+const runLive=()=>!!(meta&&meta.run&&meta.run.phase!=='over');
 const winMult=()=>isChar('nuke')?0.8:isChar('chevy')?0.9:1;
 const perkPrice=id=>disc(PERKS[id].price), chemPrice=id=>disc(CHEMS[id].price);
 
@@ -867,8 +926,8 @@ function basePriceOf(c){
 }
 const sellPrice=c=>isNum(c)?1:Math.floor(basePriceOf(c)/2);
 const pick=a=>a[Math.floor(Math.random()*a.length)];
-const perkSlots=()=>2+(meta.beaten.length>=4?1:0)+(meta.beaten.length>=8?1:0)+(isChar('chevy')?1:0);
-const has=id=>meta.equipped.includes(id);
+const perkSlots=()=>runLive()?3+(meta.run.stop>=4?1:0)+(isChar('chevy')?1:0)+(runV('rack')?1:0):2+(meta.beaten.length>=4?1:0)+(meta.beaten.length>=8?1:0)+(isChar('chevy')?1:0);
+const has=id=>(runLive()?meta.perks:meta.equipped).includes(id);
 const chemTotal=()=>Object.values(meta.chems).reduce((a,b)=>a+b,0);
 
 function tableRules(i,withPerks){
@@ -957,7 +1016,7 @@ const ROAD_STEPS=[
   {title:'Bounties',say:'Now you can see Jo’s hand, and she’s holding a Jack. Every table also posts a bounty for extra caps. This one is Kingmaker: win after playing two Kings. Put your K♠ on your 6♠ in caravan II: 3 + 18 makes 21.',
    why:'This one play does two jobs. Caravan II jumps into your sell range, and it’s your second King, so the bounty pays if you win. Spreading strength across caravans also means one Jack can’t wreck your whole hand.',
    move:{t:'face',key:'KS',side:'p',lane:1,idx:1},ai:{t:'face',key:'JH',side:'p',lane:0,idx:1}},
-  {title:'On your own',say:'Jo spent the Jack you spotted on your 9♣. Now you’ve seen the road: tables cost a buy-in and pay back more, house rules change by table, perks and chems come from the trading post, and your first win at each table earns a pick of spoils. Finish the hand any way you like.',
+  {title:'On your own',say:'Jo spent the Jack you spotted on your 9♣. Now you’ve seen the road: every stop has three tables, bosses bring their own rules, perks and chems come from the trading post between tables, and losing a table ends the run. Finish the hand any way you like.',
    why:'Your caravan I is back to 18. Getting it to 20 or more with a heart or a high card puts you back in range. Watch what Jo plays, and remember you can see her hand for the rest of this one.',
    move:null},
 ];
@@ -1035,6 +1094,14 @@ function migrate(m){
   m.classic=Object.assign({deck:null,wins:0,losses:0,rec:{},camp:null},m.classic||{});
   if(typeof m.caps!=='number'||m.caps<0)m.caps=0;
   if(m.match&&!m.match.rules)m.match.rules=baseRules();
+  if(!m.runV){ // the Road became run-based: convert old progress into starting tokens
+    m.runV=1;m.tokens=[];const b=(m.beaten||[]).length;
+    if(b>=3)m.tokens.push('stash');if(b>=6)m.tokens.push('kit');if((m.stripBy||[]).length)m.tokens.push('charm');
+    m.decksUnlocked=1;m.tiersUnlocked=1;m.run=null;
+    if(m.match&&m.match.mode==='road'&&!m.match.run&&m.match.opp>=0)m.match=null;
+    if(b||m.wins)m.convertNote=m.tokens.length;
+  }
+  m.tokens=m.tokens||[];m.decksUnlocked=m.decksUnlocked||1;m.tiersUnlocked=m.tiersUnlocked||1;
   return m;
 }
 
@@ -1045,7 +1112,8 @@ const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',
 function cardHTML(c){
   if(c.rank==='JK')return `<div class="card joker"><span class="pip">JOKER</span></div>`;
   const red=isRed(c.suit), s=SUIT_CH[c.suit], num=isNum(c);
-  return `<div class="card s-${c.suit}${red?' red':''}${num?'':' face'}"><span class="r">${c.rank}<i>${s}</i></span><span class="pip">${num?s:c.rank}</span><span class="r2">${c.rank}<i>${s}</i></span></div>`;
+  const md=c.mod&&typeof MODS!=='undefined'&&MODS[c.mod]?c.mod:null;
+  return `<div class="card s-${c.suit}${red?' red':''}${num?'':' face'}${md?' m-'+md:''}"><span class="r">${c.rank}<i>${s}</i></span><span class="pip">${num?s:c.rank}</span><span class="r2">${c.rank}<i>${s}</i></span>${md?`<span class="mod ${md}">${MODS[md].tag}</span>`:''}</div>`;
 }
 const capsHTML=n=>`<span class="pill num"><span class="cap"></span> ${n} caps</span>`;
 const capN=n=>`<span class="cap"></span> ${n}`;
@@ -1154,8 +1222,8 @@ function renderHome(){
     <button class="mode" data-go="road">
       <span class="mk">Roguelite</span>
       <span class="mt">The Road</span>
-      <span class="md">Ten tables from Goodsprings to the Strip. Buy in with caps, grow your deck, and bend the rules with perks, chems, house rules and bounties.</span>
-      <span class="ms num">${meta.caps} caps · ${meta.beaten.length}/10 tables</span>
+      <span class="md">A roguelite run from Goodsprings to the Strip. Start with a plain deck, build it up between tables, and survive the bosses. One loss and the run is over.</span>
+      <span class="ms num">${runLive()?`Run in progress · stop ${meta.run.stop+1} of 8 · ${meta.caps} caps`:`Runs won: ${meta.runsWon||0}`}</span>
     </button>
   </div>
   ${resumeHTML()}`;
@@ -1572,6 +1640,7 @@ function rulesBar(){
   const rp=rangeTxt(R.range.p), ra=rangeTxt(R.range.a);
   bits.push(`<span class="rb">Sell ${rp===ra?rp:`you ${rp} · them ${ra}`}</span>`);
   for(const h of o.house)bits.push(`<span class="rb house-chip">${HOUSE[h].name}</span>`);
+  if(G.run)for(const id of (G.ruleIds||[]).filter((x,i,a)=>a.indexOf(x)===i))bits.push(`<span class="rb house-chip" title="${esc(BOSS_RULES[id].desc)}">${BOSS_RULES[id].name}</span>`);
   if(G.char&&CHARS[G.char])bits.push(`<span class="rb char-chip">${CHARS[G.char].name}</span>`);
   if(o.rival)bits.push(`<span class="rb house-chip">Rival: ${RIVALS[o.rival].rule}</span>`);
   for(const p of (G.perks||[]))bits.push(`<span class="rb perk-chip">${PERKS[p].name}</span>`);
@@ -1656,6 +1725,7 @@ function renderMatch(){
 }
 function resultHTML(){
   const ov=G.over, won=ov.winner==='p';
+  if(ov.run)return runResultHTML(ov);
   const lines=[];
   if(won){
     if(ov.stake)lines.push(`${ov.stake} buy-in back`);
@@ -1694,9 +1764,10 @@ function resultHTML(){
 function render(){
   document.getElementById('sky').style.display=screen==='match'?'none':'block';
   document.body.dataset.screen=screen;
-  const R={help:renderHelp,settings:renderSettings,custom:renderCustom,home:renderHome,road:renderRoad,shop:renderShop,classic:renderClassic,build:renderBuild,pickdeck:renderPick,match:renderMatch,campaign:renderCampaign,vendor:renderVendor,look:renderLook,ach:renderAch,pickchar:renderPickChar};
+  const R={help:renderHelp,settings:renderSettings,custom:renderCustom,home:renderHome,road:renderRoadRun,shop:renderRoadRun,classic:renderClassic,build:renderBuild,pickdeck:renderPick,match:renderMatch,campaign:renderCampaign,vendor:renderVendor,look:renderLook,ach:renderAch,pickchar:renderPickChar};
   (R[screen]||renderHome)();
   if(screen!=='match')app.insertAdjacentHTML('afterbegin',topbarHTML());
+  if(typeof setDeckAttr==='function')setDeckAttr();
   if(pendingChoice)app.insertAdjacentHTML('beforeend',choiceHTML());
 }
 
@@ -1768,6 +1839,19 @@ function finishCore(winner,reason){
     if(tutorial)meta.tutorialDone=true;
     G.over=ov; save(); return;
   }
+  if(G.run){
+    winner==='p'?meta.wins++:meta.losses++;
+    const r=meta.run,s=G.stats||{},costs=[];
+    if(r.deck==='sarsaparilla'&&s.discards){const c=Math.min(meta.caps,s.discards);meta.caps-=c;if(c)costs.push(`−${c} for sticky discards`);}
+    if(r.deck==='blood'&&s.jacks){const c=Math.min(meta.caps,s.jacks*2);meta.caps-=c;if(c)costs.push(`−${c} blood money for Jacks`);}
+    r.kings=(r.kings||0)+(s.kings||0);
+    runFinish(winner,ov);ov.extras=costs.concat(ov.extras||[]);
+    G.over=ov;save();return;
+  }
+  if(tutorial&&G.mode==='road'){
+    const k=G.opp===-1?'tutorialDone':'roadTutDone';meta[k]=true;ov.tutorial=true;ov.delta=0;
+    G.over=ov;save();return;
+  }
   const before=meta.caps+stake, lanes=lanesResult(G);
   const doneKey=G.opp===-1?'tutorialDone':G.opp===-2?'roadTutDone':null;
   if(winner==='p'){
@@ -1797,7 +1881,8 @@ function doMove(side,m){
   if(side==='p'&&G.stats){
     if(m.t==='discard')G.stats.discards++;
     else if(m.t==='disband')G.stats.disbands++;
-    else if(m.t==='face'){const c=G.p.hand[m.ci];G.stats.faces++;if(c.rank==='JK')G.stats.jokers++;if(c.rank==='K')G.stats.kings++;}
+    else if(m.t==='face'){const c=G.p.hand[m.ci];G.stats.faces++;if(c.rank==='JK')G.stats.jokers++;if(c.rank==='K')G.stats.kings++;if(c.rank==='J')G.stats.jacks=(G.stats.jacks||0)+1;}
+    else if(m.t==='num'){const c=G.p.hand[m.ci];if(c.mod==='glass'&&c.si!=null)(G.glass=G.glass||[]).push(c.si);}
   }
   if(side==='p'&&m.t==='face')m._card=G.p.hand[m.ci];
   const pc=m.ci!=null?G[side].hand[m.ci]:null;
@@ -1874,6 +1959,7 @@ app.addEventListener('click',e=>{
   if(!t)return;
   const d=t.dataset;
   if(!('fold' in d)&&screen==='match')armedFold=false;
+  if(handleRunClick(d))return;
   if('draft' in d){takeDraft(+d.draft);render();return;}
   if('auth' in d){doAuth(d.auth);return;}
   if('choose' in d){const pc=pendingChoice;pendingChoice=null;if(!pc)return;
@@ -1889,7 +1975,6 @@ app.addEventListener('click',e=>{
     if(screen==='shop'||screen==='vendor')checkState();
     screen=d.go;sel=null;armedCut=null;armedFold=false;if(G&&G.over)G=null;
     if(screen==='road'&&(!meta.char||!charUnlocked(meta.char)))screen='pickchar';
-    else if(screen==='road'&&!meta.starter)screen='pickdeck';
     if(screen==='campaign'&&!meta.classic.camp){meta.classic.camp=freshCamp();save();}
     if(screen!=='campaign')campPick=null;
     render();window.scrollTo(0,0);return;
@@ -1901,9 +1986,9 @@ app.addEventListener('click',e=>{
   if('cplay' in d){startClassic(+d.cplay);return;}
   if('charinfo' in d){charInfo=d.charinfo;render();return;}
   if('closeinfo' in d){charInfo=null;render();return;}
-  if('pickchar' in d){charInfo=null;const id=d.pickchar;if(CHARS[id]&&charUnlocked(id)){if(!meta.pathInit){meta.pathInit=true;if(meta.beaten.length)meta.path[id]=[...meta.beaten];}meta.char=id;meta.path[id]=meta.path[id]||[];if(meta.equipped.length>perkSlots())meta.equipped=meta.equipped.slice(0,perkSlots());
+  if('pickchar' in d){charInfo=null;const id=d.pickchar;if(runLive()){screen='road';render();return;}if(CHARS[id]&&charUnlocked(id)){if(!meta.pathInit){meta.pathInit=true;if(meta.beaten.length)meta.path[id]=[...meta.beaten];}meta.char=id;meta.path[id]=meta.path[id]||[];if(meta.equipped.length>perkSlots())meta.equipped=meta.equipped.slice(0,perkSlots());
       const cap=chemMax();let tot=chemTotal();for(const k of Object.keys(meta.chems))while(tot>cap&&meta.chems[k]>0){meta.chems[k]--;tot--;}
-      checkState();save();screen=meta.starter?'road':'pickdeck';render();window.scrollTo(0,0);}return;}
+      checkState();save();screen='road';render();window.scrollTo(0,0);}return;}
   if('starter' in d){const st=STARTERS[d.starter];if(st){meta.deck=st.build();meta.starter=d.starter;save();screen='road';render();window.scrollTo(0,0);}return;}
   if('build' in d){buildMode=d.build;buildFrom=screen==='custom'?'custom':(d.build==='camp'?'campaign':'classic');buildDraft=null;screen='build';render();window.scrollTo(0,0);return;}
   if('shopdeck' in d){shopTab='deck';screen='shop';render();window.scrollTo(0,0);return;}
@@ -2019,15 +2104,21 @@ const ACH=[
   {id:'camp_done',cat:3,name:'The High Table',desc:'Beat all eight campaign dealers.',prog:()=>[meta.classic.camp?meta.classic.camp.beaten.length:0,8]},
   {id:'all_in',cat:3,name:'All In',desc:'Win a 500-cap bet in the campaign.'},
   {id:'collector',cat:3,name:'Card Collector',desc:'Own 120 cards in your campaign collection.',prog:()=>[meta.classic.camp?countsSize(meta.classic.camp.coll):0,120]},
-  {id:'road_first',cat:4,name:'Hit the Road',desc:'Beat the Goodsprings table.'},
-  {id:'road_strip',cat:4,name:'Bright Lights',desc:'Beat the Strip.',prog:()=>[meta.beaten.length,10]},
+  {id:'road_first',cat:4,name:'Hit the Road',desc:'Beat the Goodsprings boss on a run.'},
+  {id:'road_strip',cat:4,name:'Bright Lights',desc:'Reach the Strip on a run.'},
+  {id:'run1',cat:4,name:'Vegas, Baby',desc:'Win a full run.'},
+  {id:'silver_road',cat:4,name:'Sterling Work',desc:'Win a run on the Silver Road.'},
+  {id:'gold_road',cat:4,name:'Solid Gold',desc:'Win a run on the Gold Road.'},
+  {id:'ladder',cat:4,name:'Top of the Ladder',desc:'Win a run with the Gold-Plated deck.'},
+  {id:'skip3',cat:4,name:'Places to Be',desc:'Skip three tables in one run.'},
+  {id:'tinker',cat:4,name:'Workbench Regular',desc:'Have five upgraded cards in your deck.'},
   {id:'blind',cat:4,name:'Blind Faith',desc:'Win at a Sandstorm table.'},
   {id:'bounty1',cat:4,name:'Wanted Poster',desc:'Collect a bounty.'},
   {id:'bounty10',cat:4,name:'Dead or Alive',desc:'Collect 10 bounties.',prog:()=>[stv('bounties'),10]},
   {id:'chems10',cat:4,name:'Pick-Me-Up',desc:'Use 10 chems.',prog:()=>[stv('chems'),10]},
-  {id:'loaded',cat:4,name:'Fully Loaded',desc:'Run four perks at once.'},
-  {id:'hoard',cat:4,name:'Cap Hoarder',desc:'Hold 500 caps on the Road.',prog:()=>[Math.min(meta.caps,500),500]},
-  {id:'comeback',cat:4,name:'Back From Broke',desc:'Win at Goodsprings while holding fewer than 10 caps.'},
+  {id:'loaded',cat:4,name:'Fully Loaded',desc:'Hold five perks at once on a run.'},
+  {id:'hoard',cat:4,name:'Cap Hoarder',desc:'Hold 100 caps during a run.'},
+  {id:'comeback',cat:4,name:'Back From Broke',desc:'Win a table while holding 2 caps or fewer.'},
   {id:'greg',cat:4,name:'Hey, Buddy!',desc:'Unlock Greg.'},
   {id:'jeanita',cat:4,name:'Long Distance Call',desc:'Unlock Jeanita.'},
   {id:'style',cat:5,name:'Dressed to Deal',desc:'Change your card back or play mat.'},
@@ -2048,7 +2139,7 @@ function nextToast(){
   toastOn=true;
   let el=document.getElementById('toast');
   if(!el){el=document.createElement('div');el.id='toast';el.className='toast';el.setAttribute('role','status');el.setAttribute('aria-live','polite');document.body.appendChild(el);}
-  el.innerHTML=`<span class="medal" aria-hidden="true">★</span><span><small>Achievement unlocked</small><b>${esc(a.name)}</b><em>${esc(a.desc)}</em></span>`;
+  el.innerHTML=`<span class="medal" aria-hidden="true">★</span><span><small>${esc(a.label||'Achievement unlocked')}</small><b>${esc(a.name)}</b><em>${esc(a.desc)}</em></span>`;
   requestAnimationFrame(()=>el.classList.add('show'));
   setTimeout(()=>{el.classList.remove('show');setTimeout(nextToast,400);},3600);
 }
@@ -2056,15 +2147,13 @@ function checkState(){
   const before=Object.keys(meta.ach||{}).length;
   if(meta.tutorialDone)unlock('tut_basics');
   if(meta.roadTutDone)unlock('tut_road');
-  if(meta.beaten.includes(0))unlock('road_first');
-  if(meta.beaten.includes(9))unlock('road_strip');
   const cp=meta.classic.camp;
   if(cp&&cp.beaten.length)unlock('camp_first');
   if(cp&&cp.done)unlock('camp_done');
   if(cp&&countsSize(cp.coll)>=120)unlock('collector');
-  if(meta.caps>=500)unlock('hoard');
+  if(runLive()&&meta.caps>=100)unlock('hoard');
   if(typeof charUnlocked==='function'){if(charUnlocked('greg'))unlock('greg');if(charUnlocked('jeanita'))unlock('jeanita');}
-  if(meta.equipped.length>=4)unlock('loaded');
+  if(runLive()&&meta.perks.length>=5)unlock('loaded');
   if(meta.look&&(meta.look.back!=='sunburst'||meta.look.mat!=='leather'))unlock('style');
   if(meta.look&&meta.look.four)unlock('four');
   if(stv('hands')>=1)unlock('first_hand');
@@ -2092,8 +2181,8 @@ function achOnFinish(){
     if(G.mode==='classic'&&G.opp===3)unlock('classic_expert');
     if(G.mode==='campaign'&&(G.stake||0)>=500)unlock('all_in');
     if(G.mode==='road'&&G.opp>=0){
-      if(ROAD[G.opp].house.includes('sand'))unlock('blind');
-      if(G.opp===0&&meta.caps-(ov.delta||0)<10)unlock('comeback');
+      if(G.run?(G.ruleIds||[]).includes('sand'):ROAD[G.opp].house.includes('sand'))unlock('blind');
+      if(meta.caps-(ov.delta||0)<=2)unlock('comeback');
     }
     if(ov.bountyWon){st.bounties++;unlock('bounty1');}
   }
@@ -2150,20 +2239,23 @@ function resumeHTML(){
   return `<button class="resume" data-go="${go}"><span>Continue</span><b>${label}</b><em>→</em></button>`;
 }
 const ROAD_RULES=`
-  <li>Each table has a buy-in. Win and you get it back plus the table’s winnings. Lose and you lose only the buy-in. Your first win at a table pays a bonus and gives you a pick of spoils.</li>
-  <li>Goodsprings is always free, so you can always earn your way back.</li>
-  <li><b>Characters</b> each bend the rules their own way. Pick one before you start and switch between hands. Each character has their own path down the Road and meets rival characters along the way. Beat Greg at the Strip as Vladmira, Nuke or Chevy to unlock him; beat Jeanita there as Greg to unlock her.</li>
-  <li><b>House rules</b> change the game at most tables past Jean. Read them before you deal in.</li>
-  <li><b>Perks</b> are permanent rule-benders you equip at the trading post. You start with 2 slots, get a third after 4 tables and a fourth after 8.</li>
-  <li><b>Chems</b> are one-use boosts during a hand, one per turn, after the opening. You can carry ${CHEM_MAX}.</li>
-  <li><b>Bounties</b> pay extra caps for winning a particular way. They change after every hand.</li>`;
+  <li>A <b>run</b> is eight stops from Goodsprings to the Strip. Every stop has three tables: a Saloon table, a High Stakes table and a Boss table. <b>Lose a table and the run is over.</b></li>
+  <li>You can <b>skip</b> the Saloon or High Stakes table for a reward tag. The Boss table can’t be skipped.</li>
+  <li><b>Bosses</b> bring random rules, and they get nastier the further you go. Read them on the map before you deal in.</li>
+  <li>Every run starts with a <b>Plain deck</b> and a few caps. Win tables to earn caps, plus <b>interest</b>: 1 cap for every 5 you hold, up to 5.</li>
+  <li>Between tables, the <b>trading post</b> sells perks, cards, chems, crates, card upgrades and one voucher per stop. Reroll it if you don’t like what’s there.</li>
+  <li><b>Perks</b> come in four rarities. You start with 3 slots and get a 4th from Boulder City on. Sell a perk to make room.</li>
+  <li><b>Card upgrades</b>: Steel can’t be Jacked, Gilded pays caps when it sells, Lucky draws an extra card, Glass is worth double but breaks, Wild matches any suit.</li>
+  <li><b>Chems</b> are one-use boosts during a hand, one per turn, after the opening.</li>
+  <li><b>Characters</b> each bend the rules and meet their own rivals. Beat Greg at the Strip as Vladmira, Nuke or Chevy to unlock him; beat Jeanita there as Greg to unlock her.</li>
+  <li><b>Win a run</b> to unlock the next deck on the ladder (each has its own look and twist), new tokens, and the next difficulty: Silver, then Gold.</li>`;
 const FAQ=[
   ['Why can’t I play a card there?','A number card has to follow the caravan’s direction (higher if it’s climbing, lower if it’s falling) unless it matches the caravan’s current suit, and it can never repeat the value right before it. Tap a card and the places it can go will glow. If nothing glows, discard it.'],
   ['What does “Sell 21–26” mean?','A caravan counts once its total is 21 to 26 and beats the one facing it. Some Road tables and perks change that range; the chips above the table show the current one.'],
   ['When does a hand end?','When all three pairs of caravans are settled at the same time. Whoever sold two or three wins. If two facing caravans tie, the hand keeps going.'],
   ['What happens if I run out of cards?','You lose the hand, as in the original. Disbanding and discarding both burn through your deck, so use them with care.'],
-  ['How do I earn caps?','On the Road, win tables, collect bounties and pick caps as spoils. In the Classic campaign, win your bets. The two modes keep separate wallets.'],
-  ['I’m out of caps. Now what?','On the Road, Goodsprings is always free. In the Classic campaign, play a Friendly game for no stake. You can also sell spare cards.'],
+  ['How do I earn caps?','On the Road, win tables, hit bounties at Boss tables and let your caps earn interest (1 for every 5 you hold). Road caps only last for the run. In the Classic campaign, win your bets. The two modes keep separate wallets.'],
+  ['I lost a table. Is that it?','On the Road, yes: a loss ends the run, and the next one starts fresh from the Plain deck. A Second Wind token or the Guardian Angel perk can save you once. In the Classic campaign, play a Friendly game for no stake, or sell spare cards.'],
   ['Are these the real rules?','Classic follows the Caravan rules from Fallout: New Vegas. The Road uses the same rules underneath, with perks, chems, house rules and bounties on top.'],
   ['Does my progress sync?','Yes, once you sign in under Settings (the gear). Everything syncs: progress, decks, achievements and your table style.'],
   ['How do I put it on my home screen?','On iPhone, open the game in Safari, tap Share, then Add to Home Screen. It opens full screen like an app.'],
@@ -2223,7 +2315,7 @@ function renderCustom(){
     <div class="road">
       ${row('Classic single game',C.deck?`${C.deck.length} cards · bought with a ${CL_BUDGET}-cap budget`:'No deck yet',`<button class="btn" data-build="quick">${C.deck?'Edit':'Buy'}</button>`,C.deck?C.deck.length:'–')}
       ${row('Classic campaign',cp?`${countsSize(cp.deck)} cards in your deck · ${countsSize(cp.coll)} in your collection`:'Start the campaign to get your first set.',cp?`<button class="btn" data-build="camp">Edit</button>`:`<button class="btn" data-go="classic">Go</button>`,cp?countsSize(cp.deck):'–')}
-      ${row('The Road',meta.starter?`${meta.deck.length} cards · buy and sell at the trading post`:'Pick a starting deck when you first head out.',meta.starter?`<button class="btn" data-shopdeck>Manage</button>`:`<button class="btn" data-go="road">Go</button>`,meta.starter?meta.deck.length:'–')}
+      ${row('The Road','Your Road deck is rebuilt every run, starting from the Plain deck. Change its look with the card back and face above.','<button class="btn" data-go="road">Go</button>',runLive()?meta.deck.length:'–')}
     </div>
     <h3 class="sub">Cards &amp; table</h3>
     <div class="road">
@@ -2974,6 +3066,630 @@ function drawSky(){
 }
 window.addEventListener('resize',()=>{if(screen!=='match')drawSky();});
 
+
+// =====================================================================
+// THE ROAD: run-based roguelite
+// =====================================================================
+const RUN_STOPS=[0,2,3,4,5,6,8,9]; // ROAD indices: Goodsprings, Primm, Searchlight, Nelson, Boulder City, Henderson, Fremont Street, The Strip
+const TABLE_KIND=['Saloon table','High Stakes table','Boss table'];
+const DECKS=[
+  {id:'plain',name:'Plain Deck',twist:'No twist. A standard 54-card deck.'},
+  {id:'sarsaparilla',name:'Sarsaparilla-Soaked',twist:'Sticky Fingers: every discard costs 1 cap.'},
+  {id:'blood',name:'Blood-Stained',twist:'Blood Money: every Jack you play costs 2 caps.'},
+  {id:'scorched',name:'Scorched',twist:'Burnt Up: 8 random cards are lost before the run starts.'},
+  {id:'irradiated',name:'Irradiated',twist:'Rad Sickness: you open every hand with 7 cards instead of 8.'},
+  {id:'rust',name:'Rust-Pitted',twist:'Seized Up: rerolls cost double and cards cost 1 cap more.'},
+  {id:'bullet',name:'Bullet-Riddled',twist:'Outgunned: every dealer opens with an extra card.'},
+  {id:'gold',name:'Gold-Plated',twist:'Gilded Cage: no interest, and every boss has an extra rule.'},
+];
+const TIERS=[
+  {id:'copper',name:'Copper Road',desc:'The standard run.'},
+  {id:'silver',name:'Silver Road',desc:'Sharper dealers, an extra rule on every boss, and fewer starting caps.'},
+  {id:'gold',name:'Gold Road',desc:'Everything on Silver, plus a rule on every table, pricier shops and less interest.'},
+];
+const TOKENS={
+  stash:{name:'Stash',desc:'Start the run with 8 extra caps.'},
+  kit:{name:'Field Kit',desc:'Start with a Spyglass and a Black Coffee.'},
+  marked:{name:'Marked Cards',desc:'Two random cards in your deck start Lucky.'},
+  charm:{name:'Lucky Charm',desc:'Start with a random common perk.'},
+  second:{name:'Second Wind',desc:'The first table you lose doesn’t end the run.'},
+};
+const BOSS_RULES={
+  tight:HOUSE.tight, sand:HOUSE.sand, nojk:HOUSE.nojk, long:HOUSE.long, stacked:HOUSE.stacked, iron:HOUSE.iron, royal:HOUSE.royal,
+  drought:{name:'Drought',desc:'You can’t discard.',apply:R=>{R.noDiscard.p=true;}},
+  short:{name:'Short Deal',desc:'You open with 6 cards.',apply:R=>{R.deal.p=Math.min(R.deal.p,6);}},
+  noking:{name:'No Kings',desc:'Kings can’t be played.',apply:R=>{R.banned.push('K');}},
+  noqueen:{name:'No Queens',desc:'Queens can’t be played.',apply:R=>{R.banned.push('Q');}},
+  heavy:{name:'Heavy Hitter',desc:'The dealer opens with 2 extra cards.',apply:R=>{R.deal.a+=2;}},
+};
+const BOSS_POOL=Object.keys(BOSS_RULES);
+const GENERIC_DEALERS=[
+  ['Whiskey Wanda','Pours a double, deals a single.'],['Tumbleweed Tom','Rolls into town, rolls out broke.'],['Doc Fizz','Prescribes cards for every ailment.'],
+  ['Rattlesnake Ruth','Rattles her bracelets when she bluffs.'],['Lefty Loomis','Deals left-handed. Swears it’s lucky.'],['Big Iron Ike','Keeps his hand on his holster and his eyes on yours.'],
+  ['Cactus Kate','Prickly loser, worse winner.'],['Junkyard Jay','Bets bottle caps, bolts and one shoe.'],['Sweet Sue','Smiles the whole hand. That’s the scary part.'],
+  ['Old Moe','Has played since before the bombs. Says so often.'],['Copper Cal','Polishes every cap before he bets it.'],['Dusty Dell','Hasn’t cleaned her deck since the war.'],
+  ['Pastor Pete','Prays over every draw.'],['Brahma Bill','Raises cattle and stakes.'],['Two-Tone Tess','Wears one red boot and one black. Never says why.'],
+];
+const VOUCHERS={
+  pouch:{name:'Bigger Pouch',desc:'Carry 2 more chems.'},
+  pockets:{name:'Deep Pockets',desc:'Hold one more card in every hand.'},
+  haggle:{name:'Haggler',desc:'Everything in the shop is 25% cheaper.'},
+  dice:{name:'Lucky Dice',desc:'Rerolls start at 1 cap.'},
+  rack:{name:'Gun Rack',desc:'One more perk slot.'},
+  tin:{name:'Savings Tin',desc:'Interest can pay 3 more caps.'},
+};
+const TAGS={
+  caps:{name:'Cap Stash',desc:'+8 caps right now.'},
+  crate:{name:'Free Crate',desc:'A free card crate at the next shop.'},
+  chem:{name:'Pick-Me-Up',desc:'A free random chem right now.'},
+  half:{name:'Clearance Sale',desc:'The next shop is half price.'},
+  reroll:{name:'Rerolls',desc:'Two free rerolls at the next shop.'},
+  upgrade:{name:'Tune-Up',desc:'Upgrade a card for free at the next shop.'},
+};
+const MODS={
+  steel:{name:'Steel',desc:'Can’t be removed by Jacks.',tag:'STL'},
+  gilded:{name:'Gilded',desc:'+3 caps when it’s in one of your caravans that sells.',tag:'GLD'},
+  lucky:{name:'Lucky',desc:'Draw an extra card when you play it.',tag:'LCK'},
+  glass:{name:'Glass',desc:'Worth double, but breaks after the hand it’s played in.',tag:'GLS'},
+  wild:{name:'Wild',desc:'Counts as any suit for the suit rule.',tag:'WLD'},
+};
+const PERK_RARITY={
+  shark:'common',twotone:'common',cool:'common',scav:'common',jackrabbit:'common',scrapper:'common',prospector:'common',
+  wide:'uncommon',steady:'uncommon',hunter:'uncommon',kingpin:'uncommon',nose:'uncommon',collector:'uncommon',
+  royal:'rare',lead:'rare',roller:'rare',momentum:'rare',honest:'rare',
+  insure:'legendary',
+};
+const RARITY_PRICE={common:5,uncommon:8,rare:11,legendary:15};
+const RARITY_WEIGHT={common:60,uncommon:28,rare:10,legendary:2};
+Object.assign(PERKS,{
+  jackrabbit:{name:'Jackrabbit',desc:'Draw a card whenever you play a Jack.'},
+  scrapper:{name:'Scrapper',desc:'Discards draw 2 cards instead of 1.'},
+  prospector:{name:'Prospector',desc:'Interest can pay up to 5 more caps.'},
+  kingpin:{name:'Kingpin',desc:'Scales: every 3 Kings you play this run raise your sell ceiling by 1 (up to +3).'},
+  nose:{name:'Bloodhound',desc:'+4 caps for every caravan you sell at exactly 26.'},
+  collector:{name:'Collector',desc:'+1 cap per perk you own after every win.'},
+  momentum:{name:'Momentum',desc:'Scales: +1 hand size for every 5 tables you win this run (up to +2).'},
+  honest:{name:'Honest Work',desc:'+6 caps when you win without playing a face card.'},
+});
+PERKS.insure={name:'Guardian Angel',desc:'The first table you lose doesn’t end the run. Breaks when used.'};
+PERKS.scav={name:'Scavenger',desc:'+2 caps after every table, win or lose.'};
+
+const run=()=>meta&&meta.run;
+const runV=id=>!!(run()&&run().vouchers.includes(id));
+const deckIdx=id=>DECKS.findIndex(d=>d.id===id);
+const deckUnlocked=id=>deckIdx(id)<(meta.decksUnlocked||1);
+const tierIdx=id=>TIERS.findIndex(t=>t.id===id);
+const tierUnlocked=id=>tierIdx(id)<(meta.tiersUnlocked||1);
+function runRoster(cid){
+  const r=RUN_STOPS.map(()=>null);
+  if(ORIGINALS.includes(cid)){const o=ORIGINALS.filter(x=>x!==cid);r[2]=o[0];r[5]=o[1];r[7]='greg';}
+  else if(cid==='greg'){r[2]='vladmira';r[4]='nuke';r[6]='chevy';r[7]='jeanita';}
+  else if(cid==='jeanita'){r[1]='vladmira';r[3]='nuke';r[5]='chevy';r[6]='greg';}
+  return r;
+}
+function bossDealer(s){
+  const rv=runRoster(run().char)[s];
+  if(rv)return {name:CHARS[rv].name,blurb:RIVALS[rv].blurb,rival:rv};
+  const o=ROAD[RUN_STOPS[s]];return {name:o.name,blurb:o.blurb,rival:null};
+}
+function drawRules(n,avoid=[]){
+  const out=[];const pool=shuffle(BOSS_POOL.filter(x=>!avoid.includes(x)));
+  for(const id of pool){if(out.length>=n)break;
+    if((id==='tight'&&out.includes('long'))||(id==='long'&&out.includes('tight')))continue;
+    if(id==='royal'&&out.includes('noking'))continue;if(id==='noking'&&out.includes('royal'))continue;
+    out.push(id);}
+  return out;
+}
+function genRun(){
+  const r=run(), t=tierIdx(r.tier);
+  r.bosses=RUN_STOPS.map((_,s)=>drawRules((s<4?1:s<7?2:3)+(t>=1?1:0)+(r.deck==='gold'?1:0)));
+  r.extra=RUN_STOPS.map(()=>t>=2?[drawRules(1)[0],drawRules(1)[0]]:[null,null]);
+  const names=shuffle(GENERIC_DEALERS.slice());
+  r.dealers=RUN_STOPS.map((_,s)=>[0,1].map(k=>{const d=names[(s*2+k)%names.length];return {name:d[0],blurb:d[1],rival:null};}));
+  r.skipTags=RUN_STOPS.map(()=>[pick(Object.keys(TAGS)),pick(Object.keys(TAGS))]);
+  r.bounties=RUN_STOPS.map((_,s)=>{const b=r.bosses[s];return pick(Object.keys(BOUNTIES).filter(k=>k!=='wild'&&!(k==='p26'&&b.includes('tight'))&&!(k==='kings'&&b.includes('noking'))&&!(k==='calm'&&b.includes('drought'))));});
+}
+function tableRuleIds(s,t){
+  const r=run();const ids=t===2?[...r.bosses[s]]:(r.extra[s][t]?[r.extra[s][t]]:[]);
+  return ids.concat(r.nextRules||[]);
+}
+function runRules(s,t){
+  const r=run(),R=baseRules();
+  for(const id of tableRuleIds(s,t))BOSS_RULES[id]&&BOSS_RULES[id].apply(R);
+  if(t===2){const rv=runRoster(r.char)[s];if(rv)RIVALS[rv].fn(R);}
+  if(has('wide'))R.range.p=[R.range.p[0]-1,R.range.p[1]+1];
+  if(has('royal'))R.kingMult.p+=1;
+  if(has('steady'))R.hand.p+=1;
+  if(has('shark'))R.deal.p+=1;
+  if(has('lead'))R.jackproof.p=true;
+  if(has('twotone'))R.color.p=true;
+  if(has('cool'))R.freeDisband.p=true;
+  if(has('kingpin'))R.range.p=[R.range.p[0],R.range.p[1]+Math.min(3,Math.floor((r.kings||0)/3))];
+  if(has('momentum'))R.hand.p+=Math.min(2,Math.floor((r.won||0)/5));
+  if(runV('pockets'))R.hand.p+=1;
+  if(isChar('vladmira'))R.range.p=[R.range.p[0],R.range.p[1]+2];
+  if(isChar('jeanita'))R.jokerproof.p=true;
+  if(isChar('greg')){R.hand.p+=1;R.jackproof.a=true;}
+  if(r.deck==='irradiated')R.deal.p-=1;
+  if(r.deck==='bullet')R.deal.a+=1;
+  return R;
+}
+function runNoise(s,t){
+  const base=[46,38,30,24,18,13,9,6][s], adj=[14,6,0][t], tm=[1,0.72,0.5][tierIdx(run().tier)];
+  return Math.max(0.5,(base+adj)*tm);
+}
+function runDealerExtra(s,t){
+  const ri=RUN_STOPS[s];const e={...ROAD[Math.max(0,ri-(t===2?0:1))].extra};
+  if(t<2){e.JK=Math.max(0,(e.JK||0)-1);}
+  return e;
+}
+function interestCap(){
+  const r=run();if(r.deck==='gold')return 0;
+  return (r.tier==='gold'?3:5)+(runV('tin')?3:0)+(has('prospector')?5:0);
+}
+const tableReward=(s,t)=>[4,6,9][t]+s;
+const bossBountyPay=s=>Math.round((4+s)*(has('hunter')?2:1)*(isChar('vladmira')?0.5:1));
+
+function plainDeck(){return addFaces(baseNumbers(),{J:4,Q:4,K:4,JK:2});}
+function startRun(){
+  const r0=meta.newRun||{};
+  const deck=deckUnlocked(r0.deck||'plain')?(r0.deck||'plain'):'plain', tier=tierUnlocked(r0.tier||'copper')?(r0.tier||'copper'):'copper';
+  const token=r0.token&&meta.tokens.includes(r0.token)?r0.token:null;
+  meta.run={v:1,char:meta.char,deck,tier,token,stop:0,table:0,phase:'table',won:0,kings:0,skips:0,hands:0,vouchers:[],tags:[],nextRules:[],
+    secondWind:(token==='second'?1:0),halfShop:false,freeRerolls:0,freeCrate:0,freeUpgrade:0,started:Date.now(),voucherStop:-1};
+  genRun();
+  meta.caps=[10,7,5][tierIdx(tier)]+(token==='stash'?8:0);
+  let d=plainDeck();
+  if(deck==='scorched'){shuffle(d);d=d.slice(8);}
+  if(token==='marked'){shuffle(d);let n=0;for(const c of d)if(isNum(c)&&n<2){c.mod='lucky';n++;}}
+  meta.deck=d;
+  meta.perks=[];meta.equipped=[];
+  meta.chems={spy:0,coffee:0,fresh:0,shoe:0};
+  if(token==='kit'){meta.chems.spy=1;meta.chems.coffee=1;}
+  if(token==='charm'){const id=pick(Object.keys(PERK_RARITY).filter(p=>PERK_RARITY[p]==='common'));meta.perks.push(id);meta.equipped=meta.perks;}
+  meta.equipped=meta.perks;
+  meta.draft=null;
+  save();
+}
+function rollPerkOffer(n){
+  const owned=new Set(meta.perks);const out=[];
+  for(let k=0;k<n*6&&out.length<n;k++){
+    const roll=Math.random()*100;let rar='common',acc=0;for(const [r,w] of Object.entries(RARITY_WEIGHT)){acc+=w;if(roll<acc){rar=r;break;}}
+    const pool=Object.keys(PERK_RARITY).filter(p=>PERK_RARITY[p]===rar&&!owned.has(p)&&!out.includes(p));
+    if(pool.length)out.push(pick(pool));
+  }
+  return out;
+}
+function rollCard(withMod){
+  const r=Math.random();let rank;
+  if(r<.07)rank='JK';else if(r<.22)rank='K';else if(r<.36)rank='J';else if(r<.45)rank='Q';else rank=pick(['10','10','9','9','8','7','6','5','4','A']);
+  const c={rank,suit:rank==='JK'?null:pick(SUITS)};
+  if(withMod&&isNum(c)&&Math.random()<.45)c.mod=pick(Object.keys(MODS));
+  return c;
+}
+function runCardPrice(c){
+  const b=c.rank==='JK'?7:c.rank==='K'?5:c.rank==='J'?4:c.rank==='Q'?3:1+Math.ceil(val(c)/3);
+  return disc(b+(c.mod?2:0)+(run().deck==='rust'?1:0));
+}
+const perkRunPrice=id=>disc(RARITY_PRICE[PERK_RARITY[id]||'common']);
+const perkSellPrice=id=>Math.max(1,Math.floor(RARITY_PRICE[PERK_RARITY[id]||'common']/2));
+const chemRunPrice=id=>disc({spy:3,coffee:4,fresh:2,shoe:3}[id]);
+const CRATES={card:{name:'Card crate',desc:'Pick 1 of 3 cards. Some come upgraded.',price:4},perk:{name:'Perk crate',desc:'Pick 1 of 3 perks.',price:7},chem:{name:'Chem crate',desc:'Pick 1 of 3 chems.',price:3}};
+function rerollCost(){const r=run();return (runV('dice')?1:3)*(r.deck==='rust'?2:1)+(r.rerolls||0);}
+function openShop(){
+  const r=run();
+  r.offers={perks:rollPerkOffer(2),cards:[rollCard(true),rollCard(true)],chems:shuffle(Object.keys(CHEMS)).slice(0,2),
+    upgrade:pick(Object.keys(MODS)),voucher:r.voucherStop===r.stop?null:pick(Object.keys(VOUCHERS).filter(v=>!r.vouchers.includes(v))),sold:{}};
+  r.rerolls=0;r.crate=null;r.workbench=null;
+  if(r.freeCrate){r.freeCrate=0;r.crate={kind:'card',options:[rollCard(true),rollCard(true),rollCard(true)],free:true};}
+}
+function rerollShop(){
+  const r=run();
+  r.offers.perks=rollPerkOffer(2);r.offers.cards=[rollCard(true),rollCard(true)];r.offers.chems=shuffle(Object.keys(CHEMS)).slice(0,2);r.offers.upgrade=pick(Object.keys(MODS));r.offers.sold={};
+}
+function openCrate(kind){
+  const opts=kind==='card'?[rollCard(true),rollCard(true),rollCard(true)]:kind==='perk'?rollPerkOffer(3):shuffle(Object.keys(CHEMS)).slice(0,3);
+  run().crate={kind,options:opts};
+}
+function takeCrate(i){
+  const r=run(),c=r.crate;if(!c)return;const o=c.options[i];
+  if(c.kind==='card')meta.deck.push(o);
+  else if(c.kind==='perk'){if(meta.perks.length<perkSlots()&&!meta.perks.includes(o))meta.perks.push(o);}
+  else if(chemTotal()<chemMax())meta.chems[o]++;
+  meta.equipped=meta.perks;r.crate=null;save();
+}
+const modCount=()=>meta.deck.filter(c=>c.mod).length;
+
+// ---- start a table ----
+function startRunTable(){
+  const r=run();if(!r||r.phase!=='table')return;
+  const s=r.stop,t=r.table,ri=RUN_STOPS[s];
+  const R=runRules(s,t);
+  const dealer=t===2?bossDealer(s):r.dealers[s][t];
+  G=newMatch(meta.deck,addFaces(baseNumbers(),runDealerExtra(s,t)),ri,R);
+  G.mode='road';G.run=true;G.runStop=s;G.runTable=t;G.dealer=dealer;G.ruleIds=tableRuleIds(s,t);G.noise=runNoise(s,t);
+  G.perks=[...meta.perks];G.char=r.char;G.turretUsed=false;G.hugUsed=false;G.hugPending=false;if(isChar('jeanita'))G.peek=true;
+  if(t===2){G.bounty=r.bounties[s];G.bountyPay=bossBountyPay(s);}
+  G.stake=0;r.nextRules=[];
+  enterMatch();
+}
+function skipTable(){
+  const r=run();if(!r||r.phase!=='table'||r.table>1)return;
+  const tag=r.skipTags[r.stop][r.table];applyTag(tag);
+  r.skips++;r.table++;if(r.skips>=3)unlock('skip3');
+  save();
+}
+function applyTag(tag){
+  const r=run();
+  if(tag==='caps')meta.caps+=8;
+  else if(tag==='chem'){if(chemTotal()<chemMax())meta.chems[pick(Object.keys(CHEMS))]++;}
+  else if(tag==='half')r.halfShop=true;
+  else if(tag==='reroll')r.freeRerolls+=2;
+  else if(tag==='crate')r.freeCrate=1;
+  else if(tag==='upgrade')r.freeUpgrade=1;
+  toast({label:'Table skipped',name:TAGS[tag].name,desc:TAGS[tag].desc});
+}
+// ---- finish a table ----
+function runFinish(winner,ov){
+  const r=run(),s=G.runStop,t=G.runTable,lanes=lanesResult(G);
+  ov.run=true;r.hands++;const before=meta.caps;
+  const extras=[];
+  if(has('scav')){meta.caps+=2;extras.push('2 from Scavenger');}
+  // glass breaks
+  const played=new Set(G.glass||[]);
+  if(played.size){meta.deck=meta.deck.filter((c,i)=>!played.has(i));extras.push(`${played.size} glass card${played.size>1?'s':''} broke`);}
+  if(winner==='p'){
+    const w=Math.round(tableReward(s,t)*(has('roller')?1.5:1)*winMult());meta.caps+=w;ov.win=w;
+    if(G.bounty&&bountyMet(G.bounty,lanes)){ov.bountyWon=G.bountyPay;meta.caps+=G.bountyPay;}
+    let gild=0;[0,1,2].forEach(l=>{if(lanes[l]==='p')for(const e of G.p.cv[l])if(e.card.mod==='gilded')gild+=3;});
+    if(gild){meta.caps+=gild;extras.push(`${gild} from Gilded cards`);}
+    if(has('nose')){const n=[0,1,2].filter(l=>lanes[l]==='p'&&cvValue(G.p.cv[l])===26).length;if(n){meta.caps+=4*n;extras.push(`${4*n} from Bloodhound`);}}
+    if(has('collector')){meta.caps+=meta.perks.length;extras.push(`${meta.perks.length} from Collector`);}
+    if(has('honest')&&G.stats&&!G.stats.faces){meta.caps+=6;extras.push('6 from Honest Work');}
+    const intr=Math.min(interestCap(),Math.floor(before/5));if(intr>0){meta.caps+=intr;extras.push(`${intr} interest`);}
+    if(G.char==='nuke'&&chemTotal()<chemMax()){const id=pick(Object.keys(CHEMS));meta.chems[id]++;ov.brewed=id;}
+    r.won++;
+    if(t===2&&s===0)unlock('road_first');
+    if(t===2){
+      if(s===RUN_STOPS.length-1){
+        meta.stripBy=meta.stripBy||[];const had=CHAR_ORDER.filter(charUnlocked);if(!meta.stripBy.includes(G.char))meta.stripBy.push(G.char);
+        for(const id of CHAR_ORDER)if(!had.includes(id)&&charUnlocked(id)){ov.newChar=id;}
+        runWon(ov);
+      }else{r.stop++;r.table=0;r.phase='event';r.event=pick(Object.keys(EVENTS));if(r.stop===RUN_STOPS.length-1)unlock('road_strip');}
+    }else{r.table++;r.phase='shop';openShop();}
+  }else{
+    if(r.secondWind>0||has('insure')){
+      if(r.secondWind>0)r.secondWind--;else{meta.perks=meta.perks.filter(p=>p!=='insure');meta.equipped=meta.perks;}
+      ov.saved=true;r.phase='table';
+    }else{ov.runOver=true;runLost();}
+  }
+  ov.extras=extras;ov.delta=meta.caps-before;
+}
+function runLost(){
+  const r=run();r.phase='over';r.result='lost';
+  meta.runHist=meta.runHist||[];meta.runHist.unshift({char:r.char,deck:r.deck,tier:r.tier,stop:r.stop,table:r.table,won:r.won,result:'lost',at:Date.now()});meta.runHist=meta.runHist.slice(0,12);
+  meta.bestStop=Math.max(meta.bestStop||0,r.stop);
+}
+function runWon(ov){
+  const r=run();r.phase='over';r.result='won';
+  meta.runsWon=(meta.runsWon||0)+1;
+  meta.runHist=meta.runHist||[];meta.runHist.unshift({char:r.char,deck:r.deck,tier:r.tier,stop:RUN_STOPS.length,won:r.won,result:'won',at:Date.now()});meta.runHist=meta.runHist.slice(0,12);
+  meta.bestStop=RUN_STOPS.length;
+  const unl=[];
+  const di=deckIdx(r.deck);if(di+1<DECKS.length&&meta.decksUnlocked<di+2){meta.decksUnlocked=di+2;unl.push(`${DECKS[di+1].name} deck`);}
+  const ti=tierIdx(r.tier);
+  const tokenFor=[['kit','marked'],['charm'],['second']][ti];
+  for(const tk of tokenFor)if(!meta.tokens.includes(tk)){meta.tokens.push(tk);unl.push(`${TOKENS[tk].name} token`);}
+  if(ti+1<TIERS.length&&meta.tiersUnlocked<ti+2){meta.tiersUnlocked=ti+2;unl.push(TIERS[ti+1].name);}
+  unlock('run1');if(r.tier==='silver')unlock('silver_road');if(r.tier==='gold')unlock('gold_road');if(r.deck==='gold')unlock('ladder');
+  r.unlocked=unl;ov.unlocked=unl;
+}
+
+// ---- wasteland events ----
+const EVENTS={
+  trader:{title:'A Traveling Trader',text:'A trader with a two-headed mule offers to swap one of your plain number cards for an upgraded one.',
+    choices:[{label:'Trade (5 caps)',cost:5,act:()=>{const plain=meta.deck.filter(c=>isNum(c)&&!c.mod);if(plain.length){pick(plain).mod=pick(Object.keys(MODS));}return 'One of your cards came back upgraded.';}},{label:'Keep walking',act:()=>'The trader shrugs and moves on.'}]},
+  toll:{title:'Raider Toll',text:'Raiders block the road and want 10 caps to let you pass.',
+    choices:[{label:'Pay up (10 caps)',cost:10,act:()=>'They wave you through.'},{label:'Refuse',act:()=>{run().nextRules=['heavy'];return 'They let you pass, but they tip off the next dealer. Your next table: the dealer opens with 2 extra cards.';}}]},
+  doctor:{title:'The Strange Doctor',text:'A doctor in a stained coat offers to “reinforce” a card. Results guaranteed, mostly.',
+    choices:[{label:'Steel a card (6 caps)',cost:6,act:()=>{const pool=meta.deck.filter(c=>isNum(c)&&!c.mod);if(pool.length)pick(pool).mod='steel';return 'One of your cards is now Steel.';}},{label:'No thanks',act:()=>'You back away slowly.'}]},
+  wreck:{title:'An Abandoned Caravan',text:'A wrecked caravan sits by the road. Something might be worth taking.',
+    choices:[{label:'Search the cargo',act:()=>{const a=rollCard(true),b=rollCard(false);meta.deck.push(a,b);return `You found ${cardName(a)}${a.mod?` (${MODS[a.mod].name})`:''} and ${cardName(b)}, now in your deck.`;}},{label:'Take the loose caps',act:()=>{meta.caps+=6;return 'You pocket 6 caps.';}}]},
+  gambler:{title:'The Coin Flipper',text:'A grinning stranger offers a coin flip: double or nothing on 10 caps.',
+    choices:[{label:'Flip (10 caps)',cost:10,act:()=>{if(Math.random()<.5){meta.caps+=20;return 'Heads! You win 20 caps.';}return 'Tails. The stranger laughs and walks off with your caps.';}},{label:'Walk away',act:()=>'Probably wise.'}]},
+  shrine:{title:'A Roadside Shrine',text:'An old shrine to a forgotten casino. Leaving an offering here thins your deck of the cards you least need.',
+    choices:[{label:'Leave an offering',act:()=>{const lows=meta.deck.map((c,i)=>({c,i})).filter(o=>isNum(o.c)&&!o.c.mod&&val(o.c)<=3).slice(0,3).map(o=>o.i);if(meta.deck.length-lows.length>=MIN_DECK)meta.deck=meta.deck.filter((c,i)=>!lows.includes(i));else return 'Your deck is too thin to give anything up.';return `You removed ${lows.length} low cards from your deck.`;}},{label:'Move on',act:()=>'You tip your hat and keep going.'}]},
+  medic:{title:'A Wandering Medic',text:'A medic offers chems from her bag at a fair price.',
+    choices:[{label:'Buy a random chem (2 caps)',cost:2,act:()=>{if(chemTotal()<chemMax()){const id=pick(Object.keys(CHEMS));meta.chems[id]++;return `You got a ${CHEMS[id].name}.`;}return 'Your pouch is full. She keeps the caps anyway. Rude.';}},{label:'Decline',act:()=>'She nods and moves along.'}]},
+};
+function eventChoose(i){
+  const r=run(),ev=EVENTS[r.event];if(!ev)return;const ch=ev.choices[i];if(!ch)return;
+  if(ch.cost&&meta.caps<ch.cost)return;
+  if(ch.cost)meta.caps-=ch.cost;
+  r.eventResult=ch.act();save();
+}
+function eventDone(){const r=run();r.event=null;r.eventResult=null;r.phase='shop';openShop();save();}
+
+// ---- deck textures (laid over the player's chosen card design) ----
+function deckTex(id){
+  const W=240,H=336,[c,x]=mkCanvas(W,H),r=rngSeed(id.length*131+7);
+  const splat=(sx,sy,R,col)=>{x.fillStyle=col;x.beginPath();x.arc(sx,sy,R,0,7);x.fill();for(let i=0;i<12;i++){const a=r()*7,d=R*(.7+r()*1.2);x.beginPath();x.arc(sx+Math.cos(a)*d,sy+Math.sin(a)*d,R*(.08+r()*.22),0,7);x.fill();}};
+  if(id==='sarsaparilla'){
+    for(let i=0;i<3;i++){const cx=40+r()*160,cy=60+r()*220,R=26+r()*30;x.strokeStyle=`rgba(110,60,20,${.35+r()*.2})`;x.lineWidth=3+r()*4;x.beginPath();x.arc(cx,cy,R,0,7);x.stroke();
+      x.strokeStyle='rgba(110,60,20,.15)';x.lineWidth=10;x.beginPath();x.arc(cx,cy,R-4,r()*3,r()*3+2);x.stroke();}
+    for(let i=0;i<3;i++){const dx=20+r()*200,len=30+r()*80;x.strokeStyle='rgba(120,65,20,.45)';x.lineWidth=3+r()*3;x.lineCap='round';x.beginPath();x.moveTo(dx,0);x.lineTo(dx+r()*4,len);x.stroke();}
+    const g=x.createLinearGradient(0,0,0,H);g.addColorStop(0,'rgba(140,80,30,.18)');g.addColorStop(1,'rgba(140,80,30,.05)');x.fillStyle=g;x.fillRect(0,0,W,H);
+  }else if(id==='blood'){
+    splat(60+r()*120,80+r()*80,14+r()*8,'rgba(120,10,8,.75)');splat(40+r()*160,220+r()*80,8+r()*6,'rgba(120,10,8,.7)');
+    for(let i=0;i<40;i++){x.fillStyle=`rgba(110,8,6,${.3+r()*.5})`;x.beginPath();x.arc(r()*W,r()*H,r()*2.2,0,7);x.fill();}
+    x.strokeStyle='rgba(110,8,6,.7)';x.lineWidth=3;x.lineCap='round';const dx=50+r()*140;x.beginPath();x.moveTo(dx,40+r()*40);x.lineTo(dx+2,160+r()*60);x.stroke();
+  }else if(id==='scorched'){
+    const g=x.createRadialGradient(W/2,H/2,Math.min(W,H)*.25,W/2,H/2,Math.max(W,H)*.62);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(.75,'rgba(60,25,8,.45)');g.addColorStop(1,'rgba(10,5,2,.95)');x.fillStyle=g;x.fillRect(0,0,W,H);
+    for(let i=0;i<60;i++){const e=r()*4|0,t2=r();const px=e<2?t2*W:(e===2?r()*20:W-r()*20),py=e>=2?t2*H:(e===0?r()*20:H-r()*20);x.fillStyle=`rgba(${r()<.3?'255,140,40':'20,10,5'},${.4+r()*.5})`;x.beginPath();x.arc(px,py,1+r()*4,0,7);x.fill();}
+  }else if(id==='irradiated'){
+    const g=x.createRadialGradient(W/2,H/2,Math.min(W,H)*.3,W/2,H/2,Math.max(W,H)*.65);g.addColorStop(0,'rgba(120,255,90,0)');g.addColorStop(1,'rgba(120,255,90,.5)');x.fillStyle=g;x.fillRect(0,0,W,H);
+    for(let i=0;i<70;i++){x.fillStyle=`rgba(150,255,110,${.25+r()*.6})`;x.beginPath();x.arc(r()*W,r()*H,r()*2.4,0,7);x.fill();}
+    for(let i=0;i<4;i++){const px=r()*W,py=r()*H,rg=x.createRadialGradient(px,py,0,px,py,30);rg.addColorStop(0,'rgba(140,255,100,.35)');rg.addColorStop(1,'rgba(140,255,100,0)');x.fillStyle=rg;x.fillRect(0,0,W,H);}
+  }else if(id==='rust'){
+    for(let i=0;i<16;i++){const px=r()*W,py=r()*H,R=12+r()*40,rg=x.createRadialGradient(px,py,0,px,py,R);rg.addColorStop(0,`rgba(${150+r()*40},${60+r()*20},18,${.45+r()*.3})`);rg.addColorStop(1,'rgba(140,60,18,0)');x.fillStyle=rg;x.fillRect(0,0,W,H);}
+    for(let i=0;i<500;i++){x.fillStyle=`rgba(${r()<.5?'150,60,20':'80,30,10'},${r()*.4})`;x.fillRect(r()*W,r()*H,1.5,1.5);}
+  }else if(id==='bullet'){
+    const hole=(hx,hy)=>{const bg=x.createRadialGradient(hx,hy,4,hx,hy,22);bg.addColorStop(0,'rgba(30,15,5,.75)');bg.addColorStop(1,'rgba(30,15,5,0)');x.fillStyle=bg;x.beginPath();x.arc(hx,hy,22,0,7);x.fill();
+      x.fillStyle='rgba(240,225,190,.9)';x.beginPath();for(let i=0;i<12;i++){const a=i/12*Math.PI*2,rad=7+r()*5;x.lineTo(hx+Math.cos(a)*rad,hy+Math.sin(a)*rad);}x.closePath();x.fill();
+      x.fillStyle='#0c0907';x.beginPath();x.arc(hx,hy,5.5,0,7);x.fill();};
+    hole(60+r()*40,80+r()*60);hole(140+r()*60,200+r()*80);
+    x.strokeStyle='rgba(30,20,10,.25)';x.lineWidth=1;for(let i=0;i<10;i++){x.beginPath();const sx=r()*W,sy=r()*H;x.moveTo(sx,sy);x.lineTo(sx+(r()-.5)*40,sy+(r()-.5)*40);x.stroke();}
+  }else if(id==='gold'){
+    const g=x.createLinearGradient(0,0,W,H);g.addColorStop(0,'rgba(255,215,120,.0)');g.addColorStop(.42,'rgba(255,225,140,.55)');g.addColorStop(.5,'rgba(255,250,220,.75)');g.addColorStop(.58,'rgba(255,225,140,.55)');g.addColorStop(1,'rgba(255,215,120,.0)');x.fillStyle=g;x.fillRect(0,0,W,H);
+    x.strokeStyle='rgba(212,160,60,.9)';x.lineWidth=7;rrect(x,3,3,W-6,H-6,12);x.stroke();
+    for(let i=0;i<18;i++){const px=r()*W,py=r()*H;x.fillStyle='rgba(255,250,220,.9)';x.beginPath();for(let k=0;k<8;k++){const a=k*Math.PI/4,rad=k%2?1:4;x.lineTo(px+Math.cos(a)*rad,py+Math.sin(a)*rad);}x.closePath();x.fill();}
+  }
+  return c.toDataURL();
+}
+function loadDeckTextures(){
+  const css=['[data-deck="plain"],[data-deck=""]{--deck-tex:none}'];
+  for(const d of DECKS){if(d.id==='plain')continue;document.documentElement.style.setProperty('--dtex-'+d.id,`url(${deckTex(d.id)})`);
+    css.push(`[data-deck="${d.id}"]{--deck-tex:var(--dtex-${d.id});--deck-blend:${d.id==='irradiated'||d.id==='gold'?'screen':'multiply'}}`);}
+  const st=document.createElement('style');st.textContent=css.join('\n');document.head.appendChild(st);
+}
+function setDeckAttr(){
+  const r=run();const on=r&&r.phase!=='over'&&(screen==='road'||screen==='shop'||(screen==='match'&&G&&G.run));
+  document.documentElement.dataset.deck=on?r.deck:'';
+}
+
+// ---- screens ----
+const ruleChip=id=>`<span class="rb house-chip" title="${esc(BOSS_RULES[id].desc)}">${BOSS_RULES[id].name}</span>`;
+function runHeaderHTML(){
+  const r=run(),slots=perkSlots();
+  return `<div class="charstrip"><img src="${portrait(r.char)}" alt=""><div><small>${esc(TIERS[tierIdx(r.tier)].name)} · ${esc(DECKS[deckIdx(r.deck)].name)}</small><b>${esc(CHARS[r.char].name)}</b>
+      <span>Stop ${r.stop+1} of ${RUN_STOPS.length} · ${r.won} tables won${r.secondWind?' · Second Wind ready':''}</span></div></div>
+    <div class="hubbar">${capsHTML(meta.caps)}<span class="pill num">Deck ${meta.deck.length}${modCount()?` · ${modCount()} upgraded`:''}</span><span class="pill num">Perks ${meta.perks.length}/${slots}</span><span class="pill num">Chems ${chemTotal()}/${chemMax()}</span></div>
+    ${meta.perks.length?`<div class="rulesbar" style="justify-content:center">${meta.perks.map(p=>`<span class="rb perk-chip rar-${PERK_RARITY[p]}" title="${esc(PERKS[p].desc)}">${PERKS[p].name}</span>`).join('')}${r.vouchers.map(v=>`<span class="rb char-chip" title="${esc(VOUCHERS[v].desc)}">${VOUCHERS[v].name}</span>`).join('')}</div>`:''}`;
+}
+let runArmed=false, runPre=false;
+function renderRunMap(){
+  const r=run();
+  const rows=RUN_STOPS.map((ri,s)=>{
+    const place=ROAD[ri].place, cur=s===r.stop, done=s<r.stop, boss=bossDealer(s);
+    if(!cur)return `<div class="stopmini${done?' done':''}"><span class="mile">${done?'✓':s+1}</span><div><b>${esc(place)}</b><span>Boss: ${esc(boss.name)}${boss.rival?` <i class="tag rival">${s===RUN_STOPS.length-1?'FINAL RIVAL':'RIVAL'}</i>`:''}</span></div></div>`;
+    const tables=[0,1,2].map(t=>{
+      const st=t<r.table?'done':t===r.table?'now':'next';
+      const d=t===2?boss:r.dealers[s][t], ids=tableRuleIds(s,t).filter((x,i,a)=>a.indexOf(x)===i);
+      const tag=t<2?TAGS[r.skipTags[s][t]]:null;
+      return `<div class="rtable ${st}${t===2?' boss':''}">
+        <div class="rt-head">${t===2&&d.rival?`<img class="rivalimg" src="${portrait(d.rival)}" alt="">`:''}<div><small>${TABLE_KIND[t]}</small><b>${esc(d.name)}</b><span>${esc(d.blurb)}</span></div></div>
+        ${ids.length?`<div class="rulesbar">${ids.map(ruleChip).join('')}${t===2&&d.rival?`<span class="rb house-chip">Rival: ${esc(RIVALS[d.rival].rule)}</span>`:''}</div>`:(t===2&&d.rival?`<div class="rulesbar"><span class="rb house-chip">Rival: ${esc(RIVALS[d.rival].rule)}</span></div>`:'')}
+        ${ids.length?`<div class="ruledescs">${ids.map(id=>`<span><b>${BOSS_RULES[id].name}:</b> ${esc(BOSS_RULES[id].desc)}</span>`).join('')}</div>`:''}
+        <div class="rt-foot"><span class="num">Win +${Math.round(tableReward(s,t)*(has('roller')?1.5:1)*winMult())}${t===2?` · Bounty: ${BOUNTIES[r.bounties[s]].name} +${bossBountyPay(s)}`:''}</span>
+          ${st==='now'?`<span class="rt-btns">${tag?`<button class="btn" data-runskip title="${esc(tag.desc)}">Skip: ${esc(tag.name)}</button>`:''}<button class="btn hot" data-runplay>Deal in</button></span>`:st==='done'?'<span class="tag">DONE</span>':''}</div>
+      </div>`;}).join('');
+    return `<div class="stopcur"><h3>${s+1}. ${esc(place)}</h3>${tables}</div>`;
+  }).join('');
+  app.innerHTML=`
+  <div class="mbar">${backBtn('home','Modes')}<button class="btn ghost${runArmed?' armed':''}" data-runabandon>${runArmed?'Tap again to abandon':'Abandon run'}</button></div>
+  <section class="hero small"><div class="neon sm">The Road</div></section>
+  ${runHeaderHTML()}
+  <section class="panel">${rows}</section>
+  ${runPre?runPreHandHTML():''}`;
+}
+function runPreHandHTML(){
+  const r=run(),s=r.stop,t=r.table,d=t===2?bossDealer(s):r.dealers[s][t],R=runRules(s,t),ids=tableRuleIds(s,t);
+  const chems=Object.entries(meta.chems).filter(([,n])=>n>0);
+  return `<div class="overlay"><div class="panel result prehand" role="dialog" aria-label="Before you deal in">
+    ${d.rival?`<img class="rivalhero" src="${portrait(d.rival)}" alt="${esc(d.name)}">`:''}
+    <h2>${esc(ROAD[RUN_STOPS[s]].place)}</h2><p class="who">${TABLE_KIND[t]} · ${esc(d.name)} · ${esc(d.blurb)}</p>
+    <dl>
+      <dt>Character</dt><dd>${esc(CHARS[r.char].name)}</dd>
+      <dt>Reward</dt><dd>+${Math.round(tableReward(s,t)*(has('roller')?1.5:1)*winMult())} caps, plus interest (1 per 5 caps you hold, up to ${interestCap()})</dd>
+      <dt>Sell range</dt><dd>${rangeTxt(R.range.p)===rangeTxt(R.range.a)?rangeTxt(R.range.p):`You ${rangeTxt(R.range.p)} · dealer ${rangeTxt(R.range.a)}`}</dd>
+      <dt>Rules</dt><dd>${ids.length?ids.map(id=>`<b>${BOSS_RULES[id].name}:</b> ${esc(BOSS_RULES[id].desc)}`).join('<br>'):'None. Straight Caravan.'}</dd>
+      ${d.rival?`<dt>Rival</dt><dd>${esc(RIVALS[d.rival].rule)}${s===RUN_STOPS.length-1&&d.rival==='greg'?' Beat him to unlock Greg.':''}${s===RUN_STOPS.length-1&&d.rival==='jeanita'?' Beat her to unlock Jeanita.':''}</dd>`:''}
+      ${t===2?`<dt>Bounty</dt><dd>${BOUNTIES[r.bounties[s]].name}: ${esc(BOUNTIES[r.bounties[s]].desc)} +${bossBountyPay(s)}</dd>`:''}
+      <dt>Deck twist</dt><dd>${esc(DECKS[deckIdx(r.deck)].twist)}</dd>
+      <dt>Chems</dt><dd>${chems.length?chems.map(([id,n])=>`${CHEMS[id].name} ×${n}`).join(' · '):'None'}</dd>
+    </dl>
+    <p class="note" style="text-align:center">Lose this table and the run ends${r.secondWind||has('insure')?', unless your Second Wind or Guardian Angel saves you':''}.</p>
+    <div class="hubbtns" style="justify-content:center"><button class="btn hot" data-runconfirm>Deal in</button><button class="btn" data-runcancel>Cancel</button></div>
+  </div></div>`;
+}
+function renderRunSetup(){
+  const nr=meta.newRun=meta.newRun||{deck:'plain',tier:'copper',token:null};
+  if(!deckUnlocked(nr.deck))nr.deck='plain';if(!tierUnlocked(nr.tier))nr.tier='copper';if(nr.token&&!meta.tokens.includes(nr.token))nr.token=null;
+  const T2=TUTORS['-2'];
+  app.innerHTML=`
+  <div class="mbar">${backBtn('home','Modes')}</div>
+  <section class="hero small"><div class="neon sm">The Road</div><p class="tagline">Eight stops to the Strip. Lose a table and the run is over.</p></section>
+  ${meta.char?`<div class="charstrip"><img src="${portrait(meta.char)}" alt=""><div><small>Character</small><b>${esc(CHARS[meta.char].name)}</b><span>${CHARS[meta.char].traits.map(t=>t[1]).join(' · ')}</span></div><button class="btn" data-go="pickchar">Change</button></div>`:''}
+  <section class="panel">
+    <h2 style="font-size:24px">New run</h2>
+    <h3 class="sub">Deck</h3>
+    <div class="decklist">${DECKS.map((d,i)=>{const ok=deckUnlocked(d.id),on=nr.deck===d.id;return `<button class="deckopt${on?' on':''}${ok?'':' locked'}" data-rundeck="${d.id}" ${ok?'':'disabled'} aria-pressed="${on}">
+      <span class="deckprev" data-deck="${d.id}"><div class="card back"></div>${cardHTML({rank:'K',suit:'H'})}${ok?'':'<i class="lockbadge sm" aria-hidden="true">🔒︎</i>'}</span>
+      <span class="dtxt"><b>${i+1}. ${esc(d.name)}</b><span>${ok?esc(d.twist):`Win a run with the ${esc(DECKS[i-1].name)} to unlock.`}</span></span></button>`;}).join('')}</div>
+    <h3 class="sub">Difficulty</h3>
+    <div class="hubbtns" style="margin-top:0">${TIERS.map(t=>{const ok=tierUnlocked(t.id);return `<button class="btn${nr.tier===t.id?' hot':''}" data-runtier="${t.id}" ${ok?'':'disabled'} title="${esc(t.desc)}">${ok?'':'🔒︎ '}${esc(t.name)}</button>`;}).join('')}</div>
+    <p class="note">${esc(TIERS[tierIdx(nr.tier)].desc)}${tierUnlocked('silver')?'':' Win a run to unlock the Silver Road.'}</p>
+    <h3 class="sub">Token</h3>
+    ${meta.tokens.length?`<div class="hubbtns" style="margin-top:0"><button class="btn${!nr.token?' hot':''}" data-runtoken="">None</button>${meta.tokens.map(tk=>`<button class="btn${nr.token===tk?' hot':''}" data-runtoken="${tk}" title="${esc(TOKENS[tk].desc)}">${esc(TOKENS[tk].name)}</button>`).join('')}</div><p class="note">${nr.token?esc(TOKENS[nr.token].desc):'Bring one token into the run.'}</p>`:'<p class="note">Win runs to unlock tokens: small boosts you can bring into a run.</p>'}
+    <button class="btn hot" data-runstart style="width:100%;margin-top:10px;font-size:16px;padding:12px">Start the run</button>
+  </section>
+  <section class="panel" style="margin-top:14px">
+    <h2 style="font-size:22px">Learn</h2>
+    <div class="road">
+      ${tutRow(-2,T2,meta.roadTutDone,!meta.roadTutDone,{attr:'data-play="-2"',terms:'House rules, perks, chems and bounties'})}
+      ${tutRow(-1,{...TUTOR,place:'Rules refresher'},meta.tutorialDone,false,{attr:'data-play="-1"',terms:'New to Caravan? Start here.'})}
+    </div>
+  </section>
+  <section class="panel" style="margin-top:14px">
+    <h2 style="font-size:22px">Your record</h2>
+    <p class="note">Runs won: ${meta.runsWon||0} · Best: ${meta.bestStop>=RUN_STOPS.length?'Reached Vegas':meta.bestStop?`stop ${meta.bestStop+1}`:'none yet'}</p>
+    ${(meta.runHist||[]).length?`<div class="hist">${meta.runHist.slice(0,6).map(h=>`<div class="${h.result}"><b>${h.result==='won'?'Won':'Lost'}</b> ${esc(CHARS[h.char]?CHARS[h.char].name:'?')} · ${esc(DECKS[deckIdx(h.deck)].name)} · ${esc(TIERS[tierIdx(h.tier)].name)}${h.result==='lost'?` · stop ${h.stop+1}`:''} · ${h.won} tables</div>`).join('')}</div>`:''}
+  </section>`;
+}
+function renderRunOver(){
+  const r=run(),won=r.result==='won';
+  app.innerHTML=`
+  <div class="mbar">${backBtn('home','Modes')}</div>
+  <section class="panel result runover" style="margin:24px auto">
+    <img class="rivalhero" src="${portrait(r.char)}" alt="">
+    <h2 class="${won?'':'lost'}">${won?'You made it to Vegas':'Run over'}</h2>
+    <p>${won?`${esc(CHARS[r.char].name)} beat the Strip on the ${esc(TIERS[tierIdx(r.tier)].name)} with the ${esc(DECKS[deckIdx(r.deck)].name)}.`:`${esc(CHARS[r.char].name)} fell at ${esc(ROAD[RUN_STOPS[r.stop]].place)}, ${TABLE_KIND[r.table].toLowerCase()}.`}</p>
+    <p class="num">${r.won} tables won · ${r.skips} skipped · ${meta.caps} caps left</p>
+    ${won&&r.unlocked&&r.unlocked.length?`<h3 class="sub">Unlocked</h3><ul class="traits">${r.unlocked.map(u=>`<li class="pro"><b>+ ${esc(u)}</b></li>`).join('')}</ul>`:''}
+    <button class="btn hot" data-runnew>New run</button>
+  </section>`;
+}
+function renderEvent(){
+  const r=run(),ev=EVENTS[r.event];
+  if(!ev){eventDone();return renderRunShop();}
+  app.innerHTML=`
+  <div class="mbar">${backBtn('home','Modes')}${capsHTML(meta.caps)}</div>
+  <section class="hero small"><div class="neon sm" style="font-size:clamp(24px,7vw,40px)">On the road</div><p class="tagline">Between ${esc(ROAD[RUN_STOPS[r.stop-1]].place)} and ${esc(ROAD[RUN_STOPS[r.stop]].place)}</p></section>
+  <section class="panel eventcard">
+    <h2 style="font-size:26px;color:var(--neon)">${esc(ev.title)}</h2>
+    <p class="story">${esc(ev.text)}</p>
+    ${r.eventResult?`<p class="ex">${esc(r.eventResult)}</p><button class="btn hot" data-eventdone>Continue to the shop</button>`:
+      `<div class="spoils">${ev.choices.map((c,i)=>`<button class="spoil" data-eventpick="${i}" ${c.cost&&meta.caps<c.cost?'disabled':''}><b>${esc(c.label)}</b>${c.cost&&meta.caps<c.cost?'<span>Not enough caps.</span>':''}</button>`).join('')}</div>`}
+  </section>`;
+}
+let runShopTab='shop', armedSell=null;
+function renderRunShop(){
+  const r=run(),o=r.offers;if(!o)openShop();
+  const of=r.offers,slots=perkSlots(),full=meta.perks.length>=slots;
+  const sold=k=>of.sold[k];
+  const buyBtn=(key,price,dis)=>`<button class="btn${!dis&&meta.caps>=price?' hot':''}" data-rbuy="${key}" ${dis||meta.caps<price||sold(key)?'disabled':''}>${sold(key)?'Sold':capN(price)}</button>`;
+  const perkRow=(id,i)=>`<div class="prow"><div><b>${PERKS[id].name} <i class="rar rar-${PERK_RARITY[id]}">${PERK_RARITY[id]}</i></b><span>${esc(PERKS[id].desc)}</span></div>${buyBtn('perk'+i,perkRunPrice(id),full)}</div>`;
+  const deck=meta.deck.map((c,i)=>({...c,i})).sort(sortSpec);
+  app.innerHTML=`
+  <div class="mbar"><span class="pill">${esc(ROAD[RUN_STOPS[r.stop]].place)} · next: ${TABLE_KIND[r.table]}</span>${capsHTML(meta.caps)}</div>
+  ${runHeaderHTML()}
+  <section class="panel">
+    <div class="sect-h"><h2 style="font-size:26px">Trading post</h2><button class="btn hot" data-runnext>Next table →</button></div>
+    ${r.halfShop?'<p class="note" style="color:var(--sage)">Clearance Sale: everything is half price this visit.</p>':''}
+    <div class="tabs" role="group" aria-label="Shop section"><button class="btn" data-rtab="shop" aria-pressed="${runShopTab==='shop'}">Shop</button><button class="btn" data-rtab="deck" aria-pressed="${runShopTab==='deck'}">Your deck (${meta.deck.length})</button><button class="btn" data-rtab="perks" aria-pressed="${runShopTab==='perks'}">Your perks (${meta.perks.length}/${slots})</button></div>
+    ${runShopTab==='shop'?`
+      <h3 class="sub">Perks ${full?'<span class="note">· slots full, sell one first</span>':''}</h3>
+      <div class="plist">${of.perks.map(perkRow).join('')||'<p class="note">No perks left to offer.</p>'}</div>
+      <h3 class="sub">Crates</h3>
+      <div class="plist">${Object.entries(CRATES).map(([k,c])=>`<div class="prow"><div><b>${c.name}</b><span>${c.desc}</span></div>${buyBtn('crate-'+k,disc(c.price),k==='perk'&&full)}</div>`).join('')}</div>
+      <h3 class="sub">Cards</h3>
+      <div class="offers">${of.cards.map((c,i)=>`<div class="offer${sold('card'+i)?' sold':''}">${cardHTML(c)}<div class="what">${c.rank==='JK'?'Joker':isNum(c)?cardName(c):FACE_NAME[c.rank]+' '+SUIT_CH[c.suit]}${c.mod?`<br><b>${MODS[c.mod].name}:</b> ${esc(MODS[c.mod].desc)}`:''}</div>${buyBtn('card'+i,runCardPrice(c))}</div>`).join('')}</div>
+      <h3 class="sub">Workbench</h3>
+      <div class="prow"><div><b>${MODS[of.upgrade].name} upgrade</b><span>${esc(MODS[of.upgrade].desc)} Pick a number card from your deck to apply it.</span></div>${r.freeUpgrade?`<button class="btn hot" data-rbuy="upgrade">Free</button>`:buyBtn('upgrade',disc(5))}</div>
+      <h3 class="sub">Chems</h3>
+      <div class="plist">${of.chems.map((id,i)=>`<div class="prow"><div><b>${CHEMS[id].name}${meta.chems[id]?` ×${meta.chems[id]}`:''}</b><span>${esc(CHEMS[id].desc)}</span></div>${buyBtn('chem'+i,chemRunPrice(id),chemTotal()>=chemMax())}</div>`).join('')}</div>
+      ${of.voucher?`<h3 class="sub">Voucher <span class="note">· one per stop, lasts the whole run</span></h3><div class="prow"><div><b>${VOUCHERS[of.voucher].name}</b><span>${esc(VOUCHERS[of.voucher].desc)}</span></div>${buyBtn('voucher',disc(9))}</div>`:''}
+      <div class="hubbtns"><button class="btn" data-rreroll ${r.freeRerolls||meta.caps>=rerollCost()?'':'disabled'}>Reroll shop (${r.freeRerolls?'free':capN(rerollCost())})</button></div>`
+    :runShopTab==='deck'?`
+      <p class="note">Tap a card to sell it for 1 cap and thin your deck (at least ${MIN_DECK} cards). Upgraded cards show a tag.</p>
+      <div class="deckgrid">${deck.map(c=>`<button class="card-btn" data-rsell="${c.i}" ${meta.deck.length>MIN_DECK?'':'disabled'} style="${armedSell===c.i?'transform:translateY(-6px)':''}" aria-label="${cardName(c)}${c.mod?' '+MODS[c.mod].name:''}">${cardHTML(c)}</button>`).join('')}</div>
+      <p class="hint" style="text-align:left">${armedSell!=null&&meta.deck[armedSell]?`Tap ${cardName(meta.deck[armedSell])} again to sell it.`:''}</p>`
+    :`
+      <p class="note">You can run ${slots} perks. Sell one for half its price to make room.</p>
+      <div class="plist">${meta.perks.map(id=>`<div class="prow"><div><b>${PERKS[id].name} <i class="rar rar-${PERK_RARITY[id]}">${PERK_RARITY[id]}</i></b><span>${esc(PERKS[id].desc)}</span></div><button class="btn${armedSell==='p:'+id?' armed':''}" data-rsellperk="${id}">${armedSell==='p:'+id?'Tap to sell':'Sell '+capN(perkSellPrice(id))}</button></div>`).join('')||'<p class="note">No perks yet.</p>'}</div>`}
+  </section>
+  ${r.crate?crateHTML():''}${r.workbench?workbenchHTML():''}`;
+}
+function crateHTML(){
+  const c=run().crate;
+  const lab=o=>c.kind==='card'?{t:`${o.rank==='JK'?'Joker':cardName(o)}${o.mod?` · ${MODS[o.mod].name}`:''}`,d:o.mod?MODS[o.mod].desc:'Goes into your deck.',card:o}:c.kind==='perk'?{t:PERKS[o].name,d:PERKS[o].desc}:{t:CHEMS[o].name,d:CHEMS[o].desc};
+  return `<div class="overlay"><div class="panel result" style="text-align:left"><h2 style="font-size:26px;color:var(--neon)">${CRATES[c.kind].name}${c.free?' (free)':''}</h2><p>Pick one.</p>
+    <div class="spoils">${c.options.map((o,i)=>{const l=lab(o);return `<button class="spoil crateopt" data-cratepick="${i}">${l.card?cardHTML(l.card):''}<span><b>${esc(l.t)}</b><span>${esc(l.d)}</span></span></button>`;}).join('')}</div>
+    <button class="btn ghost" data-crateskip style="margin-top:10px">Take nothing</button></div></div>`;
+}
+function workbenchHTML(){
+  const w=run().workbench,deck=meta.deck.map((c,i)=>({...c,i})).filter(c=>isNum(c)&&c.mod!==w.mod).sort(sortSpec);
+  return `<div class="overlay"><div class="panel result" style="text-align:left"><h2 style="font-size:24px;color:var(--neon)">${MODS[w.mod].name} upgrade</h2><p>${esc(MODS[w.mod].desc)} Tap a card to upgrade it.</p>
+    <div class="deckgrid">${deck.map(c=>`<button class="card-btn" data-wbpick="${c.i}">${cardHTML(c)}</button>`).join('')}</div>
+    <button class="btn ghost" data-wbcancel style="margin-top:10px">Cancel</button></div></div>`;
+}
+function runShopBuy(key){
+  const r=run(),of=r.offers;if(of.sold[key])return;
+  const pay=n=>{if(meta.caps<n)return false;meta.caps-=n;return true;};
+  if(key.startsWith('perk')){const id=of.perks[+key.slice(4)];if(meta.perks.length>=perkSlots())return;if(!pay(perkRunPrice(id)))return;meta.perks.push(id);meta.equipped=meta.perks;of.sold[key]=1;if(meta.perks.length>=5)unlock('loaded');}
+  else if(key.startsWith('crate-')){const k=key.slice(6);if(!pay(disc(CRATES[k].price)))return;openCrate(k);}
+  else if(key.startsWith('card')){const c=of.cards[+key.slice(4)];if(!pay(runCardPrice(c)))return;meta.deck.push({...c});of.sold[key]=1;}
+  else if(key.startsWith('chem')){const id=of.chems[+key.slice(4)];if(chemTotal()>=chemMax())return;if(!pay(chemRunPrice(id)))return;meta.chems[id]++;}
+  else if(key==='upgrade'){if(r.freeUpgrade){r.freeUpgrade=0;}else if(!pay(disc(5)))return;r.workbench={mod:of.upgrade};of.sold[key]=1;}
+  else if(key==='voucher'){if(!pay(disc(9)))return;r.vouchers.push(of.voucher);r.voucherStop=r.stop;of.sold[key]=1;}
+  save();
+}
+function renderRoadRun(){
+  const r=run();
+  if(r&&r.phase!=='over'&&meta.char!==r.char)meta.char=r.char;
+  if(!r||r.phase==='none')return renderRunSetup();
+  if(r.phase==='over')return renderRunOver();
+  if(r.phase==='event')return renderEvent();
+  if(r.phase==='shop')return renderRunShop();
+  return renderRunMap();
+}
+function runResultHTML(ov){
+  const won=ov.winner==='p',r=run();
+  const lines=[];
+  if(won){lines.push(`${ov.win} for the win`);if(ov.bountyWon)lines.push(`${ov.bountyWon} bounty`);}
+  for(const x of (ov.extras||[]))lines.push(x);
+  if(ov.brewed)lines.push(`Nuke brewed a ${CHEMS[ov.brewed].name}`);
+  if(ov.newChar)lines.push(`${CHARS[ov.newChar].name} unlocked`);
+  const title=won?(r.phase==='over'?'You made it to Vegas!':'Table won'):ov.saved?'Saved!':'Run over';
+  return `<div class="overlay"><div class="panel result">
+    <h2 class="${won||ov.saved?'':'lost'}">${title}</h2>
+    <p>${esc(ov.reason)}</p>
+    ${ov.delta?`<div class="gain num">${ov.delta>0?`+${capN(ov.delta)}`:`−${capN(-ov.delta)}`}</div>`:''}
+    ${lines.length?`<p style="margin-top:-8px">${esc(lines.join(' · '))}</p>`:''}
+    ${ov.saved?'<p>Your Second Wind kicked in. You get another shot at this table.</p>':''}
+    ${ov.unlocked&&ov.unlocked.length?`<p>Unlocked: ${esc(ov.unlocked.join(', '))}</p>`:''}
+    <p>You have ${meta.caps} caps.</p>
+    <button class="btn hot" data-runcontinue>${ov.runOver?'See how it went':r&&r.phase==='over'?'Celebrate':r&&r.phase==='event'?'Hit the road':r&&r.phase==='shop'?'To the trading post':'Back to the table'}</button>
+  </div></div>`;
+}
+function handleRunClick(d){
+  const r=run();
+  if('rundeck' in d){meta.newRun.deck=d.rundeck;render();return true;}
+  if('runtier' in d){meta.newRun.tier=d.runtier;render();return true;}
+  if('runtoken' in d){meta.newRun.token=d.runtoken||null;render();return true;}
+  if('runstart' in d){if(!meta.char){screen='pickchar';render();return true;}startRun();runPre=false;runArmed=false;render();window.scrollTo(0,0);return true;}
+  if('runnew' in d){meta.run=null;save();render();window.scrollTo(0,0);return true;}
+  if('runabandon' in d){if(runArmed){runArmed=false;runLost();r.result='lost';save();}else runArmed=true;render();return true;}
+  if('runplay' in d){runPre=true;render();return true;}
+  if('runcancel' in d){runPre=false;render();return true;}
+  if('runconfirm' in d){runPre=false;startRunTable();return true;}
+  if('runskip' in d){skipTable();render();return true;}
+  if('runcontinue' in d){G=null;screen='road';render();window.scrollTo(0,0);return true;}
+  if('eventpick' in d){eventChoose(+d.eventpick);render();return true;}
+  if('eventdone' in d){eventDone();render();return true;}
+  if('runnext' in d){r.phase='table';r.offers=null;r.halfShop=false;armedSell=null;runShopTab='shop';save();render();window.scrollTo(0,0);return true;}
+  if('rtab' in d){runShopTab=d.rtab;armedSell=null;render();return true;}
+  if('rbuy' in d){runShopBuy(d.rbuy);render();return true;}
+  if('rreroll' in d){if(r.freeRerolls){r.freeRerolls--;}else{const c=rerollCost();if(meta.caps<c)return true;meta.caps-=c;r.rerolls=(r.rerolls||0)+1;}rerollShop();save();render();return true;}
+  if('cratepick' in d){takeCrate(+d.cratepick);render();return true;}
+  if('crateskip' in d){r.crate=null;save();render();return true;}
+  if('wbpick' in d){const c=meta.deck[+d.wbpick];if(c&&r.workbench){c.mod=r.workbench.mod;r.workbench=null;if(modCount()>=5)unlock('tinker');save();}render();return true;}
+  if('wbcancel' in d){r.workbench=null;save();render();return true;}
+  if('rsell' in d){const i=+d.rsell;if(armedSell===i){if(meta.deck.length>MIN_DECK){meta.deck.splice(i,1);meta.caps+=1;save();}armedSell=null;}else armedSell=i;render();return true;}
+  if('rsellperk' in d){const id=d.rsellperk,k='p:'+id;if(armedSell===k){meta.perks=meta.perks.filter(p=>p!==id);meta.equipped=meta.perks;meta.caps+=perkSellPrice(id);armedSell=null;save();}else armedSell=k;render();return true;}
+  return false;
+}
+
 // ---------- boot ----------
 function start(data){
   meta=migrate((data&&data.meta)||load()||freshMeta());
@@ -2985,7 +3701,8 @@ function start(data){
   achSilent=true;const retro=checkState();achSilent=false;
   if(retro>0){save();setTimeout(()=>toast({name:`${retro} achievement${retro>1?'s':''} from past play`,desc:'Open Achievements to see them.'}),900);}if(screen==='hub')screen='road';
   if(G&&!G.rules)G.rules=baseRules();
-  applyLook();if(!window.__art){window.__art=1;initArt();try{loadPortraitFiles();}catch(e){}}drawSky();render();
+  applyLook();if(!window.__art){window.__art=1;initArt();try{loadDeckTextures();}catch(e){}try{loadPortraitFiles();}catch(e){}}
+  if(meta.convertNote!=null){const n=meta.convertNote;delete meta.convertNote;save();setTimeout(()=>toast({label:'Update',name:'The Road is now a roguelite',desc:n?`Your old progress became ${n} starting token${n>1?'s':''}. Pick one when you start a run.`:'Every run starts fresh with the Plain deck.'}),1200);}drawSky();render();
   if(screen==='match'&&G&&!G.over&&G.turn==='a'){busy=true;render();setTimeout(aiTurn,600);}
 }
 window.claude?.hot?.snapshot?.(()=>({meta,G,screen}));
