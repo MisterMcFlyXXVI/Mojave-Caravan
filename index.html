@@ -486,6 +486,7 @@ body[data-screen="home"] .wordmark{visibility:hidden}
 .bets .btn{padding:6px 10px;font-size:13px}
 
 /* ---- The Road: runs ---- */
+.opt.packopt{cursor:default}.opt.packopt.owned{border-color:#a9c08b66}.opt.packopt.owned .req{color:var(--sage)}
 .packdots{display:flex;gap:2px;justify-content:center;flex-wrap:wrap;max-width:56px}
 .packdot{display:inline-block;width:9px;height:13px;border-radius:2px;background:var(--back-bg);border:1px solid var(--back-border,#0008);flex:none}
 .packstrip{display:flex;flex-wrap:wrap;gap:4px 10px;margin-top:6px}
@@ -808,7 +809,7 @@ function deckSummary(spec){
 // Your starter deck is one pack in any of the free designs. Each Wasteland collection back you earn is one more pack.
 const starterBack=()=>{const L=meta&&meta.look;if(!L)return 'sunburst';const b=LOOKS.back.find(o=>o.id===L.back);if(b&&!b.art)return b.id;const st=LOOKS.back.find(o=>o.id===L.starter&&!o.art);return st?st.id:'sunburst';};
 const earnedPacks=()=>LOOKS.back.filter(b=>b.art&&lookUnlocked(b)).map(b=>b.id);
-const packList=()=>{const st=starterBack(),earned=earnedPacks(),main=meta&&meta.look&&earned.includes(meta.look.back)?meta.look.back:st;return [main,...[st,...earned].filter(x=>x!==main)];};
+const packList=()=>[starterBack(),...earnedPacks()];
 const packCount=()=>packList().length;
 const backName=id=>(LOOKS.back.find(b=>b.id===id)||{name:id}).name;
 const capFor=k=>k==='JK'?2*packCount():packCount();
@@ -862,7 +863,7 @@ const LOOKS={
 const lookUnlocked=item=>!item.unlock||!!(meta.ach&&meta.ach[item.unlock])||meta.look.unlocked.includes(item.id);
 const backReward=achId=>LOOKS.back.find(b=>b.unlock===achId);
 function applyLook(){
-  {const b=LOOKS.back.find(o=>o.id===meta.look.back);if(!b||!lookUnlocked(b))meta.look.back='sunburst';}
+  {const b=LOOKS.back.find(o=>o.id===meta.look.back);if(!b||b.art||!lookUnlocked(b))meta.look.back=starterBack();}
   const L=meta.look, el=document.documentElement;
   el.dataset.font=L.font||'deco'; el.dataset.face=L.face; el.dataset.back=L.back; el.dataset.mat=L.mat; el.dataset.four=L.four?'1':'0';
 }
@@ -1228,6 +1229,7 @@ function renderLook(){
       <div class="entry" style="top:calc(var(--off) * 2)">${cardHTML({rank:'10',suit:'D'})}</div></div></div>
     <div class="prevrow">${cardHTML({rank:'A',suit:'S'})}${cardHTML({rank:'Q',suit:'H'})}${cardHTML({rank:'JK',suit:null})}<div class="card back"></div></div></div>`;
   const opt=(kind,o,inner)=>{const ok=lookUnlocked(o),a=o.unlock&&ACH.find(x=>x.id===o.unlock);
+    if(kind==='back'&&o.art)return `<div class="opt packopt${ok?' owned':' locked'}" data-back="${o.id}"><span class="optart">${inner}${ok?'':'<i class="lockbadge sm" aria-hidden="true">🔒︎</i>'}</span><span>${esc(o.name)}</span>${ok?'<small class="req">In your collection</small>':a?`<small class="req">${esc(a.name)}: ${esc(a.desc)}</small>`:''}</div>`;
     return `<button class="opt${ok?'':' locked'}" data-look="${kind}:${o.id}" data-${kind}="${o.id}" aria-pressed="${L[kind]===o.id}" ${ok?'':'disabled'}><span class="optart">${inner}${ok?'':'<i class="lockbadge sm" aria-hidden="true">🔒︎</i>'}</span><span>${esc(o.name)}</span>${!ok&&a?`<small class="req">${esc(a.name)}: ${esc(a.desc)}</small>`:''}</button>`;};
   app.innerHTML=`
   <div class="mbar">${backBtn(lookFrom,'Back')}</div>
@@ -1243,7 +1245,7 @@ function renderLook(){
     <p class="note">You start with one standard 54-card deck. Pick any of these designs for it. They’re different looks for the same deck, not extra decks.</p>
     <div class="opts">${LOOKS.back.filter(o=>!o.art).map(o=>opt('back',o,'<div class="card back"></div>')).join('')}</div>
     <h3 class="sub">Wasteland collection <span class="pill num" style="font-size:12px;vertical-align:middle">${LOOKS.back.filter(o=>o.art&&lookUnlocked(o)).length}/${LOOKS.back.filter(o=>o.art).length}</span></h3>
-    <p class="note">Each of these is an extra <b>pack</b>, earned through achievements. Every pack you own lets you hold one more copy of every card in Classic. Pick one here to make it the back you see first.</p>
+    <p class="note">Each of these is an extra <b>pack</b>, earned through achievements. Every pack you own lets you hold one more copy of every card in Classic. Your deck is shuffled every hand, so the cards from all your packs mix together, and whichever card is on top shows its own pack’s back.</p>
     <div class="opts">${LOOKS.back.filter(o=>o.art).map(o=>opt('back',o,'<div class="card back"></div>')).join('')}</div>
     <h3 class="sub">Play mat</h3>
     <div class="opts">${LOOKS.mat.map(o=>opt('mat',o,'<div class="table swatch"></div>')).join('')}</div>
@@ -2022,7 +2024,7 @@ app.addEventListener('click',e=>{
   if('auth' in d){doAuth(d.auth);return;}
   if('choose' in d){const pc=pendingChoice;pendingChoice=null;if(!pc)return;
     if(d.choose==='cloud'){adoptCloud(pc.cloud);render();}else{save();pushNow();render();}return;}
-  if('look' in d){const [k,v]=d.look.split(':');const item=LOOKS[k]&&LOOKS[k].find(o=>o.id===v);if(item&&lookUnlocked(item)){meta.look[k]=v;if(k==='back'&&!item.art)meta.look.starter=v;applyLook();if(k!=='face')unlock('style');save();}render();return;}
+  if('look' in d){const [k,v]=d.look.split(':');const item=LOOKS[k]&&LOOKS[k].find(o=>o.id===v);if(item&&lookUnlocked(item)&&!(k==='back'&&item.art)){meta.look[k]=v;if(k==='back'&&!item.art)meta.look.starter=v;applyLook();if(k!=='face')unlock('style');save();}render();return;}
   if('togglefour' in d){meta.look.four=!meta.look.four;applyLook();if(meta.look.four)unlock('four');save();render();return;}
   if('go' in d){
     if(d.go==='look'&&screen!=='look')lookFrom=screen;
