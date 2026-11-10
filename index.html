@@ -883,7 +883,7 @@ const STARTERS={
 const CL_BUDGET=160;
 const deckLimitHTML=()=>{const n=packCount();return `<div class="explain">
   <p><b>Packs.</b> A pack is one of every card plus 2 Jokers, and it never has two identical cards. So your second J♠ has to come from a different pack than your first. In play, each card shows its own pack’s back.</p>
-  <p><b>You own ${n} pack${n>1?'s':''}</b>: your starter deck${n>1?` plus ${n-1} from the Wasteland collection`:''}. So you can have up to ${n} of any one card (same value and suit) and up to ${2*n} Jokers. Earn Wasteland collection card backs through achievements to get more packs.</p>
+  <p><b>You own ${n} pack${n>1?'s':''}</b>: your starter deck${n>1?` plus ${n-1} earned pack${n>2?'s':''}`:''}. So you can have up to ${n} of any one card (same value and suit) and up to ${2*n} Jokers. Earn more packs through achievements.</p>
   ${packStrip()}
 </div>`;};
 function deckSummary(spec){
@@ -1231,7 +1231,7 @@ const RULES_HTML=`
 <ul>
 <li>If you have no cards left in your hand or deck, you lose the hand.</li>
 <li>If a Jack or Joker leaves two cards of the same value side by side, the caravan keeps the direction it had.</li>
-<li>Decks hold at least 30 cards. A pack has only one of each card, so you can have as many copies of a card (like J♠) as you own packs: your starter deck plus each Wasteland collection back you’ve earned. Jokers come two per pack.</li>
+<li>Decks hold at least 30 cards. A pack has only one of each card, so you can have as many copies of a card (like J♠) as you own packs: your starter deck plus each pack you’ve earned. Jokers come two per pack.</li>
 </ul>`;
 const RULES_LIST=RULES_HTML;
 const backBtn=(to,label)=>`<button class="btn" data-go="${to}">← ${label}</button>`;
@@ -1264,11 +1264,11 @@ function renderLook(){
     <div class="opts">${LOOKS.face.map(o=>opt('face',o,`<span class="duo">${cardHTML({rank:'7',suit:'H'})}${cardHTML({rank:'K',suit:'S'})}</span>`)).join('')}</div>
     <h3 class="sub">Card font</h3>
     <div class="opts">${LOOKS.font.map(o=>opt('font',o,`<span class="duo">${cardHTML({rank:'10',suit:'H'})}${cardHTML({rank:'Q',suit:'S'})}</span>`)).join('')}</div>
-    <h3 class="sub">Starter deck design</h3>
-    <p class="note">You start with one standard 54-card deck. Pick any of these designs for it. They’re different looks for the same deck, not extra decks.</p>
+    <h3 class="sub">Classic Card Backs</h3>
+    <p class="note">You start with one standard 54-card deck. Pick any of these backs for it, free. They’re different looks for that same deck, not extra cards.</p>
     <div class="opts">${LOOKS.back.filter(o=>!o.art).map(o=>opt('back',o,'<div class="card back"></div>')).join('')}</div>
-    <h3 class="sub">Wasteland collection <span class="pill num" style="font-size:12px;vertical-align:middle">${LOOKS.back.filter(o=>o.art&&lookUnlocked(o)).length}/${LOOKS.back.filter(o=>o.art).length}</span></h3>
-    <p class="note">Each of these is an extra <b>pack</b>, earned through achievements. Every pack you own lets you hold one more copy of every card in Classic. Your deck is shuffled every hand, so the cards from all your packs mix together, and whichever card is on top shows its own pack’s back.</p>
+    <h3 class="sub">Packs <span class="pill num" style="font-size:12px;vertical-align:middle">${LOOKS.back.filter(o=>o.art&&lookUnlocked(o)).length}/${LOOKS.back.filter(o=>o.art).length}</span></h3>
+    <p class="note">Each pack is a full extra set of cards with its own back, earned through achievements. Every pack you own lets you hold one more copy of every card in Classic. Your deck is shuffled every hand, so the cards from all your packs mix together, and whichever card is on top shows its own pack’s back.</p>
     <div class="opts">${LOOKS.back.filter(o=>o.art).map(o=>opt('back',o,'<div class="card back"></div>')).join('')}</div>
     <h3 class="sub">Play mat</h3>
     <div class="opts">${LOOKS.mat.map(o=>opt('mat',o,'<div class="table swatch"></div>')).join('')}</div>
@@ -2009,7 +2009,7 @@ const ACH=[
   {id:'comeback',cat:4,name:'Back From Broke',desc:'Win a table while holding 2 caps or fewer.'},
   {id:'greg',cat:4,name:'Hey, Buddy!',desc:'Unlock Greg.'},
   {id:'jeanita',cat:4,name:'Long Distance Call',desc:'Unlock Jeanita.'},
-  {id:'style',cat:5,name:'Dressed to Deal',desc:'Change your card back or play mat.'},
+  {id:'style',cat:5,name:'Dressed to Deal',desc:'Change your Classic Card Back or play mat.'},
   {id:'four',cat:5,name:'Seeing in Color',desc:'Try four-color suits.'},
 ];
 let toastQ=[], toastOn=false, achSilent=false;
@@ -2095,7 +2095,7 @@ function renderAch(){
     ${ACH_CATS.map((cat,ci)=>`<h3 class="sub">${cat}</h3><div class="achlist">${ACH.filter(a=>a.cat===ci).map(a=>{
       const when=meta.ach[a.id], p=a.prog&&!when?a.prog():null;
       const rw=backReward(a.id);
-      return `<div class="achrow${when?' got':''}"><span class="medal" aria-hidden="true">★</span><div><b>${esc(a.name)}</b><span>${esc(a.desc)}</span>${rw?`<span class="reward">Reward: ${esc(rw.name)} card back</span>`:''}
+      return `<div class="achrow${when?' got':''}"><span class="medal" aria-hidden="true">★</span><div><b>${esc(a.name)}</b><span>${esc(a.desc)}</span>${rw?`<span class="reward">Reward: ${esc(rw.name)} pack</span>`:''}
         ${when?`<small>Earned ${new Date(when).toLocaleDateString()}</small>`:p?`<div class="achprog"><i style="width:${Math.min(100,p[0]/p[1]*100)}%"></i></div><small>${Math.min(p[0],p[1])} / ${p[1]}</small>`:''}</div></div>`;}).join('')}</div>`).join('')}
   </section>`;
 }
@@ -2147,7 +2147,7 @@ const FAQ=[
   ['How do I earn caps?','On the Road, win tables, hit bounties at Boss tables and let your caps earn interest (1 for every 5 you hold). Road caps only last for the run. In the Classic campaign, win your bets. The two modes keep separate wallets.'],
   ['I lost a table. Is that it?','On the Road, yes: a loss ends the run, and the next one starts fresh from the Plain deck. A Second Wind token or the Guardian Angel perk can save you once. In the Classic campaign, play a Friendly game for no stake, or sell spare cards.'],
   ['Are these the real rules?','Classic follows the Caravan rules from Fallout: New Vegas. The Road uses the same rules underneath, with perks, chems, house rules and bounties on top.'],
-  ['How many of one card can I have?','In Classic, one copy per pack. You start with one pack, your starter deck, in whichever free design you pick. Each Wasteland collection card back you earn through achievements is another pack. So two J♠ have to come from two different packs, and in play you can see which pack each card came from by its back. The Road has no limit.'],
+  ['How many of one card can I have?','In Classic, one copy per pack. You start with one pack, your starter deck, in whichever Classic Card Back you pick. Each pack you earn through achievements is another full set of cards. So two J♠ have to come from two different packs, and in play you can see which pack each card came from by its back. The Road has no limit.'],
   ['Does my progress sync?','Yes, once you sign in under Settings (the gear). Everything syncs: progress, decks, achievements and your table style.'],
   ['How do I put it on my home screen?','On iPhone, open the game in Safari, tap Share, then Add to Home Screen. It opens full screen like an app.'],
 ];
@@ -2163,7 +2163,7 @@ function renderHelp(){
       <li>Start with one full 54-card pack and ${CAMP_START} caps. Beat eight dealers in order.</li>
       <li>Pick your bet before each game, up to the dealer’s table limit. Win and they pay it; lose and you pay it. A Friendly game risks nothing.</li>
       <li>Buy cards and full sets from the vendor, and sell spares for half. Build your deck from your collection for free with the pencil at the top.</li>
-      <li>You start with one pack (your starter deck). Each Wasteland collection card back you earn is another pack. You can own one copy of each card per pack (Jokers: two per pack).</li></ul></details>
+      <li>You start with one pack (your starter deck). Each pack you earn through achievements adds another full set of cards. You can own one copy of each card per pack (Jokers: two per pack).</li></ul></details>
     <h3 class="sub">FAQ</h3>
     <div class="faq">${FAQ.map(([q,a])=>`<details><summary>${esc(q)}</summary><p>${esc(a)}</p></details>`).join('')}</div>
   </section>`;
@@ -2208,13 +2208,16 @@ function renderCustom(){
     <div class="road">
       ${row('Classic single game',C.deck?`${C.deck.length} cards · bought with a ${CL_BUDGET}-cap budget`:'No deck yet',`<button class="btn" data-build="quick">${C.deck?'Edit':'Buy'}</button>`,C.deck?C.deck.length:'–')}
       ${row('Classic campaign',cp?`${countsSize(cp.deck)} cards in your deck · ${countsSize(cp.coll)} in your collection`:'Start the campaign to get your first set.',cp?`<button class="btn" data-build="camp">Edit</button>`:`<button class="btn" data-go="classic">Go</button>`,cp?countsSize(cp.deck):'–')}
-      ${row('The Road','Your Road deck is rebuilt every run, starting from the Plain deck. Change its look with the card back and face above.','<button class="btn" data-go="road">Go</button>',runLive()?meta.deck.length:'–')}
+      ${row('The Road','Your Road deck is rebuilt every run, starting from the Plain deck. Change its look with your Classic Card Back and card face above.','<button class="btn" data-go="road">Go</button>',runLive()?meta.deck.length:'–')}
     </div>
     <h3 class="sub">Cards &amp; table</h3>
     <div class="road">
       <div class="stop"><div class="mile"><div class="card back" style="--cw:30px"></div></div>
-        <div><div class="place">Look</div><div class="who">${esc(nm('font',L.font||'deco'))} font · ${esc(nm('face',L.face))} faces · ${esc(nm('back',L.back))} back · ${esc(nm('mat',L.mat))}${L.four?' · four-color suits':''}</div></div>
+        <div><div class="place">Look</div><div class="who">${esc(nm('font',L.font||'deco'))} font · ${esc(nm('face',L.face))} faces · ${esc(nm('back',L.back))} Classic Card Back · ${esc(nm('mat',L.mat))}${L.four?' · four-color suits':''}</div></div>
         <button class="btn" data-go="look">Change</button></div>
+      <div class="stop"><div class="mile num">${packCount()}</div>
+        <div><div class="place">Packs</div><div class="who">${packCount()===1?'Just your starter deck so far.':`Your starter deck plus ${packCount()-1} earned: ${packList().slice(1).map(backName).join(', ')}.`} Earn more through achievements.</div></div>
+        <button class="btn" data-go="ach">Achievements</button></div>
     </div>
   </section>`;
 }
