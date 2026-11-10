@@ -486,6 +486,16 @@ body[data-screen="home"] .wordmark{visibility:hidden}
 .bets .btn{padding:6px 10px;font-size:13px}
 
 /* ---- The Road: runs ---- */
+.packdots{display:flex;gap:2px;justify-content:center;flex-wrap:wrap;max-width:56px}
+.packdot{display:inline-block;width:9px;height:13px;border-radius:2px;background:var(--back-bg);border:1px solid var(--back-border,#0008);flex:none}
+.packstrip{display:flex;flex-wrap:wrap;gap:4px 10px;margin-top:6px}
+.packchip{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--muted)}
+.explain{margin:10px 0;padding:10px 12px;border-radius:8px;background:#ffa4490f;border:1px solid #ffa44933;font-size:13px;line-height:1.5}
+.explain p{margin:0 0 6px}.explain p:last-child{margin:0}
+.explain b{color:var(--neon)}
+ul.steps{margin:6px 0 4px;padding-left:18px;font-size:13.5px;line-height:1.5;color:var(--bone)}
+ul.steps li{margin-bottom:3px}
+.spoil span+span{color:var(--sage);font-size:12px}
 html.matt{filter:grayscale(1) contrast(.92);transition:filter .6s}
 html{transition:filter .6s}
 .traits li.meh b{color:var(--muted)}
@@ -570,7 +580,7 @@ let _uid=0;
 const mk=(rank,suit)=>({id:'c'+(++_uid)+'_'+Math.random().toString(36).slice(2,6),rank,suit});
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
 
-function buildDeck(spec){return shuffle(spec.map((s,i)=>{const c=mk(s.rank,s.suit);if(s.mod)c.mod=s.mod;c.si=i;return c;}));}
+function buildDeck(spec){return shuffle(spec.map((s,i)=>{const c=mk(s.rank,s.suit);if(s.mod)c.mod=s.mod;if(s.pack)c.pack=s.pack;c.si=i;return c;}));}
 function baseNumbers(){const out=[];for(const s of SUITS)for(const r of NUM_RANKS)out.push({rank:r,suit:s});return out;}
 function addFaces(spec,extra){
   for(const [rank,n] of Object.entries(extra)){
@@ -730,7 +740,7 @@ function chooseAIMove(g,side,noise){
 }
 function newMatch(playerSpec,oppSpec,oppIndex,rules){
   const R=rules||baseRules();
-  const g={p:{deck:buildDeck(playerSpec),hand:[],cv:[[],[],[]]},a:{deck:buildDeck(oppSpec),hand:[],cv:[[],[],[]]},
+  const g={p:{deck:buildDeck(playerSpec),hand:[],cv:[[],[],[]]},a:{deck:buildDeck(oppSpec.some(c=>c.pack)?oppSpec:withPacks(oppSpec,typeof dealerPacks==='function'&&typeof LOOKS!=='undefined'?dealerPacks(String(oppIndex)+':'+oppSpec.length):[null])),hand:[],cv:[[],[],[]]},
     turn:'p',setupLeft:{p:3,a:3},log:[],over:null,opp:oppIndex,fx:null,rules:R};
   for(let i=0;i<R.deal.p;i++)g.p.hand.push(g.p.deck.pop());
   for(let i=0;i<R.deal.a;i++)g.a.hand.push(g.a.deck.pop());
@@ -778,12 +788,35 @@ const nums=(skip=[])=>baseNumbers().filter(c=>!skip.includes(c.rank));
 const STARTERS={
   standard:{name:'Mojave Standard',desc:'Every number card plus a few of each face. Steady and forgiving.',build:()=>addFaces(nums(),{J:2,Q:2,K:2,JK:1})},
   royal:{name:'High Roller',desc:'No Aces, 2s or 3s. Four Kings. Hits the sell range fast, busts if you’re careless.',build:()=>addFaces(nums(['A','2','3']),{J:2,Q:1,K:4,JK:1})},
-  saboteur:{name:'Saboteur',desc:'No Aces, five Jacks and two Jokers. Wins by wrecking the other side.',build:()=>addFaces(nums(['A']),{J:5,Q:1,K:1,JK:2})},
+  saboteur:{name:'Saboteur',desc:'No Aces, every Jack and both Jokers. Wins by wrecking the other side.',build:()=>addFaces(nums(['A']),{J:4,Q:1,K:1,JK:2})},
 };
 // Classic card buy
 // New Vegas rule: no two copies of a card from the same set. A set is 52 cards + 2 Jokers.
-const SETS=4, CL_BUDGET=160;
-const capFor=k=>k==='JK'?2*SETS:SETS;
+const CL_BUDGET=160;
+const deckLimitHTML=()=>{const n=packCount();return `<div class="explain">
+  <p><b>Packs.</b> A pack is one of every card plus 2 Jokers, and it never has two identical cards. So your second J♠ has to come from a different pack than your first. In play, each card shows its own pack’s back.</p>
+  <p><b>You own ${n} pack${n>1?'s':''}</b>: your starter deck${n>1?` plus ${n-1} from the Wasteland collection`:''}. So you can have up to ${n} of any one card (same value and suit) and up to ${2*n} Jokers. Earn Wasteland collection card backs through achievements to get more packs.</p>
+  ${packStrip()}
+</div>`;};
+function deckSummary(spec){
+  const n=spec.filter(isNum).length,cnt=r=>spec.filter(c=>c.rank===r).length;
+  const nr=[...new Set(spec.filter(isNum).map(c=>c.rank))];const miss=NUM_RANKS.filter(r=>!nr.includes(r));
+  const face=[['J','Jack'],['Q','Queen'],['K','King'],['JK','Joker']].map(([r,w])=>cnt(r)?`${cnt(r)} ${w}${cnt(r)>1?'s':''}`:null).filter(Boolean);
+  return `${spec.length} cards: ${n} numbers${miss.length?` (no ${miss.map(r=>r==='A'?'Aces':r+'s').join(', ')})`:' (every number, all four suits)'}, ${face.join(', ')}.`;
+}
+// Packs: every card back you own is a pack. One copy of each card per pack (Jokers: two per pack).
+// Your starter deck is one pack in any of the free designs. Each Wasteland collection back you earn is one more pack.
+const starterBack=()=>{const L=meta&&meta.look;if(!L)return 'sunburst';const b=LOOKS.back.find(o=>o.id===L.back);if(b&&!b.art)return b.id;const st=LOOKS.back.find(o=>o.id===L.starter&&!o.art);return st?st.id:'sunburst';};
+const earnedPacks=()=>LOOKS.back.filter(b=>b.art&&lookUnlocked(b)).map(b=>b.id);
+const packList=()=>{const st=starterBack(),earned=earnedPacks(),main=meta&&meta.look&&earned.includes(meta.look.back)?meta.look.back:st;return [main,...[st,...earned].filter(x=>x!==main)];};
+const packCount=()=>packList().length;
+const backName=id=>(LOOKS.back.find(b=>b.id===id)||{name:id}).name;
+const capFor=k=>k==='JK'?2*packCount():packCount();
+const packOf=(k,i,packs)=>packs[Math.min(packs.length-1,k==='JK'?Math.floor(i/2):i)];
+function withPacks(spec,packs){const seen={};return spec.map(c=>{const k=keyOf(c),i=seen[k]||0;seen[k]=i+1;return {...c,pack:packOf(k,i,packs)};});}
+function dealerPacks(name){const mine=meta&&meta.look&&meta.look.back;const free=LOOKS.back.filter(b=>!b.art&&b.id!==mine).map(b=>b.id);let h=0;for(const ch of String(name))h=(h*31+ch.charCodeAt(0))>>>0;const sig=free[h%free.length];return [sig,...shuffle(free.filter(x=>x!==sig))];}
+const packDots=(k,n)=>{const ps=packList();return n?`<div class="packdots">${Array.from({length:n},(_,i)=>{const id=packOf(k,i,ps);return `<span class="packdot" data-back="${id}" title="${esc(backName(id))}"></span>`;}).join('')}</div>`:'';};
+const packStrip=()=>`<div class="packstrip">${packList().map(id=>`<span class="packchip"><span class="packdot" data-back="${id}"></span>${esc(backName(id))}</span>`).join('')}</div>`;
 function clPrice(rank){
   if(rank==='JK')return 8; if(rank==='K')return 6; if(rank==='J')return 5; if(rank==='Q')return 3;
   const v=rank==='A'?1:+rank; return v<=4?2:v<=7?3:4;
@@ -802,6 +835,7 @@ let buildDraft=null;
 const LOOKS={
   font:[{id:'deco',name:'Deco'},{id:'pixel',name:'Pixel'},{id:'western',name:'Western'},{id:'typewriter',name:'Typewriter'},{id:'stencil',name:'Stencil'},{id:'classic',name:'Classic'},{id:'marker',name:'Marker'},{id:'atomic',name:'Atomic'}],
   face:[{id:'bone',name:'Bone'},{id:'sand',name:'Sun-bleached'},{id:'night',name:'Midnight'},{id:'contrast',name:'High contrast'}],
+  // The first 11 are free designs for your starter deck. The art backs below are extra packs, earned through achievements.
   back:[{id:'sunburst',name:'Sunburst'},{id:'cap',name:'Bottle cap'},{id:'stripe',name:'Barber pole'},{id:'dusk',name:'Mojave dusk'},{id:'star',name:'Lone star'},
     {id:'blood',name:'Blood-spattered'},{id:'uranium',name:'Uranium glow'},{id:'cowhide',name:'Cowhide'},{id:'rust',name:'Rusted steel'},{id:'shot',name:'Shot up'},{id:'map',name:'Old trail map'},
     // Unlockable backs: art comes from the "cardbacks" folder (file name = id). unlock = achievement id.
@@ -1173,7 +1207,7 @@ const RULES_HTML=`
 <ul>
 <li>If you have no cards left in your hand or deck, you lose the hand.</li>
 <li>If a Jack or Joker leaves two cards of the same value side by side, the caravan keeps the direction it had.</li>
-<li>Decks hold at least 30 cards. You can’t have two of the same card from one set, but you can mix sets.</li>
+<li>Decks hold at least 30 cards. A pack has only one of each card, so you can have as many copies of a card (like J♠) as you own packs: your starter deck plus each Wasteland collection back you’ve earned. Jokers come two per pack.</li>
 </ul>`;
 const RULES_LIST=RULES_HTML;
 const backBtn=(to,label)=>`<button class="btn" data-go="${to}">← ${label}</button>`;
@@ -1205,11 +1239,12 @@ function renderLook(){
     <div class="opts">${LOOKS.face.map(o=>opt('face',o,`<span class="duo">${cardHTML({rank:'7',suit:'H'})}${cardHTML({rank:'K',suit:'S'})}</span>`)).join('')}</div>
     <h3 class="sub">Card font</h3>
     <div class="opts">${LOOKS.font.map(o=>opt('font',o,`<span class="duo">${cardHTML({rank:'10',suit:'H'})}${cardHTML({rank:'Q',suit:'S'})}</span>`)).join('')}</div>
-    <h3 class="sub">Card backs</h3>
-    <div class="opts">${LOOKS.back.filter(o=>!o.unlock).map(o=>opt('back',o,'<div class="card back"></div>')).join('')}</div>
-    <h3 class="sub">Unlockable card backs <span class="pill num" style="font-size:12px;vertical-align:middle">${LOOKS.back.filter(o=>o.unlock&&lookUnlocked(o)).length}/${LOOKS.back.filter(o=>o.unlock).length}</span></h3>
-    <p class="note">Earn these through achievements.</p>
-    <div class="opts">${LOOKS.back.filter(o=>o.unlock).map(o=>opt('back',o,'<div class="card back"></div>')).join('')}</div>
+    <h3 class="sub">Starter deck design</h3>
+    <p class="note">You start with one standard 54-card deck. Pick any of these designs for it. They’re different looks for the same deck, not extra decks.</p>
+    <div class="opts">${LOOKS.back.filter(o=>!o.art).map(o=>opt('back',o,'<div class="card back"></div>')).join('')}</div>
+    <h3 class="sub">Wasteland collection <span class="pill num" style="font-size:12px;vertical-align:middle">${LOOKS.back.filter(o=>o.art&&lookUnlocked(o)).length}/${LOOKS.back.filter(o=>o.art).length}</span></h3>
+    <p class="note">Each of these is an extra <b>pack</b>, earned through achievements. Every pack you own lets you hold one more copy of every card in Classic. Pick one here to make it the back you see first.</p>
+    <div class="opts">${LOOKS.back.filter(o=>o.art).map(o=>opt('back',o,'<div class="card back"></div>')).join('')}</div>
     <h3 class="sub">Play mat</h3>
     <div class="opts">${LOOKS.mat.map(o=>opt('mat',o,'<div class="table swatch"></div>')).join('')}</div>
     <h3 class="sub">Suit colors</h3>
@@ -1265,7 +1300,7 @@ function rollCampStock(coll){
   return pool.slice(0,8).map(k=>({k,sold:false}));
 }
 const campOpen=i=>i===0||meta.classic.camp.beaten.includes(i-1);
-function campDeckSpec(){return countsToSpec(meta.classic.camp.deck);}
+function campDeckSpec(){return withPacks(countsToSpec(meta.classic.camp.deck),packList());}
 
 function renderClassic(){
   const C=meta.classic, d=C.deck, cp=C.camp;
@@ -1341,8 +1376,9 @@ function renderVendor(){
   <div class="mbar">${backBtn('campaign','The circuit')}${capsHTML(cp.caps)}</div>
   <section class="panel">
     <h2 style="font-size:28px">Card vendor</h2>
-    <p class="note">You can own up to ${SETS} of any card, one from each set (Jokers come two to a set). New stock after every game.</p>
-    <div class="prow"><div><b>Full card set</b><span>A complete 54-card set: one of every card plus 2 Jokers. Cards you already have ${SETS} of are skipped.</span></div>
+    <p class="note">New stock after every game. Each copy you buy comes from your next pack.</p>
+    ${deckLimitHTML()}
+    <div class="prow"><div><b>Full pack</b><span>One of every card plus 2 Jokers, each from your next unused pack. Cards you already own from every pack are skipped.</span></div>
       <button class="btn${canSet&&cp.caps>=SET_PRICE?' hot':''}" data-buyset ${canSet&&cp.caps>=SET_PRICE?'':'disabled'}>${capN(SET_PRICE)}</button></div>
     <h3 class="sub">Single cards</h3>
     <div class="offers">${cp.stock.map((o,i)=>{const c=fromKeyC(o.k),pr=singlePrice(o.k),full=(cp.coll[o.k]||0)>=capFor(o.k);return `<div class="offer${o.sold?' sold':''}">
@@ -1367,7 +1403,7 @@ function renderBuild(){
     const canAdd=n<lim&&(camp||pr<=left);
     return `<div class="btile${n?' have':''}">
       <div class="bcard">${cardHTML(c)}${n?`<span class="cnt">×${n}</span>`:''}</div>
-      <div class="pr num">${camp?`own ${lim}`:pr+'c'}</div>
+      ${packDots(k,n)}<div class="pr num">${camp?`${n} of ${lim} owned`:`${pr}c · ${n}/${lim}`}</div>
       <div class="pm"><button class="btn" data-dec="${k}" ${n?'':'disabled'} aria-label="Remove one ${cardName(c)}">−</button><button class="btn" data-inc="${k}" ${canAdd?'':'disabled'} aria-label="Add one ${cardName(c)}">+</button></div>
     </div>`;};
   const ranks=[...NUM_RANKS,'J','Q','K'];
@@ -1377,10 +1413,18 @@ function renderBuild(){
   <div class="mbar">${backBtn(buildFrom,'Back')}${camp?`<span class="pill num">${size} in deck</span>`:`<span class="pill num"><span class="cap"></span> ${left} of ${CL_BUDGET} left</span>`}</div>
   <section class="panel">
     <h2 style="font-size:28px">${camp?'Build your deck':'Card buy'}</h2>
-    ${camp?`<p class="note">Choose cards from your collection: at least ${MIN_DECK}. Changes are free, just like the original. Buy more cards from the vendor.</p>
+    ${camp?`<p class="note">Choose cards from your collection: at least ${MIN_DECK}. Changes are free, just like the original. You can only use cards you own; the number under each card is how many you have. Buy more from the vendor.</p>
+      ${deckLimitHTML()}
       <div class="presets"><button class="btn ghost" data-preset="all">Use every card I own</button><button class="btn ghost" data-preset="clear">Clear all</button></div>`
-    :`<p class="note">Build your deck with a ${CL_BUDGET}-cap budget: at least ${MIN_DECK} cards. As in New Vegas, you can’t have two of the same card from one set; you can mix up to ${SETS} sets, so up to ${SETS} of any card (Jokers come two per set). Start from a ready-made deck and tweak it, or buy card by card. This budget is separate from the Road.</p>
-    <div class="presets">${Object.entries(STARTERS).map(([id,s])=>`<button class="spoil" data-preset="${id}"><b>${s.name}</b><span>${s.desc} ${countsCost(specToCounts(s.build()))} caps.</span></button>`).join('')}
+    :`<ul class="steps">
+      <li>You have <b>${CL_BUDGET} caps</b> to spend. Each card shows its price.</li>
+      <li>Your deck needs <b>at least ${MIN_DECK} cards</b>. There’s no maximum, but bigger decks draw your best cards less often.</li>
+      <li>Tap <b>+</b> and <b>−</b> to add and remove cards, or start from a ready-made deck below and tweak it.</li>
+      <li>This budget only applies to Classic. The Road has its own caps.</li>
+    </ul>
+    ${deckLimitHTML()}
+    <h3 class="sub">Ready-made decks</h3>
+    <div class="presets">${Object.entries(STARTERS).map(([id,s])=>{const sp=s.build();return `<button class="spoil" data-preset="${id}"><b>${s.name}</b><span>${s.desc}</span><span>${deckSummary(sp)} Costs ${countsCost(specToCounts(sp))} caps.</span></button>`;}).join('')}
       <button class="btn ghost" data-preset="clear">Clear all</button></div>`}
     ${groups}
     ${jt?`<h3 class="sub">Jokers</h3><div class="bgrid">${jt}</div>`:''}
@@ -1680,9 +1724,10 @@ function abilityBar(myTurn){
   if(G.char==='greg')return `<div class="chems"><button class="btn ability" data-hug ${!G.hugUsed&&ready?'':'disabled'}>${G.hugUsed?(G.hugPending?'Hug coming…':'Hug given'):'Bear hug'}</button><span class="chem-note">${G.hugPending?'The dealer skips their next turn.':G.hugUsed?'':'Once per hand. Doesn’t use your turn.'}</span></div>`;
   return '';
 }
-function pileHTML(n,label,cls){
+const packAttr=c=>c&&c.pack?` data-back="${c.pack}"`:'';
+function pileHTML(n,label,cls,deck){
   const layers=Math.min(4,Math.max(1,Math.ceil(n/10)));
-  return `<div class="deckpile ${cls}" role="img" aria-label="${label}: ${n} cards">${n?Array.from({length:layers},(_,i)=>`<div class="card back" style="--o:${i}"></div>`).join(''):'<div class="emptypile">empty</div>'}<span class="pilecount num">${n}</span></div>`;
+  return `<div class="deckpile ${cls}" role="img" aria-label="${label}: ${n} cards">${n?Array.from({length:layers},(_,i)=>`<div class="card back"${deck?packAttr(deck[deck.length-layers+i]):''} style="--o:${i}"></div>`).join(''):'<div class="emptypile">empty</div>'}<span class="pilecount num">${n}</span></div>`;
 }
 function renderMatch(){
   const o=OPP(), lanes=lanesResult(G), tut=tutActive();
@@ -1709,15 +1754,15 @@ function renderMatch(){
   <div class="mgrid"><div class="mg-table">
   <div class="table">
     <div class="deckrow top">
-      <div class="fan" aria-label="Dealer holds ${G.a.hand.length} cards">${G.a.hand.map((_,i,a)=>`<div class="card back" style="--r:${(i-(a.length-1)/2)*6}deg"></div>`).join('')}</div>
-      ${pileHTML(G.a.deck.length,'Dealer’s deck','small')}
+      <div class="fan" aria-label="Dealer holds ${G.a.hand.length} cards">${G.a.hand.map((c,i,a)=>`<div class="card back"${packAttr(c)} style="--r:${(i-(a.length-1)/2)*6}deg"></div>`).join('')}</div>
+      ${pileHTML(G.a.deck.length,'Dealer’s deck','small',G.a.deck)}
     </div>
     <div class="side">${[0,1,2].map(l=>laneHTML('a',l,lanes,selMoves,proj)).join('')}</div>
     <div class="mid"><span class="turn${G.turn==='p'?' mine':''}">${G.over?'Hand over':G.turn==='p'?'Your move':'Their move'}</span><span class="log">${esc(G.log[0]||'Sell two caravans in range to win.')}</span></div>
     <div class="side">${[0,1,2].map(l=>laneHTML('p',l,lanes,selMoves,proj)).join('')}</div>
     <div class="deckrow bottom">
       <span class="decklabel">${G.char==='nuke'&&G.mode==='road'&&G.p.deck.length?`Next draw ${cardHTML(G.p.deck[G.p.deck.length-1])}`:'Your deck'}</span>
-      ${pileHTML(G.p.deck.length,'Your deck','mine')}
+      ${pileHTML(G.p.deck.length,'Your deck','mine',G.p.deck)}
     </div>
   </div>
   </div><div class="mg-side">
@@ -1807,7 +1852,7 @@ function startMatch(i){
 function startClassic(i){
   if(i<0){G=newTutorial('classic');G.stake=0;enterMatch();return;}
   const d=CLASSIC_DEALERS[i]; if(!d||!meta.classic.deck)return;
-  G=newMatch(meta.classic.deck,addFaces(baseNumbers(),d.extra),i,baseRules());
+  G=newMatch(withPacks(meta.classic.deck.map(c=>({rank:c.rank,suit:c.suit})),packList()),addFaces(baseNumbers(),d.extra),i,baseRules());
   G.mode='classic';G.stake=0;
   enterMatch();
 }
@@ -1977,7 +2022,7 @@ app.addEventListener('click',e=>{
   if('auth' in d){doAuth(d.auth);return;}
   if('choose' in d){const pc=pendingChoice;pendingChoice=null;if(!pc)return;
     if(d.choose==='cloud'){adoptCloud(pc.cloud);render();}else{save();pushNow();render();}return;}
-  if('look' in d){const [k,v]=d.look.split(':');const item=LOOKS[k]&&LOOKS[k].find(o=>o.id===v);if(item&&lookUnlocked(item)){meta.look[k]=v;applyLook();if(k!=='face')unlock('style');save();}render();return;}
+  if('look' in d){const [k,v]=d.look.split(':');const item=LOOKS[k]&&LOOKS[k].find(o=>o.id===v);if(item&&lookUnlocked(item)){meta.look[k]=v;if(k==='back'&&!item.art)meta.look.starter=v;applyLook();if(k!=='face')unlock('style');save();}render();return;}
   if('togglefour' in d){meta.look.four=!meta.look.four;applyLook();if(meta.look.four)unlock('four');save();render();return;}
   if('go' in d){
     if(d.go==='look'&&screen!=='look')lookFrom=screen;
@@ -2143,7 +2188,7 @@ function unlock(id){
   if(meta.ach[id])return false;
   meta.ach[id]=Date.now();
   const a=ACH.find(x=>x.id===id),rw=backReward(id);
-  if(a&&!achSilent)toast(rw?{...a,desc:`${a.desc} Unlocked the ${rw.name} card back.`}:a);
+  if(a&&!achSilent)toast(rw?{...a,desc:`${a.desc} New pack: ${rw.name}.`}:a);
   return true;
 }
 function toast(a){toastQ.push(a);if(!toastOn)nextToast();}
@@ -2270,6 +2315,7 @@ const FAQ=[
   ['How do I earn caps?','On the Road, win tables, hit bounties at Boss tables and let your caps earn interest (1 for every 5 you hold). Road caps only last for the run. In the Classic campaign, win your bets. The two modes keep separate wallets.'],
   ['I lost a table. Is that it?','On the Road, yes: a loss ends the run, and the next one starts fresh from the Plain deck. A Second Wind token or the Guardian Angel perk can save you once. In the Classic campaign, play a Friendly game for no stake, or sell spare cards.'],
   ['Are these the real rules?','Classic follows the Caravan rules from Fallout: New Vegas. The Road uses the same rules underneath, with perks, chems, house rules and bounties on top.'],
+  ['How many of one card can I have?','In Classic, one copy per pack. You start with one pack, your starter deck, in whichever free design you pick. Each Wasteland collection card back you earn through achievements is another pack. So two J♠ have to come from two different packs, and in play you can see which pack each card came from by its back. The Road has no limit.'],
   ['Does my progress sync?','Yes, once you sign in under Settings (the gear). Everything syncs: progress, decks, achievements and your table style.'],
   ['How do I put it on my home screen?','On iPhone, open the game in Safari, tap Share, then Add to Home Screen. It opens full screen like an app.'],
 ];
@@ -2282,10 +2328,10 @@ function renderHelp(){
     <details class="rules" open><summary>How Caravan works</summary><div class="rulebook">${RULES_HTML}</div></details>
     <details class="rules"><summary>The Road</summary><ul>${ROAD_RULES}</ul></details>
     <details class="rules"><summary>Classic campaign</summary><ul>
-      <li>Start with one full 54-card set and ${CAMP_START} caps. Beat eight dealers in order.</li>
+      <li>Start with one full 54-card pack and ${CAMP_START} caps. Beat eight dealers in order.</li>
       <li>Pick your bet before each game, up to the dealer’s table limit. Win and they pay it; lose and you pay it. A Friendly game risks nothing.</li>
       <li>Buy cards and full sets from the vendor, and sell spares for half. Build your deck from your collection for free with the pencil at the top.</li>
-      <li>You can own up to ${SETS} of any card, one per set (Jokers come two to a set).</li></ul></details>
+      <li>You start with one pack (your starter deck). Each Wasteland collection card back you earn is another pack. You can own one copy of each card per pack (Jokers: two per pack).</li></ul></details>
     <h3 class="sub">FAQ</h3>
     <div class="faq">${FAQ.map(([q,a])=>`<details><summary>${esc(q)}</summary><p>${esc(a)}</p></details>`).join('')}</div>
   </section>`;
