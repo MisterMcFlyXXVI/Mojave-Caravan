@@ -868,7 +868,7 @@ const CLASSIC_DEALERS=[
   {level:'Hard',name:'Rosa Quill',place:'Classic table',blurb:'Never wastes a Jack.',noise:4,extra:{J:3,Q:2,K:3,JK:2}},
   {level:'Expert',name:'The Cardsharp',place:'Classic table',blurb:'Nobody’s seen him lose.',noise:0.5,extra:{J:3,Q:3,K:3,JK:2}},
 ];
-const OPP=()=>G.opp<0?TUTORS[G.opp]:G.mode==='classic'?CLASSIC_DEALERS[G.opp]:G.mode==='campaign'?CAMP_DEALERS[G.opp]:{...ROAD[G.opp],...(G.dealer||{}),house:[],noise:G.noise??ROAD[G.opp].noise};
+const OPP=()=>G.opp<0?TUTORS[G.opp]:G.mode==='classic'?CLASSIC_DEALERS[G.opp]:G.mode==='campaign'?(G.rita?RITA:CAMP_DEALERS[G.opp]):{...ROAD[G.opp],...(G.dealer||{}),house:[],noise:G.noise??ROAD[G.opp].noise};
 const isClassicish=()=>G.mode==='classic'||G.mode==='campaign';
 
 // Ready-made decks for the classic card buy.
@@ -1052,7 +1052,7 @@ const BASIC_STEPS=[
    move:{t:'num',key:'7H',lane:0},ai:{t:'num',key:'8S',lane:0}},
   {title:'Opening',say:'Now open caravan II with the 5♠.',why:'A low opener leaves lots of room. Almost any card can follow a 5, so caravan II stays easy to build.',move:{t:'num',key:'5S',lane:1},ai:{t:'num',key:'6D',lane:1}},
   {title:'Opening',say:'And caravan III with the 9♣. Once all three are open, you draw back up to five cards after each play.',why:'A high opener gets a caravan near the sell range fast. Mixing high and low openers gives you different ways to reach 21.',move:{t:'num',key:'9C',lane:2},ai:{t:'num',key:'4C',lane:2}},
-  {title:'Reading the table',info:true,say:'All three of your caravans are open. The big number above each caravan is its total. Once a caravan has two cards, an arrow shows its direction (▲ climbing, ▼ falling), and the small suit symbol shows its current suit. Tags like SOLD, OUTBID and BUST appear as totals change.',
+  {title:'Reading the table',info:true,say:'All three of your caravans are open. The big number above each caravan is its total. Once a caravan has two cards, an arrow shows its direction (▲ climbing, ▼ falling), and the small suit symbol shows its current suit. Tags like AHEAD, BEHIND and BUST appear as totals change. Nothing is final until all three caravans are settled; then the winners get stamped SOLD.',
    why:'Your caravans are on the bottom row and Ezra’s are on top. Each of yours faces the one directly above it: your I against his I, and so on.'},
   {title:'Direction',say:'The second card sets a caravan’s direction. Put the 10♦ on caravan I: 7 then 10 climbs, so the next card there has to be higher. A card matching the caravan’s current suit can break that rule. You can never play the same value twice in a row.',
    why:'7 + 10 is 17 in one move, just short of 21. The catch: nothing is higher than a 10, so this caravan can now only grow with a diamond or a face card. That’s fine, because you’re holding a King.',
@@ -1313,6 +1313,11 @@ const CAMP_DEALERS=[
   {name:'Mr. Pell',place:'The Desert Palace',blurb:'House dealer. House rules: none.',max:300,noise:2,extra:{J:4,Q:2,K:4,JK:2}},
   {name:'The Old Man',place:'The High Table',blurb:'Taught half the Mojave to play.',max:500,noise:0.5,extra:{J:4,Q:3,K:4,JK:2}},
 ];
+// Dusty Rita: a free table that's always open, for getting back on your feet.
+const RITA={name:'Dusty Rita',place:'Rita’s Porch, Goodsprings',blurb:'Plays for fun, pays for pity. Never takes a cap off anybody.',noise:40,extra:{J:1,Q:1,K:1},pay:5};
+// Velma's tab: borrow caps against a flat fee. One loan at a time; half of every win pays it down.
+const TAB={lender:'Velma',bar:'the Prospector Saloon',options:[25,50],fee:0.2};
+const tabOwe=amt=>Math.ceil(amt*(1+TAB.fee));
 const CAMP_START=100, SET_PRICE=150, BET_STEPS=[0,10,25,50,75,100,150,200,300,500];
 const singlePrice=k=>clPrice(fromKeyC(k).rank)*2;
 let campPick=null, buildMode='quick', buildFrom='classic';
@@ -1376,8 +1381,22 @@ function renderCampaign(){
   </div>
   ${deckOK?'':`<p class="hint" style="color:var(--blood)">Your deck needs at least ${MIN_DECK} cards. <button class="btn" data-build="camp" style="padding:3px 10px">Build it</button></p>`}
   <section class="panel">
-    <p class="note">Pick a dealer, then your bet. Win and they pay your bet; lose and you pay it. Each dealer has a table limit. A friendly game risks nothing.</p>
+    <div class="sect-h"><h2 style="font-size:22px">${esc(TAB.lender)}’s tab</h2>${cp.tab?`<span class="pill num">You owe ${cp.tab}</span>`:''}</div>
+    ${cp.tab
+      ?`<p class="note">${esc(TAB.lender)} takes half of every win until the tab is paid. You can’t borrow again until it’s clear.</p>
+        <div class="hubbtns" style="margin-top:0"><button class="btn${cp.caps>=cp.tab?' hot':''}" data-paytab ${cp.caps?'':'disabled'}>Pay ${Math.min(cp.caps,cp.tab)} now</button></div>`
+      :`<p class="note">The bartender at ${esc(TAB.bar)} will float you caps for a flat ${Math.round(TAB.fee*100)}% fee. One loan at a time. Half of every win goes back to her until it’s paid.</p>
+        <div class="hubbtns" style="margin-top:0">${TAB.options.map(a=>`<button class="btn" data-borrow="${a}">Borrow ${a}, owe ${tabOwe(a)}</button>`).join('')}</div>`}
+  </section>
+  <section class="panel" style="margin-top:14px">
+    <p class="note">Pick a dealer, then your bet. Win and they pay your bet; lose and you pay it. Each dealer has a table limit. A friendly game risks nothing and pays nothing.</p>
     <div class="road">
+      <div class="stop rita">
+        <div class="mile">★</div>
+        <div><div class="place">${esc(RITA.place)}</div><div class="who">${esc(RITA.name)} · ${esc(RITA.blurb)}</div>
+          <div class="terms num">Always open · no bet · win and she pays you ${RITA.pay} caps${cp.rita?` · record ${cp.rita.w}W · ${cp.rita.l}L`:''}</div></div>
+        <button class="btn${cp.caps<10?' hot':''}" data-ritaplay ${deckOK?'':'disabled'}>Play</button>
+      </div>
       ${CAMP_DEALERS.map((o,i)=>{
         const open=campOpen(i), beat=cp.beaten.includes(i), r=cp.rec[i]||{w:0,l:0};
         const picking=campPick===i;
@@ -1460,6 +1479,14 @@ function renderBuild(){
     <button class="btn hot" data-savedeck ${problem?'disabled':''}>Save deck</button>
   </div>`;
 }
+function startRita(){
+  const cp=meta.classic.camp;if(countsSize(cp.deck)<MIN_DECK)return;
+  campPick=null;
+  G=newMatch(campDeckSpec(),addFaces(baseNumbers(),RITA.extra),0,baseRules());
+  G.mode='campaign';G.rita=true;G.stake=0;G.noise=RITA.noise;
+  enterMatch();
+}
+function payTab(cp,amount){const n=Math.min(amount,cp.tab||0,cp.caps);if(n>0){cp.caps-=n;cp.tab-=n;}return n;}
 function startCamp(i,bet){
   const cp=meta.classic.camp,o=CAMP_DEALERS[i];
   if(!campOpen(i)||bet>cp.caps||bet>o.max||countsSize(cp.deck)<MIN_DECK)return;
@@ -1520,7 +1547,7 @@ function laneHTML(side,l,lanes,selMoves,proj){
   const vcls=hide?'':v>r[1]?'bust':inR(v,r)?'ok':'';
   const arrow=cv.length<2&&!cv.some(e=>e.faces.some(f=>f.rank==='Q'))?'':st.dir>0?'▲':st.dir<0?'▼':'•';
   let tag='';
-  if(!R.hideOpp||G.over)tag=w?(w===side?'<span class="tag">SOLD</span>':'<span class="tag lose">OUTBID</span>'):(v>r[1]?'<span class="tag lose">BUST</span>':'');
+  if(!R.hideOpp||G.over)tag=w?(w===side?`<span class="tag">${G.over?'SOLD':'AHEAD'}</span>`:`<span class="tag lose">${G.over?'OUTBID':'BEHIND'}</span>`):(v>r[1]?'<span class="tag lose">BUST</span>':'');
   else if(side==='p')tag=v>r[1]?'<span class="tag lose">BUST</span>':inR(v,r)?'<span class="tag">IN RANGE</span>':'';
   let can=false;
   if(side==='p'){
@@ -1540,7 +1567,7 @@ function laneHTML(side,l,lanes,selMoves,proj){
   const isBust=!hide&&v>r[1];
   return `<div class="lane${can?' can':''}${flash}${isBust?' isbust':''}" data-side="${side}" data-lane="${l}" ${can?'role="button" tabindex="0"':''} aria-label="${side==='p'?'Your':'Their'} caravan ${ROMAN[l]}${hide?'':`, value ${v}`}">
     <div class="lhead"><b class="v num ${vcls}" data-lv="${side}${l}" data-val="${hide?-1:v}">${hide&&cv.length?'??':v}</b><span class="dir">${arrow}${st.suit&&cv.length?SUIT_CH[st.suit]:''}</span>${tag}${proj['L'+l]!=null&&side==='p'?`<span class="proj ${pcls(proj['L'+l])}">→ ${proj['L'+l]}</span>`:''}</div>
-    <div class="stack" style="height:calc(var(--ch) + var(--off) * ${h})">${cv.length?entries:`<div class="slot">${ROMAN[l]}</div>`}${w===side&&(!R.hideOpp||G.over)?`<div class="stampmark" data-k="${side}${l}">SOLD</div>`:''}</div>
+    <div class="stack" style="height:calc(var(--ch) + var(--off) * ${h})">${cv.length?entries:`<div class="slot">${ROMAN[l]}</div>`}${w===side&&G.over?`<div class="stampmark" data-k="${side}${l}">SOLD</div>`:''}</div>
   </div>`;
 }
 function whyNot(cv,c){
@@ -1638,7 +1665,7 @@ function renderMatch(){
   const dealt=new Set(G.dealtDone?[]:(G.dealt||[]));
   app.innerHTML=`
   <div class="mbar">
-    <div class="opp">${o.rival?`<img class="rivalimg big" src="${portrait(o.rival)}" alt="">`:''}<h2>${esc(o.name)}</h2><small>${esc(o.place)}${G.stake?` · buy-in ${G.stake}`:''}</small></div>
+    <div class="opp">${o.rival?`<img class="rivalimg big" src="${portrait(o.rival)}" alt="">`:''}<h2>${esc(o.name)}</h2><small>${esc(o.place)}${G.stake?` · ${G.mode==='campaign'?'bet':'buy-in'} ${G.stake}`:''}</small></div>
     <button class="btn ghost${armedFold?' armed':''}" data-fold>${armedFold?(G.stake?`Fold, lose ${G.stake}`:'Tap to fold'):'Fold'}</button>
   </div>
   ${rulesBar()}
@@ -1698,15 +1725,19 @@ function resultHTML(){
   return `<div class="overlay"><div class="panel result">
     <h2 class="${won?'':'lost'}">${won?'Caravans sold':'Outbid'}</h2>
     <p>${esc(ov.reason)}</p>
-    ${ov.mode==='campaign'?`<div class="gain num" data-delta="${ov.delta}">${ov.delta>0?`+<span class="cap"></span> <span class="cn">${ov.delta}</span>`:ov.delta<0?`−${capN(-ov.delta)}`:'Friendly game'}</div>
-      <p>You have ${meta.classic.camp.caps} caps.${ov.firstBeat?` ${esc(OPP().place)} is beaten.`:''}${ov.campDone?' That’s the whole circuit. Well played.':''}</p>`
+    ${ov.mode==='campaign'?`<div class="gain num" data-delta="${ov.delta}">${ov.delta>0?`+<span class="cap"></span> <span class="cn">${ov.delta}</span>`:ov.delta<0?`−${capN(-ov.delta)}`:G.rita?'No caps lost':'Friendly game'}</div>
+      ${G.rita&&ov.winner==='p'?`<p>Rita slides you ${RITA.pay} caps. “Don’t spend it all in one place, hon.”</p>`:''}
+      ${ov.tabPaid?`<p>${ov.tabPaid} caps went to ${TAB.lender}’s tab. ${meta.classic.camp.tab?`You still owe ${meta.classic.camp.tab}.`:'Your tab is paid off.'}</p>`:''}
+      <p>You have ${meta.classic.camp.caps} caps.${ov.firstBeat?` ${esc(OPP().place)} is beaten.`:''}${ov.campDone?' That’s the whole circuit. Well played.':''}</p>
+      ${!G.rita&&meta.classic.camp.caps<10?`<p class="note">Short on caps? Dusty Rita’s table is always open${meta.classic.camp.tab?'':`, and ${TAB.lender} will run you a tab`}.</p>`:''}`
     :ov.mode==='classic'?`<p>Classic record: ${meta.classic.wins}W · ${meta.classic.losses}L</p>`:`<div class="gain num" data-delta="${delta}">${delta>0?`+<span class="cap"></span> <span class="cn">${delta}</span>`:delta<0?`−${capN(-delta)}`:'No caps lost'}</div>`}
     ${ov.mode==='road'&&lines.length?`<p style="margin-top:-8px">${esc(lines.join(' · '))}</p>`:''}
     ${missed}
     ${ov.mode==='road'?`<p>You have ${meta.caps} caps.</p>`:''}
     ${ov.tutorial?`<p>${ov.mode==='classic'?'Lessons done. Build a deck and pick a dealer when you’re ready.':'Lessons done. Head for Goodsprings when you’re ready.'}</p>`:''}
     ${ov.mode==='campaign'
-      ?`<button class="btn hot" data-rebet="${G.opp}">Play again (${ov.stake?ov.stake+' caps':'friendly'})</button> <button class="btn" data-go="campaign" style="margin-left:6px">Back to the circuit</button>`
+      ?G.rita?`<button class="btn hot" data-ritaplay>Play Rita again</button> <button class="btn" data-go="campaign" style="margin-left:6px">Back to the circuit</button>`
+      :`<button class="btn hot" data-rebet="${G.opp}">Play again (${ov.stake?ov.stake+' caps':'friendly'})</button> <button class="btn" data-go="campaign" style="margin-left:6px">Back to the circuit</button>`
       :ov.mode==='classic'
       ?(G.opp>=0?`<button class="btn hot" data-cplay="${G.opp}">Deal again</button> <button class="btn" data-go="classic" style="margin-left:6px">Back to the table</button>`
         :`<button class="btn hot" data-go="classic">Back to the table</button>`)
@@ -1767,6 +1798,13 @@ function finish(winner,reason){finishCore(winner,reason);try{if(winner==='p'){sf
 function finishCore(winner,reason){
   const o=OPP(), tutorial=G.opp<0, stake=G.stake||0;
   const ov={winner,reason,stake,win:0,bonus:0,tutorial,bounty:G.bounty||null,bountyWon:0,refund:0,scav:0,delta:0,mode:G.mode||'road'};
+  if(G.mode==='campaign'&&G.rita){
+    const cp=meta.classic.camp;cp.rita=cp.rita||{w:0,l:0};
+    if(winner==='p'){cp.caps+=RITA.pay;cp.rita.w++;ov.delta=RITA.pay;}else{cp.rita.l++;ov.delta=0;}
+    if(winner==='p'&&cp.tab){ov.tabPaid=payTab(cp,Math.ceil(RITA.pay/2));}
+    cp.stock=rollCampStock(cp.coll);
+    G.over=ov;save();return;
+  }
   if(G.mode==='campaign'){
     const cp=meta.classic.camp, r=cp.rec[G.opp]||{w:0,l:0};
     if(winner==='p'){cp.caps+=stake*2;cp.wins++;r.w++;
@@ -1775,6 +1813,7 @@ function finishCore(winner,reason){
     }else{cp.losses++;r.l++;}
     cp.rec[G.opp]=r; cp.stock=rollCampStock(cp.coll);
     ov.delta=winner==='p'?stake:-stake;
+    if(winner==='p'&&cp.tab&&stake)ov.tabPaid=payTab(cp,Math.ceil(stake/2));
     G.over=ov; save(); return;
   }
   if(G.mode==='classic'){
@@ -1916,6 +1955,9 @@ app.addEventListener('click',e=>{
     render();return;}
   if('pick' in d){const i=+d.pick;campPick=campPick===i?null:i;render();return;}
   if('bet' in d){if(campPick!=null)startCamp(campPick,+d.bet);return;}
+  if('ritaplay' in d){G=null;startRita();return;}
+  if('borrow' in d){const cp=meta.classic.camp,a=+d.borrow;if(!cp.tab&&TAB.options.includes(a)){cp.caps+=a;cp.tab=tabOwe(a);save();}render();return;}
+  if('paytab' in d){payTab(meta.classic.camp,meta.classic.camp.tab);save();render();return;}
   if('rebet' in d){const i=+d.rebet,cp=meta.classic.camp;const bet=Math.min(cp.lastBet[i]||0,cp.caps);G=null;startCamp(i,bet);return;}
   if('buyset' in d){const cp=meta.classic.camp;if(cp.caps>=SET_PRICE){cp.caps-=SET_PRICE;for(const k of ALL_KEYS)cp.coll[k]=Math.min(capFor(k),(cp.coll[k]||0)+(k==='JK'?2:1));cp.stock=cp.stock.map(o=>({...o}));save();}render();return;}
   if('cbuy' in d){const cp=meta.classic.camp,o=cp.stock[+d.cbuy],pr=singlePrice(o.k);if(!o.sold&&cp.caps>=pr&&(cp.coll[o.k]||0)<capFor(o.k)){cp.caps-=pr;cp.coll[o.k]=(cp.coll[o.k]||0)+1;o.sold=true;save();}render();return;}
@@ -2145,7 +2187,7 @@ const FAQ=[
   ['When does a hand end?','When all three pairs of caravans are settled at the same time. Whoever sold two or three wins. If two facing caravans tie, the hand keeps going.'],
   ['What happens if I run out of cards?','You lose the hand, as in the original. Disbanding and discarding both burn through your deck, so use them with care.'],
   ['How do I earn caps?','On the Road, win tables, hit bounties at Boss tables and let your caps earn interest (1 for every 5 you hold). Road caps only last for the run. In the Classic campaign, win your bets. The two modes keep separate wallets.'],
-  ['I lost a table. Is that it?','On the Road, yes: a loss ends the run, and the next one starts fresh from the Plain deck. A Second Wind token or the Guardian Angel perk can save you once. In the Classic campaign, play a Friendly game for no stake, or sell spare cards.'],
+  ['I lost a table. Is that it?','On the Road, yes: a loss ends the run, and the next one starts fresh from the Plain deck. A Second Wind token or the Guardian Angel perk can save you once. In the Classic campaign, you never get stuck: Dusty Rita’s table is always open and pays 5 caps per win, and Velma will lend you caps for a flat 20% fee.'],
   ['Are these the real rules?','Classic follows the Caravan rules from Fallout: New Vegas. The Road uses the same rules underneath, with perks, chems, house rules and bounties on top.'],
   ['How many of one card can I have?','In Classic, one copy per pack. You start with one pack, your starter deck, in whichever Classic Card Back you pick. Each pack you earn through achievements is another full set of cards. So two J♠ have to come from two different packs, and in play you can see which pack each card came from by its back. The Road has no limit.'],
   ['Does my progress sync?','Yes, once you sign in under Settings (the gear). Everything syncs: progress, decks, achievements and your table style.'],
@@ -2161,7 +2203,8 @@ function renderHelp(){
     <details class="rules"><summary>The Road</summary><ul>${ROAD_RULES}</ul></details>
     <details class="rules"><summary>Classic campaign</summary><ul>
       <li>Start with one full 54-card pack and ${CAMP_START} caps. Beat eight dealers in order.</li>
-      <li>Pick your bet before each game, up to the dealer’s table limit. Win and they pay it; lose and you pay it. A Friendly game risks nothing.</li>
+      <li>Pick your bet before each game, up to the dealer’s table limit. Win and they pay it; lose and you pay it. A Friendly game risks nothing and pays nothing.</li>
+      <li>Low on caps? Dusty Rita’s table in Goodsprings is always open: no bet, and she pays you 5 caps when you win. Velma will also lend you 25 or 50 caps for a flat 20% fee; half of every win pays it back.</li>
       <li>Buy cards and full sets from the vendor, and sell spares for half. Build your deck from your collection for free with the pencil at the top.</li>
       <li>You start with one pack (your starter deck). Each pack you earn through achievements adds another full set of cards. You can own one copy of each card per pack (Jokers: two per pack).</li></ul></details>
     <h3 class="sub">FAQ</h3>
