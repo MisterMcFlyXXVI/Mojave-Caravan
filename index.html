@@ -486,6 +486,13 @@ body[data-screen="home"] .wordmark{visibility:hidden}
 .bets .btn{padding:6px 10px;font-size:13px}
 
 /* ---- The Road: runs ---- */
+.mbtns{display:flex;gap:6px;flex:none}
+.rulespop .panel{max-height:88vh;overflow:auto;max-width:640px}
+.qa{display:grid;gap:6px}
+.qa details{background:#0003;border:1px solid #ffffff14;border-radius:8px;padding:8px 10px}
+.qa summary{cursor:pointer;font-family:var(--display);font-size:16px;color:var(--bone)}
+.qa details[open] summary{color:var(--neon)}
+.qa p{margin:6px 0 0;font-size:14px;line-height:1.5;color:var(--bone)}
 .picker{max-height:90vh;overflow:auto}
 .pickgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:8px;margin:10px 0}
 .pickgrid.burn{grid-template-columns:repeat(auto-fill,minmax(48px,1fr))}.pickgrid.burn .card{--cw:42px}
@@ -1138,6 +1145,7 @@ function playerLegal(){
 }
 
 // ---------- state ----------
+let rulesOpen=false;
 let meta=null, G=null, screen='home', sel=null, disbandMode=false, busy=false, armedFold=false, armedCut=null;
 
 function freshMeta(){
@@ -1234,6 +1242,45 @@ const RULES_HTML=`
 <li>Decks hold at least 30 cards. A pack has only one of each card, so you can have as many copies of a card (like J♠) as you own packs: your starter deck plus each pack you’ve earned. Jokers come two per pack.</li>
 </ul>`;
 const RULES_LIST=RULES_HTML;
+const QUICK_QA=[
+  ['When does the hand end?','Only when all three matchups have a seller at the same moment. Being ahead on two isn’t enough; the third has to settle too. Then whoever sold two or three wins.'],
+  ['What counts as “settled”?','One side is at 21–26 and beats the other. Both under 21, both bust, or an exact tie (24 vs 24) is not settled yet.'],
+  ['Why can’t I play this number card here?','Three checks: it can’t match the top card’s value; it has to follow the caravan’s direction (higher if ▲, lower if ▼); unless it’s the same suit as the caravan, which is always allowed.'],
+  ['Can I play on the dealer’s caravans?','Only face cards. Number cards go on your own caravans. A King on their big card is the main way to bust them.'],
+  ['Where can a Queen go?','Only on the top card of a caravan. It flips the direction and changes the caravan’s suit to the Queen’s suit.'],
+  ['What does a King do?','Adds the card’s value again. Kings stack: a 6 with one King is 12, with two Kings is 24.'],
+  ['What does a Jack do?','Removes the card it’s on, plus any face cards attached to it.'],
+  ['What does a Joker do?','On a 2–10: removes every other card of that value from the whole table, yours included. On an Ace: removes every other number card of that suit.'],
+  ['What if my caravan goes over 26?','It’s a bust and can’t sell. Jack one of its cards to bring it down, or disband it and start over.'],
+  ['When can I discard or disband?','Any turn after the opening. Discarding swaps a card for a new draw. Disbanding throws away a whole caravan of yours.'],
+  ['What happens during the opening?','For your first three turns you must start each empty caravan with a number card. No face cards, discards or disbands yet.'],
+  ['What if I run out of cards?','If your hand and deck are both empty, you lose the hand.'],
+];
+function tableRulesHTML(){
+  if(!G)return '';
+  const R=G.rules,o=OPP(),items=[];
+  const rng=(a)=>`${a[0]}–${a[1]}`;
+  items.push(`<li><b>Sell range:</b> ${rng(R.range.p)===rng(R.range.a)?`${rng(R.range.p)} for both of you`:`you ${rng(R.range.p)}, dealer ${rng(R.range.a)}`}.</li>`);
+  if(R.hand.p!==5||R.hand.a!==5)items.push(`<li><b>Hand size:</b> you draw up to ${R.hand.p}, the dealer up to ${R.hand.a}.</li>`);
+  if(G.run)for(const id of (G.ruleIds||[]).filter((x,i,a)=>a.indexOf(x)===i))items.push(`<li><b>${BOSS_RULES[id].name}:</b> ${esc(BOSS_RULES[id].desc)}</li>`);
+  for(const h of (o.house||[]))items.push(`<li><b>${HOUSE[h].name}:</b> ${esc(HOUSE[h].desc)}</li>`);
+  if(o.rival)items.push(`<li><b>Rival:</b> ${esc(RIVALS[o.rival].rule)}</li>`);
+  if(G.mode==='road'&&G.char&&CHARS[G.char])for(const t of CHARS[G.char].traits)items.push(`<li><b>${esc(t[1])} (${esc(CHARS[G.char].name)}):</b> ${esc(t[2])}</li>`);
+  if(G.run&&meta.run){const dk=DECKS[deckIdx(meta.run.deck)];if(dk&&dk.id!=='plain')items.push(`<li><b>${esc(dk.name)}:</b> ${esc(dk.twist)}</li>`);
+    for(const pk of (G.perks||[]))if(PERKS[pk])items.push(`<li><b>${esc(PERKS[pk].name)} (perk):</b> ${esc(PERKS[pk].desc)}</li>`);}
+  return `<h3 class="sub">This table</h3><ul class="steps">${items.join('')}</ul>`;
+}
+function rulesPopHTML(){
+  return `<div class="overlay rulespop"><div class="panel result" role="dialog" aria-label="Rules" style="text-align:left">
+    <div class="sect-h"><h2 style="font-size:26px;color:var(--neon)">Rules</h2><button class="btn" data-rulesclose>Close</button></div>
+    ${tableRulesHTML()}
+    <h3 class="sub">Quick answers</h3>
+    <div class="qa">${QUICK_QA.map(([q,a])=>`<details><summary>${esc(q)}</summary><p>${esc(a)}</p></details>`).join('')}</div>
+    <details class="rules"><summary>The full rules</summary><div class="rulebook">${RULES_HTML}</div></details>
+    ${G&&G.mode==='road'?`<details class="rules"><summary>The Road</summary><ul>${ROAD_RULES}</ul></details>`:''}
+    <button class="btn hot" data-rulesclose style="margin-top:14px;width:100%">Back to the table</button>
+  </div></div>`;
+}
 const backBtn=(to,label)=>`<button class="btn" data-go="${to}">← ${label}</button>`;
 function tutRow(id,o,done,hot,data){
   return `<div class="stop${done?' beat':''}">
@@ -1666,7 +1713,7 @@ function renderMatch(){
   app.innerHTML=`
   <div class="mbar">
     <div class="opp">${o.rival?`<img class="rivalimg big" src="${portrait(o.rival)}" alt="">`:''}<h2>${esc(o.name)}</h2><small>${esc(o.place)}${G.stake?` · ${G.mode==='campaign'?'bet':'buy-in'} ${G.stake}`:''}</small></div>
-    <button class="btn ghost${armedFold?' armed':''}" data-fold>${armedFold?(G.stake?`Fold, lose ${G.stake}`:'Tap to fold'):'Fold'}</button>
+    <div class="mbtns"><button class="btn ghost" data-rulesopen aria-label="Rules">Rules</button><button class="btn ghost${armedFold?' armed':''}" data-fold>${armedFold?(G.stake?`Fold, lose ${G.stake}`:'Tap to fold'):'Fold'}</button></div>
   </div>
   ${rulesBar()}
   ${G.peek&&!G.over?`<div class="peek"><span>Their hand</span><div class="deckgrid">${G.a.hand.map(cardHTML).join('')}</div></div>`:''}
@@ -1697,7 +1744,8 @@ function renderMatch(){
   ${tut?coachHTML():`<p class="hint" aria-live="polite">${esc(hintText(selMoves))}</p>`}
   </div></div>
   ${propsHTML()}
-  ${G.over?resultHTML():''}`;
+  ${G.over?resultHTML():''}
+  ${rulesOpen?rulesPopHTML():''}`;
   if(G.fx)G.fx.done=true;
   if(G.dealt)G.dealtDone=true;
 }
@@ -1759,7 +1807,7 @@ function render(){
 }
 
 // ---------- flow ----------
-function enterMatch(){G.intro=true;undoStack=[];turretMode=false;G.stats=Object.assign({faces:0,jokers:0,kings:0,discards:0,disbands:0,turns:0},G.stats||{});sel=null;disbandMode=false;busy=false;armedFold=false;screen='match';save();render();window.scrollTo(0,0);}
+function enterMatch(){rulesOpen=false;G.intro=true;undoStack=[];turretMode=false;G.stats=Object.assign({faces:0,jokers:0,kings:0,discards:0,disbands:0,turns:0},G.stats||{});sel=null;disbandMode=false;busy=false;armedFold=false;screen='match';save();render();window.scrollTo(0,0);}
 function startMatch(i){
   if(i===-2)G=newRoadTutorial();
   else if(i===-1)G=newTutorial('road');
@@ -1919,6 +1967,8 @@ app.addEventListener('click',e=>{
   const t=e.target.closest('button,[data-lane]');
   if(!t)return;
   const d=t.dataset;
+  if('rulesopen' in d){rulesOpen=true;render();return;}
+  if('rulesclose' in d){rulesOpen=false;render();return;}
   if(!('fold' in d)&&screen==='match')armedFold=false;
   if(handleRunClick(d))return;
   if('auth' in d){doAuth(d.auth);return;}
