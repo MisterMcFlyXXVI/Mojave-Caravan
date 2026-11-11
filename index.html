@@ -726,6 +726,28 @@ ul.resl{text-align:left;display:inline-block;margin:0 auto 6px}
 .mcap{text-align:center;font-size:12.5px;color:var(--muted);margin:6px 0 0}
 .mhand{display:flex;justify-content:center;gap:6px;--cw:50px;flex-wrap:wrap}
 .marrow{align-self:center;font-size:22px;color:var(--neon)}
+
+.table{isolation:isolate}
+.tprop{position:absolute;z-index:-1;pointer-events:none;transform:rotate(var(--pt,0deg)) scale(var(--ps,1));transform-origin:50% 60%}
+.tprop img{display:block;width:100%;height:auto;
+  filter:saturate(.78) sepia(.16) brightness(var(--pb,.86)) contrast(1.06)
+    drop-shadow(0 1px 1px #000e) drop-shadow(var(--sx,0px) var(--sy,5px) 5px #000b) drop-shadow(calc(var(--sx,0px)*2) calc(var(--sy,5px)*2) 16px #0007)}
+.tprop.sz-s{width:clamp(58px,17vw,100px)}.tprop.sz-m{width:clamp(70px,20vw,124px)}.tprop.sz-l{width:clamp(84px,24vw,148px)}
+.tprop.p-lantern{width:clamp(42px,12vw,72px)}
+.tprop.slot0{right:17%;top:4px;--sx:1px;--sy:4px}
+.tprop.slot1{left:29%;bottom:4px;--sx:-3px;--sy:5px;--pb:.82}
+.tprop.slot2{right:22%;bottom:2px;--sx:3px;--sy:5px;--pb:.82}
+.tvig{position:absolute;inset:0;z-index:-1;pointer-events:none;border-radius:inherit;
+  background:radial-gradient(ellipse 75% 70% at 50% 45%,transparent 55%,#00000055 100%)}
+.propgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px}
+.propopt{display:grid;justify-items:center;gap:3px;padding:8px;border-radius:8px;background:#0003;border:1px solid #ffffff14;color:var(--bone);text-align:center;font:inherit}
+.propopt.on{border-color:var(--neon);box-shadow:0 0 0 1px #ffa44966}
+.propopt.locked{opacity:.55}
+.pimgbox{width:72px;height:72px;display:grid;place-items:center}
+.pimgbox img{max-width:100%;max-height:100%;filter:drop-shadow(2px 4px 3px #000a)}
+.pph{font-size:11px;color:var(--muted);border:1px dashed #ffffff33;border-radius:6px;width:100%;height:100%;display:grid;place-items:center}
+.propopt b{font-size:12px;font-weight:600}.propopt small{font-size:11px;color:var(--muted);line-height:1.3}
+.propopt.on small{color:var(--neon)}
 </style>
 </head>
 <body>
@@ -1441,6 +1463,7 @@ function renderLook(){
     <h3 class="sub">Packs <span class="pill num" style="font-size:12px;vertical-align:middle">${LOOKS.back.filter(o=>o.art&&lookUnlocked(o)).length}/${LOOKS.back.filter(o=>o.art).length}</span></h3>
     <p class="note">Each pack is a full extra set of cards with its own back, earned through achievements. Every pack you own lets you hold one more copy of every card in Classic. Your deck is shuffled every hand, so the cards from all your packs mix together, and whichever card is on top shows its own pack’s back.</p>
     <div class="opts">${LOOKS.back.filter(o=>o.art).map(o=>opt('back',o,'<div class="card back"></div>')).join('')}</div>
+    ${propsPickerHTML()}
     <h3 class="sub">Play mat</h3>
     <div class="opts">${LOOKS.mat.map(o=>opt('mat',o,'<div class="table swatch"></div>')).join('')}</div>
     <h3 class="sub">Suit colors</h3>
@@ -1755,6 +1778,7 @@ function renderMatch(){
   ${G.peek&&!G.over?`<div class="peek"><span>Their hand</span><div class="deckgrid">${G.a.hand.map(cardHTML).join('')}</div></div>`:''}
   <div class="mgrid"><div class="mg-table">
   <div class="table">
+    ${tablePropsHTML()}
     <div class="deckrow top">
       <div class="fan" aria-label="Dealer holds ${G.a.hand.length} cards">${G.a.hand.map((c,i,a)=>`<div class="card back"${packAttr(c)} data-cid="${c.id}" data-zone="fan" style="--r:${(i-(a.length-1)/2)*6}deg"></div>`).join('')}</div>
       ${pileHTML(G.a.deck.length,'Dealer’s deck','small',G.a.deck)}
@@ -2005,6 +2029,7 @@ app.addEventListener('click',e=>{
   const t=e.target.closest('button,[data-lane]');
   if(!t)return;
   const d=t.dataset;
+  if('propsel' in d){const id=d.propsel;if(propUnlocked(id)){const eq=meta.look.props=meta.look.props||[];const k=eq.indexOf(id);if(k>=0)eq.splice(k,1);else if(eq.length<PROP_SLOTS)eq.push(id);else{eq.shift();eq.push(id);}save();}render();return;}
   if(handleRundownClick(d))return;
   if(handleCareerClick(d))return;
   if('rulesopen' in d){rulesOpen=true;render();return;}
@@ -3557,6 +3582,7 @@ function runFinish(winner,ov){
     if(G.char==='nuke'&&chemTotal()<chemMax()){const id=pick(Object.keys(CHEMS));meta.chems[id]++;ov.brewed=id;}
     r.won++;
     if(t===2&&s===0)unlock('road_first');
+    if(t===2&&s<RUN_STOPS.length){const pp=TABLE_PROPS.find(x=>x.road===s);if(pp)unlockProp(pp.id);}
     if(t===2){
       if(s===RUN_STOPS.length-1&&!r.endless){
         meta.stripBy=meta.stripBy||[];const had=CHAR_ORDER.filter(charUnlocked);if(!meta.stripBy.includes(G.char))meta.stripBy.push(G.char);
@@ -4477,6 +4503,7 @@ function careerFinish(winner,ov,stake){
     const first=!beatNow(d.id);
     cp.rep[T.id]=Math.min(12,(cp.rep[T.id]||0)+(d.slot==='c'?2:d.slot==='h'?2:1));
     if(first){cp.cbeat.push(d.id);ov.firstBeat=true;}
+    if(d.slot==='c'){const pp=TABLE_PROPS.find(x=>x.camp===T.id);if(pp)unlockProp(pp.id);}
     if(d.slot==='c'&&first){
       const purse=T.purse*(1+p);cp.caps+=purse;ov.lines.push(`Champion’s purse: ${purse} caps`);
       const C=T.champ;let text=C.post;
@@ -4724,6 +4751,73 @@ function handleRundownClick(d){
   render();window.scrollTo(0,0);return true;
 }
 
+
+// =====================================================================
+// TABLE PROPS: real images you drop in props/<id>.png, unlocked by beating bosses.
+// Pick up to 3 to sit on the table in every mode.
+// =====================================================================
+const PROP_SLOTS=3;
+// Table props are switched off for now. Unlocks are still tracked quietly, so flipping this to true brings them back with everything already earned.
+const PROPS_ON=false;
+const TABLE_PROPS=[
+  {id:'badge',name:'Tin star',size:'s',from:'Sheriff Amos Dunn',how:'Beat Sheriff Dunn in the campaign (Goodsprings).',camp:'goodsprings'},
+  {id:'pearls',name:'Pearl necklace',size:'s',from:'Lady Marigold',how:'Beat Lady Marigold in the campaign (Primm).',camp:'primm'},
+  {id:'dino',name:'Tin dinosaur',size:'m',from:'Dino Dale',how:'Beat Dino Dale in the campaign (Novac).',camp:'novac'},
+  {id:'clipboard',name:'NCR requisition clipboard',size:'m',from:'Major Ada Strand',how:'Beat Major Strand in the campaign (Boulder City).',camp:'boulder'},
+  {id:'switchblade',name:'Switchblade',size:'m',from:'Lena Vasquez',how:'Beat Lena Vasquez in the campaign (Freeside).',camp:'freeside'},
+  {id:'watch',name:'Old pocket watch',size:'s',from:'The Old Man',how:'Beat the Old Man in the campaign (the Strip).',camp:'strip'},
+  {id:'caps',name:'Pile of bottle caps',size:'s',from:'the Goodsprings boss',how:'Beat the Goodsprings boss on the Road.',road:0},
+  {id:'iguana',name:'Iguana-on-a-stick plate',size:'m',from:'the Primm boss',how:'Beat the Primm boss on the Road.',road:1},
+  {id:'lantern',name:'Miner’s lantern',size:'s',from:'the Nelson boss',how:'Beat the Nelson boss on the Road.',road:2},
+  {id:'ammo',name:'Ammo box',size:'m',from:'the Boulder City boss',how:'Beat the Boulder City boss on the Road.',road:3},
+  {id:'cocktail',name:'Lounge cocktail',size:'s',from:'the Fremont Street boss',how:'Beat the Fremont Street boss on the Road.',road:4},
+  {id:'dice',name:'Gold dice and chips',size:'s',from:'the Strip boss',how:'Beat the Strip boss on the Road.',road:5},
+];
+const PROP_FILE={};
+function loadPropFiles(){
+  if(!PROPS_ON)return;
+  const exts=['png','webp','PNG','WEBP'];
+  for(const p of TABLE_PROPS){const tryExt=n=>{if(n>=exts.length)return;const im=new Image();
+    im.onload=()=>{PROP_FILE[p.id]=im.src;if(meta&&(screen==='match'||screen==='look'))render();};im.onerror=()=>tryExt(n+1);im.src=`props/${p.id}.${exts[n]}`;};tryExt(0);}
+}
+const propUnlocked=id=>(meta.propsUnlocked||[]).includes(id);
+function unlockProp(id){
+  meta.propsUnlocked=meta.propsUnlocked||[];if(meta.propsUnlocked.includes(id))return;
+  meta.propsUnlocked.push(id);const p=TABLE_PROPS.find(x=>x.id===id);
+  meta.look.props=meta.look.props||[];if(meta.look.props.length<PROP_SLOTS)meta.look.props.push(id);
+  if(PROPS_ON)setTimeout(()=>toast({label:'Table prop unlocked',name:p.name,desc:`From ${p.from}. ${meta.look.props.includes(id)?'It’s on your table now.':'Put it on your table from the pencil menu.'}`}),900);
+}
+function propsRetro(){ // credit bosses beaten before props existed
+  const cp=meta.classic&&meta.classic.camp;
+  for(const p of TABLE_PROPS){
+    if(p.camp&&cp&&(cp.trophies||[]).some(t=>t.town===p.camp))unlockProp(p.id);
+    if(p.road!=null&&((meta.bestStop||0)>p.road||(meta.runsWon||0)>0))unlockProp(p.id);
+  }
+}
+// how each prop sits: flat things can lie at any angle, standing things stay near upright
+const PROP_POSE={badge:[-30,30],pearls:[-35,35],clipboard:[-18,18],switchblade:[-25,25],caps:[-20,20],iguana:[-14,14],
+  dino:[-8,8],watch:[-10,10],lantern:[-3,3],ammo:[-5,5],cocktail:[-2,2],dice:[-6,6]};
+function tablePropsHTML(){
+  if(!PROPS_ON)return '';
+  const ids=((meta.look&&meta.look.props)||[]).filter(id=>propUnlocked(id)&&PROP_FILE[id]).slice(0,PROP_SLOTS);
+  if(!ids.length)return '';
+  return ids.map((id,i)=>{const p=TABLE_PROPS.find(x=>x.id===id);const [lo,hi]=PROP_POSE[id]||[-10,10];
+    const h=hashStr(id+':'+i);const tilt=lo+(h%1000)/1000*(hi-lo);const sc=0.94+((h>>10)%100)/100*0.12;
+    const src=PROP_FILE[id];
+    return `<div class="tprop slot${i} sz-${p.size} p-${id}" aria-hidden="true" style="--pt:${tilt.toFixed(1)}deg;--ps:${sc.toFixed(2)}"><img src="${src}" alt=""></div>`;}).join('')+'<div class="tvig" aria-hidden="true"></div>';
+}
+function propsPickerHTML(){
+  if(!PROPS_ON)return '';
+  const eq=(meta.look.props||[]);
+  return `<h3 class="sub">Table props <span class="pill num" style="font-size:12px;vertical-align:middle">${TABLE_PROPS.filter(p=>propUnlocked(p.id)).length}/${TABLE_PROPS.length}</span></h3>
+    <p class="note">Beat bosses to unlock props: each campaign champion and each Road boss gives one. Pick up to ${PROP_SLOTS} to sit on your table in every mode. Tap to add or remove.</p>
+    <div class="propgrid">${TABLE_PROPS.map(p=>{const ok=propUnlocked(p.id),on=eq.includes(p.id),img=PROP_FILE[p.id];
+      return `<button class="propopt${on?' on':''}${ok?'':' locked'}" data-propsel="${p.id}" ${ok?'':'disabled'} aria-pressed="${on}">
+        <span class="pimgbox">${img?`<img src="${img}" alt="">`:`<span class="pph">${ok?'Art coming':'🔒︎'}</span>`}</span>
+        <b>${esc(p.name)}</b><small>${ok?(on?'On your table':'Unlocked'):esc(p.how)}</small></button>`;}).join('')}</div>
+    <p class="note">${eq.length}/${PROP_SLOTS} on the table.</p>`;
+}
+
 // ---------- boot ----------
 function start(data){
   meta=migrate((data&&data.meta)||load()||freshMeta());
@@ -4734,7 +4828,8 @@ function start(data){
   achSilent=true;const retro=checkState();achSilent=false;
   if(retro>0){save();setTimeout(()=>toast({name:`${retro} achievement${retro>1?'s':''} from past play`,desc:'Open Achievements to see them.'}),900);}if(screen==='hub')screen='road';
   if(G&&!G.rules)G.rules=baseRules();
-  applyLook();if(!window.__art){window.__art=1;initArt();try{loadDeckTextures();}catch(e){}try{loadCourtArt();}catch(e){console.warn(e);}try{loadPortraitFiles();}catch(e){}}
+  applyLook();if(!window.__art){window.__art=1;initArt();try{loadDeckTextures();}catch(e){}try{loadCourtArt();}catch(e){console.warn(e);}try{loadPropFiles();}catch(e){}try{loadPortraitFiles();}catch(e){}}
+  try{propsRetro();}catch(e){}
   if(meta.convertNote!=null){const n=meta.convertNote;delete meta.convertNote;save();setTimeout(()=>toast({label:'Update',name:'The Road is now a roguelite',desc:n?`Your old progress became ${n} starting token${n>1?'s':''}. Pick one when you start a run.`:'Every run starts fresh with the Plain deck.'}),1200);}drawSky();render();
   if(screen==='match'&&G&&!G.over&&G.turn==='a'){busy=true;render();setTimeout(aiTurn,600);}
 }
