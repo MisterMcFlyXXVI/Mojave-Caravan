@@ -537,6 +537,26 @@ html{transition:filter .6s}
 .card.m-lucky{outline:2px solid #7fbf5a;outline-offset:-2px}.card .mod.lucky{background:#3f7a2a}
 .card.m-glass{outline:2px solid #9fd8ec;outline-offset:-2px}.card .mod.glass{background:#3f7f96}
 .card.m-glass::after{content:"";position:absolute;inset:0;background:linear-gradient(135deg,#ffffff00 30%,#ffffff66 45%,#ffffff00 60%);pointer-events:none;z-index:2}
+.card .edfx{position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:2}
+.card .edtag{position:absolute;right:3px;top:50%;transform:translateY(-50%) rotate(90deg);transform-origin:100% 50%;z-index:3;font:700 calc(var(--cw)*.12)/1 system-ui,sans-serif;letter-spacing:.08em;padding:1px 3px;border-radius:3px;color:#fff;background:#000a;white-space:nowrap}
+.card.ed-holo .edfx{background:linear-gradient(115deg,#ff000000 20%,#ff5ec455 32%,#5ee7ff55 42%,#8dff7a55 52%,#ffe45e55 62%,#ff000000 74%);background-size:250% 250%;mix-blend-mode:color-dodge;animation:edholo 4.5s ease-in-out infinite;box-shadow:inset 0 0 0 2px #9fe3ff99,inset 0 0 8px #ff5ec455}
+.card.ed-holo .edtag{background:linear-gradient(90deg,#b0397f,#2f7fa8,#3d9b4a)}
+@keyframes edholo{0%,100%{background-position:0% 0%}50%{background-position:100% 100%}}
+.card.ed-gold{filter:sepia(.25) saturate(1.3)}
+.card.ed-gold .edfx{background:linear-gradient(135deg,#f6d58a33,#b8862a22 40%,#fff3c455 50%,#b8862a22 60%,#f6d58a33);background-size:300% 300%;mix-blend-mode:overlay;animation:edgold 3.2s linear infinite;box-shadow:inset 0 0 0 2px #e8b84a,inset 0 0 12px #f5c95aaa}
+.card.ed-gold .edtag{background:#9a6c14}
+@keyframes edgold{0%{background-position:100% 100%}100%{background-position:0% 0%}}
+.card.ed-neon{box-shadow:0 0 0 2px #ff4fa3,0 0 10px #ff4fa3aa,0 0 18px #4fe3ff66;animation:edneon 2.6s infinite}
+.card.ed-neon .edfx{box-shadow:inset 0 0 10px #ff4fa366,inset 0 0 3px #4fe3ff99}
+.card.ed-neon .edtag{background:#b0206a;box-shadow:0 0 6px #ff4fa3}
+@keyframes edneon{0%,100%{box-shadow:0 0 0 2px #ff4fa3,0 0 10px #ff4fa3aa,0 0 18px #4fe3ff66}46%{box-shadow:0 0 0 2px #ff4fa3,0 0 10px #ff4fa3aa,0 0 18px #4fe3ff66}48%{box-shadow:0 0 0 2px #ff4fa388,0 0 4px #ff4fa355,0 0 6px #4fe3ff33}50%{box-shadow:0 0 0 2px #ff4fa3,0 0 12px #ff4fa3cc,0 0 22px #4fe3ff88}}
+.card.ed-ghost{opacity:.82}
+.card.ed-ghost .edfx{box-shadow:inset 0 0 0 2px #8dffb088,inset 0 0 12px #6dff9a66}
+.card.ed-ghost .edfx{background:radial-gradient(ellipse at 50% 40%,#8dffb022,#5dff8a33 70%,#3dff7a44);mix-blend-mode:screen;animation:edghost 3.8s ease-in-out infinite}
+.card.ed-ghost .edtag{background:#2f7a48}
+@keyframes edghost{0%,100%{opacity:.6}50%{opacity:1}}
+body.stillfx .card .edfx,body.stillfx .card.ed-neon{animation:none}
+@media (prefers-reduced-motion: reduce){.card .edfx,.card.ed-neon{animation:none}}
 .card.m-wild{outline:2px solid #c98bd8;outline-offset:-2px}.card .mod.wild{background:linear-gradient(90deg,#9b3b3b,#3b5e9b,#3b9b59,#9b8a3b)}
 .stopmini{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:center;padding:8px 12px;border-radius:8px;background:var(--dust);border:1px solid #ffffff10;margin-bottom:6px;opacity:.75}
 .stopmini .mile{font-family:var(--display);font-size:18px;color:var(--neon);width:2.2ch;text-align:center}
@@ -774,7 +794,7 @@ let _uid=0;
 const mk=(rank,suit)=>({id:'c'+(++_uid)+'_'+Math.random().toString(36).slice(2,6),rank,suit});
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
 
-function buildDeck(spec){return shuffle(spec.map((s,i)=>{const c=mk(s.rank,s.suit);if(s.mod)c.mod=s.mod;if(s.pack)c.pack=s.pack;c.si=i;return c;}));}
+function buildDeck(spec){return shuffle(spec.map((s,i)=>{const c=mk(s.rank,s.suit);if(s.mod)c.mod=s.mod;if(s.ed)c.ed=s.ed;if(s.pack)c.pack=s.pack;c.si=i;return c;}));}
 function baseNumbers(){const out=[];for(const s of SUITS)for(const r of NUM_RANKS)out.push({rank:r,suit:s});return out;}
 function addFaces(spec,extra){
   for(const [rank,n] of Object.entries(extra)){
@@ -825,7 +845,10 @@ function laneWinner(pv,av,R){
   if(ai&&(!pi||av>pv))return 'a';
   return null;
 }
-function lanesResult(g){const R=RULES(g);return [0,1,2].map(l=>laneWinner(cvValue(g.p.cv[l]),cvValue(g.a.cv[l]),R));}
+const edIn=(cv,ed)=>cv.reduce((n,e)=>n+(e.card.ed===ed?1:0)+e.faces.filter(f=>f.ed===ed).length,0);
+function laneRange(g,side,l){const r=RULES(g).range[side],h=edIn(g[side].cv[l],'holo');return h?[r[0],r[1]+h]:r;}
+function lanesResult(g){const R=RULES(g);return [0,1,2].map(l=>{const pr=laneRange(g,'p',l);if(pr===R.range.p)return laneWinner(cvValue(g.p.cv[l]),cvValue(g.a.cv[l]),R);
+  return laneWinner(cvValue(g.p.cv[l]),cvValue(g.a.cv[l]),{range:{p:pr,a:R.range.a}});});}
 function winnerOf(g){
   if(g.setupLeft.p>0||g.setupLeft.a>0)return null;
   const r=lanesResult(g); if(r.some(x=>!x))return null;
@@ -858,13 +881,15 @@ function legalMoves(g,side){
   }
   return moves;
 }
-function drawTo(g,side,n){const me=g[side];while(me.hand.length<n&&me.deck.length)me.hand.push(me.deck.pop());}
+const handSize=h=>h.filter(c=>c.ed!=='ghost').length; // Ghost edition cards don't take a hand slot
+function drawTo(g,side,n){const me=g[side];while(handSize(me.hand)<n&&me.deck.length)me.hand.push(me.deck.pop());}
 function applyMove(g,side,m,sim){
   const R=RULES(g),me=g[side];
   if(m.t==='disband'){me.cv[m.lane]=[];return;}
   if(m.t==='turret'){g[other(side)].cv[m.lane].pop();return;}
   const wasSetup=g.setupLeft[side]>0;
   const card=me.hand.splice(m.ci,1)[0];
+  if(!sim&&side==='p'&&card.ed==='gold'&&(m.t==='num'||m.t==='face'))g.goldCaps=(g.goldCaps||0)+3;
   if(m.t==='num'){
     me.cv[m.lane].push({card,faces:[]});
     if(wasSetup)g.setupLeft[side]--;
@@ -936,7 +961,7 @@ function newMatch(playerSpec,oppSpec,oppIndex,rules){
   const R=rules||baseRules();
   const g={p:{deck:buildDeck(playerSpec),hand:[],cv:[[],[],[]]},a:{deck:buildDeck(oppSpec.some(c=>c.pack)?oppSpec:withPacks(oppSpec,typeof dealerPacks==='function'&&typeof LOOKS!=='undefined'?dealerPacks(String(oppIndex)+':'+oppSpec.length):[null])),hand:[],cv:[[],[],[]]},
     turn:'p',setupLeft:{p:3,a:3},log:[],over:null,opp:oppIndex,fx:null,rules:R};
-  for(let i=0;i<R.deal.p;i++)g.p.hand.push(g.p.deck.pop());
+  while(handSize(g.p.hand)<R.deal.p&&g.p.deck.length)g.p.hand.push(g.p.deck.pop());
   for(let i=0;i<R.deal.a;i++)g.a.hand.push(g.a.deck.pop());
   return g;
 }
@@ -1070,9 +1095,9 @@ const PERKS={
   lead:{name:'Lead Lined',desc:'The dealer’s Jacks can’t touch your caravans.',price:90},
   twotone:{name:'Two-Tone',desc:'Any card of the same color counts as matching suit for you.',price:45},
   cool:{name:'Cool Head',desc:'Disbanding a caravan doesn’t use up your turn.',price:35},
-  scav:{name:'Scavenger',desc:'+5 caps after every hand, win or lose.',price:50},
+  scav:{name:'Scavenger',desc:'+3 caps after every table, win or lose.',price:50},
   roller:{name:'High Roller',desc:'Table winnings pay 50% more.',price:75},
-  insure:{name:'Insured',desc:'Lose a hand and get half your buy-in back.',price:40},
+  insure:{name:'Insured',desc:'Once per run, a loss that would end your run doesn’t. Then it’s used up.',price:40},
   hunter:{name:'Bounty Hunter',desc:'Bounties pay double.',price:55},
 };
 const CHEMS={
@@ -1291,11 +1316,13 @@ const $=s=>document.querySelector(s);
 const app=$('#app');
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
+const edCls=c=>c&&c.ed&&typeof EDITIONS!=='undefined'&&EDITIONS[c.ed]?' ed-'+c.ed:'';
+const edFx=c=>edCls(c)?`<span class="edfx" aria-hidden="true"></span><span class="edtag">${EDITIONS[c.ed].tag}</span>`:'';
 function cardHTML(c){
-  if(c.rank==='JK')return `<div class="card joker"><span class="court jk"></span><span class="jkc t">JOKER</span><span class="jkc b">JOKER</span></div>`;
+  if(c.rank==='JK')return `<div class="card joker${edCls(c)}"><span class="court jk"></span><span class="jkc t">JOKER</span><span class="jkc b">JOKER</span>${edFx(c)}</div>`;
   const red=isRed(c.suit), s=SUIT_CH[c.suit], num=isNum(c);
   const md=c.mod&&typeof MODS!=='undefined'&&MODS[c.mod]?c.mod:null;
-  return `<div class="card s-${c.suit}${red?' red':''}${num?'':' face'}${md?' m-'+md:''}"><span class="r">${c.rank}<i>${s}</i></span>${num?`<span class="pip">${s}</span>`:`<span class="court" style="background-image:var(--court-${c.rank}-${red?'r':'b'})"></span>`}<span class="r2">${c.rank}<i>${s}</i></span>${md?`<span class="mod ${md}">${MODS[md].tag}</span>`:''}</div>`;
+  return `<div class="card s-${c.suit}${red?' red':''}${num?'':' face'}${md?' m-'+md:''}${edCls(c)}"><span class="r">${c.rank}<i>${s}</i></span>${num?`<span class="pip">${s}</span>`:`<span class="court" style="background-image:var(--court-${c.rank}-${red?'r':'b'})"></span>`}<span class="r2">${c.rank}<i>${s}</i></span>${md?`<span class="mod ${md}">${MODS[md].tag}</span>`:''}${edFx(c)}</div>`;
 }
 const capsHTML=n=>`<span class="pill num" data-capsval="${n}"><span class="cap"></span> <span class="cn">${n}</span> caps</span>`;
 const capN=n=>`<span class="cap"></span> ${n}`;
@@ -1358,6 +1385,7 @@ const QUICK_QA=[
   ['When can I discard or disband?','Any turn after the opening. Discarding swaps a card for a new draw. Disbanding throws away a whole caravan of yours.'],
   ['What happens during the opening?','For your first three turns you must start each empty caravan with a number card. No face cards, discards or disbands yet.'],
   ['What if I run out of cards?','If your hand and deck are both empty, you lose the hand.'],
+  ['What are HOLO, GOLD, NEON and GHOST cards?','Road-only special finishes. Holographic: the caravan it’s in sells 1 point higher. Golden: +3 caps each time you play it, paid when the table ends. Neon: if its caravan sells, the table pays 25% more. Ghost: doesn’t take a slot in your hand.'],
 ];
 function tableRulesHTML(){
   if(!G)return '';
@@ -1648,7 +1676,7 @@ function sortSpec(a,b){
 // ---------- match ----------
 function laneHTML(side,l,lanes,selMoves,proj){
   proj=proj||{};
-  const R=G.rules, cv=G[side].cv[l], v=cvValue(cv), st=cvState(cv), w=lanes[l], r=R.range[side];
+  const R=G.rules, cv=G[side].cv[l], v=cvValue(cv), st=cvState(cv), w=lanes[l], r=laneRange(G,side,l);
   const hide=R.hideOpp&&side==='a'&&!G.over;
   const vcls=hide?'':v>r[1]?'bust':inR(v,r)?'ok':'';
   const arrow=cv.length<2&&!cv.some(e=>e.faces.some(f=>f.rank==='Q'))?'':st.dir>0?'▲':st.dir<0?'▼':'•';
@@ -2303,6 +2331,8 @@ const ROAD_RULES=`
   <li>A <b>run</b> is six stops from Goodsprings to the Strip. Every stop has three tables: a Saloon table, a High Stakes table and a Boss table.</li>
   <li><b>Grit:</b> you start each run with 1. Lose a Saloon or High Stakes table and you spend 1 Grit and move on without the reward. Lose a Boss and you spend 1 Grit to try again. <b>With no Grit left, any loss ends the run.</b> Campfires on the road can restore Grit (up to 2).</li>
   <li>You can <b>skip</b> the Saloon or High Stakes table: you give up its winnings to earn a <b>boon</b> instead (free caps, a free bundle, a free chem, half-price shop, free rerolls or a free card upgrade). Each table shows its boon. The Boss table can’t be skipped.</li>
+  <li>Some cards in the shop have a <b>special finish</b>: <b>Holographic</b> (its caravan can sell 1 higher), <b>Golden</b> (+3 caps each time you play it), <b>Neon</b> (+25% winnings if its caravan sells) or <b>Ghost</b> (doesn’t take a hand slot). The <b>Collector’s bundle</b> only has finished cards. Like everything you buy on the Road, they last for the run.</li>
+  <li>Cards you add during a run wear the back of a <b>Pack</b> you’ve earned (or a different Classic back if you haven’t earned any yet), so you can spot them coming off your deck.</li>
   <li><b>Bosses</b> bring random rules, and they get nastier the further you go. Read them on the map before you deal in.</li>
   <li>Every run starts with a <b>Plain deck</b> and a few caps. Win tables to earn caps, plus <b>interest</b>: 1 cap for every 5 you hold, up to 5.</li>
   <li>Between tables, the <b>trading post</b> sells perks, single cards, chems, card upgrades and one voucher per stop. Reroll it if you don’t like what’s there.</li>
@@ -3297,6 +3327,7 @@ const GENERIC_DEALERS=[
   ['Old Moe','Has played since before the bombs. Says so often.'],['Copper Cal','Polishes every cap before he bets it.'],['Dusty Dell','Hasn’t cleaned her deck since the war.'],
   ['Pastor Pete','Prays over every draw.'],['Brahma Bill','Raises cattle and stakes.'],['Two-Tone Tess','Wears one red boot and one black. Never says why.'],
 ];
+const VOUCHER_PRICE=id=>disc(id==='pockets'||id==='rack'?22:16);
 const VOUCHERS={
   pouch:{name:'Bigger Pouch',desc:'Carry 2 more chems.'},
   pockets:{name:'Deep Pockets',desc:'Hold one more card in every hand.'},
@@ -3306,7 +3337,7 @@ const VOUCHERS={
   tin:{name:'Savings Tin',desc:'Interest can pay 3 more caps.'},
 };
 const TAGS={
-  caps:{name:'Cap Stash',desc:'+8 caps right now.'},
+  caps:{name:'Cap Stash',desc:'Free caps right now (4, plus 1 for each stop you’ve reached).'},
   crate:{name:'Free Bundle',desc:'A free Supply crate (see 5 cards, keep 2) at the next shop.'},
   chem:{name:'Pick-Me-Up',desc:'A free random chem right now.'},
   half:{name:'Clearance Sale',desc:'The next shop is half price.'},
@@ -3320,18 +3351,37 @@ const MODS={
   glass:{name:'Glass',desc:'Worth double, but breaks after the hand it’s played in.',tag:'GLS'},
   wild:{name:'Wild',desc:'Counts as any suit for the suit rule.',tag:'WLD'},
 };
-const PERK_RARITY={
-  shark:'common',twotone:'common',cool:'common',scav:'common',jackrabbit:'common',scrapper:'common',prospector:'common',
-  wide:'uncommon',steady:'uncommon',hunter:'uncommon',kingpin:'uncommon',nose:'uncommon',collector:'uncommon',
-  royal:'rare',lead:'rare',roller:'rare',momentum:'rare',honest:'rare',
-  insure:'legendary',
+// Editions: a special finish on any card, separate from upgrades. Road only, and only for the run.
+const EDITIONS={
+  holo:{name:'Holographic',tag:'HOLO',desc:'The caravan it’s in can sell 1 point higher.',price:3,w:12},
+  gold:{name:'Golden',tag:'GOLD',desc:'+3 caps every time you play it (paid when the table ends).',price:4,w:7},
+  neon:{name:'Neon',tag:'NEON',desc:'If it’s in a caravan you sell, that table pays 25% more.',price:6,w:3},
+  ghost:{name:'Ghost',tag:'GHOST',desc:'Doesn’t take up a slot in your hand.',price:8,w:1},
 };
-const RARITY_PRICE={common:5,uncommon:8,rare:11,legendary:15};
-const RARITY_WEIGHT={common:60,uncommon:28,rare:10,legendary:2};
+function rollEdition(chance){ // chance: odds out of 100 that a card gets any edition; null = guaranteed
+  const tot=Object.values(EDITIONS).reduce((a,e)=>a+e.w,0);
+  if(chance!=null&&Math.random()*100>=chance)return null;
+  let x=Math.random()*tot;for(const [id,e] of Object.entries(EDITIONS)){x-=e.w;if(x<0)return id;}return 'holo';
+}
+// Cards you pick up on the Road wear the back of a Pack you've earned. No Packs yet: a Classic back that isn't your starter.
+function runPackBack(){
+  const earned=earnedPacks();if(earned.length)return pick(earned);
+  const free=LOOKS.back.filter(b=>!b.art&&b.id!==starterBack()).map(b=>b.id);return free.length?pick(free):null;
+}
+function runAddCard(c){const n={...c};delete n.id;const b=runPackBack();if(b)n.pack=b;meta.deck.push(n);return n;}
+const edLine=c=>c&&c.ed&&EDITIONS[c.ed]?`${EDITIONS[c.ed].name}: ${EDITIONS[c.ed].desc}`:'';
+const PERK_RARITY={
+  twotone:'common',jackrabbit:'common',scav:'common',honest:'common',nose:'common',
+  shark:'uncommon',cool:'uncommon',kingpin:'uncommon',prospector:'uncommon',collector:'uncommon',hunter:'uncommon',
+  scrapper:'rare',wide:'rare',royal:'rare',roller:'rare',momentum:'rare',
+  steady:'legendary',lead:'legendary',insure:'legendary',
+};
+const RARITY_PRICE={common:10,uncommon:16,rare:24,legendary:32};
+const RARITY_WEIGHT={common:55,uncommon:30,rare:12,legendary:3};
 Object.assign(PERKS,{
   jackrabbit:{name:'Jackrabbit',desc:'Draw a card whenever you play a Jack.'},
   scrapper:{name:'Scrapper',desc:'Discards draw 2 cards instead of 1.'},
-  prospector:{name:'Prospector',desc:'Interest can pay up to 5 more caps.'},
+  prospector:{name:'Prospector',desc:'Interest can pay up to 3 more caps.'},
   kingpin:{name:'Kingpin',desc:'Scales: every 3 Kings you play this run raise your sell ceiling by 1 (up to +3).'},
   nose:{name:'Bloodhound',desc:'+4 caps for every caravan you sell at exactly 26.'},
   collector:{name:'Collector',desc:'+1 cap per perk you own after every win.'},
@@ -3425,7 +3475,7 @@ function runDealerExtra(s,t){
 }
 function interestCap(){
   const r=run();if(r.deck==='gold')return 0;
-  return (r.tier==='gold'?3:5)+(runV('tin')?3:0)+(has('prospector')?5:0);
+  return (r.tier==='gold'?3:5)+(runV('tin')?3:0)+(has('prospector')?3:0);
 }
 const tableReward=(s,t)=>[5,7,11][t]+Math.round(s*1.5);
 const bossBountyPay=s=>Math.round((4+s)*(has('hunter')?2:1)*(isChar('vladmira')?0.5:1));
@@ -3466,11 +3516,12 @@ function rollCard(withMod){
   if(r<.07)rank='JK';else if(r<.22)rank='K';else if(r<.36)rank='J';else if(r<.45)rank='Q';else rank=pick(['10','10','9','9','8','7','6','5','4','A']);
   const c={rank,suit:rank==='JK'?null:pick(SUITS)};
   if(withMod&&isNum(c)&&Math.random()<.45)c.mod=pick(Object.keys(MODS));
+  if(withMod){const e=rollEdition(23);if(e)c.ed=e;}
   return c;
 }
 function runCardPrice(c){
-  const b=c.rank==='JK'?7:c.rank==='K'?5:c.rank==='J'?4:c.rank==='Q'?3:1+Math.ceil(val(c)/3);
-  return disc(b+(c.mod?2:0)+(run().deck==='rust'?1:0));
+  const b=c.rank==='JK'?9:c.rank==='K'?6:c.rank==='J'?4:c.rank==='Q'?3:1+Math.ceil(val(c)/3);
+  return disc(b+(c.mod?2:0)+(c.ed&&EDITIONS[c.ed]?EDITIONS[c.ed].price:0)+(run().deck==='rust'?1:0));
 }
 const perkRunPrice=id=>disc(RARITY_PRICE[PERK_RARITY[id]||'common']);
 const perkSellPrice=id=>Math.max(1,Math.floor(RARITY_PRICE[PERK_RARITY[id]||'common']/2));
@@ -3482,12 +3533,13 @@ const BUNDLES={
   haul:{name:'Caravan haul',desc:'See 5 cards, keep 2. Every card is a face card or an upgraded number.',price:11,see:5,keep:2,w:10},
   suit:{name:'Suit bundle',desc:'See 5 number cards of one suit, keep 2. Some come upgraded.',price:6,see:5,keep:2,w:16},
   royal:{name:'Royal bundle',desc:'See 5 Kings and Queens, keep 2.',price:9,see:5,keep:2,w:8},
+  collector:{name:'Collector’s bundle',desc:'See 4 cards, keep 1. Every card has a special finish: Holographic, Golden, Neon or Ghost.',price:14,see:4,keep:1,w:6},
 };
 const bundleName=b=>b.id==='suit'?`${SUIT_WORD[b.suit]} bundle`:BUNDLES[b.id].name;
 const bundleDesc=b=>b.id==='suit'?`See 5 ${SUIT_WORD[b.suit].toLowerCase()} number cards, keep 2. Some come upgraded.`:BUNDLES[b.id].desc;
 function rollBundle(){const tot=Object.values(BUNDLES).reduce((a,b)=>a+b.w,0);let x=Math.random()*tot;for(const [id,b] of Object.entries(BUNDLES)){x-=b.w;if(x<0)return id==='suit'?{id,suit:pick(SUITS)}:{id};}return {id:'saddlebag'};}
 function genBundleCards(b){
-  const out=[],key=c=>c.rank+(c.suit||'')+(c.mod||'');
+  const out=[],key=c=>c.rank+(c.suit||'')+(c.mod||'')+(c.ed||'');
   const numRank=()=>pick(['A','2','3','4','5','6','7','8','9','10']);
   const mod=()=>pick(Object.keys(MODS));
   const make=()=>{
@@ -3498,13 +3550,15 @@ function genBundleCards(b){
     if(Math.random()<face){const r=Math.random();return r<.12?{rank:'JK',suit:null}:{rank:pick(['K','J','Q','J','K']),suit:pick(SUITS)};}
     const c={rank:numRank(),suit:pick(SUITS)};if(Math.random()<up)c.mod=mod();return c;
   };
-  for(let k=0;k<60&&out.length<BUNDLES[b.id].see;k++){const c=make();if(!out.some(o=>key(o)===key(c)))out.push(c);}
+  for(let k=0;k<60&&out.length<BUNDLES[b.id].see;k++){const c=b.id==='collector'?rollCard(false):make();
+    const e=b.id==='collector'?rollEdition(null):rollEdition(4);if(e)c.ed=e;
+    if(!out.some(o=>key(o)===key(c)))out.push(c);}
   return out;
 }
 function openBundle(b,free){run().picker={kind:'bundle',title:bundleName(b)+(free?' (free)':''),note:`Pick up to ${BUNDLES[b.id].keep} to add to your deck.`,options:genBundleCards(b),keep:BUNDLES[b.id].keep,sel:[]};}
 function openBurn(max,title,note){run().picker={kind:'burn',title,note,keep:max,sel:[]};}
 const burnRoom=()=>Math.max(0,meta.deck.length-MIN_DECK);
-const CRATES={perk:{name:'Perk crate',desc:'Pick 1 of 3 perks.',price:7},chem:{name:'Chem crate',desc:'Pick 1 of 3 chems.',price:3}};
+const CRATES={perk:{name:'Perk crate',desc:'Pick 1 of 3 perks.',price:14},chem:{name:'Chem crate',desc:'Pick 1 of 3 chems.',price:3}};
 function rerollCost(){const r=run();return (runV('dice')?1:3)*(r.deck==='rust'?2:1)+(r.rerolls||0);}
 function openShop(){
   const r=run();
@@ -3524,7 +3578,7 @@ function openCrate(kind){
 }
 function takeCrate(i){
   const r=run(),c=r.crate;if(!c)return;const o=c.options[i];
-  if(c.kind==='card')meta.deck.push(o);
+  if(c.kind==='card')runAddCard(o);
   else if(c.kind==='perk'){if(meta.perks.length<perkSlots()&&!meta.perks.includes(o))meta.perks.push(o);}
   else if(chemTotal()<chemMax())meta.chems[o]++;
   meta.equipped=meta.perks;r.crate=null;save();
@@ -3552,7 +3606,7 @@ function skipTable(){
 }
 function applyTag(tag){
   const r=run();
-  if(tag==='caps')meta.caps+=8;
+  if(tag==='caps')meta.caps+=4+r.stop;
   else if(tag==='chem'){if(chemTotal()<chemMax())meta.chems[pick(Object.keys(CHEMS))]++;}
   else if(tag==='half')r.halfShop=true;
   else if(tag==='reroll')r.freeRerolls+=2;
@@ -3565,12 +3619,14 @@ function runFinish(winner,ov){
   const r=run(),s=G.runStop,t=G.runTable,lanes=lanesResult(G);
   ov.run=true;r.hands++;const before=meta.caps;
   const extras=[];
-  if(has('scav')){meta.caps+=2;extras.push('2 from Scavenger');}
+  if(has('scav')){meta.caps+=3;extras.push('3 from Scavenger');}
+  if(G.goldCaps){meta.caps+=G.goldCaps;extras.push(`${G.goldCaps} from Golden cards`);}
   // glass breaks
   const played=new Set(G.glass||[]);
   if(played.size){meta.deck=meta.deck.filter((c,i)=>!played.has(i));extras.push(`${played.size} glass card${played.size>1?'s':''} broke`);}
   if(winner==='p'){
-    const w=Math.round(tableReward(s,t)*(has('roller')?1.5:1)*winMult());meta.caps+=w;ov.win=w;
+    const neon=[0,1,2].reduce((n,l)=>n+(lanes[l]==='p'?edIn(G.p.cv[l],'neon'):0),0);
+    const w=Math.round(tableReward(s,t)*(has('roller')?1.5:1)*winMult()*(1+0.25*neon));meta.caps+=w;ov.win=w;if(neon)extras.push(`Neon: winnings +${25*neon}%`);
     if(G.bounty&&bountyMet(G.bounty,lanes)){ov.bountyWon=G.bountyPay;meta.caps+=G.bountyPay;}
     let gild=0;[0,1,2].forEach(l=>{if(lanes[l]==='p')for(const e of G.p.cv[l])if(e.card.mod==='gilded')gild+=3;});
     if(gild){meta.caps+=gild;extras.push(`${gild} from Gilded cards`);}
@@ -3633,7 +3689,7 @@ const EVENTS={
   doctor:{title:'The Strange Doctor',text:'A doctor in a stained coat offers to “reinforce” a card. Results guaranteed, mostly.',
     choices:[{label:'Steel a card (6 caps)',cost:6,act:()=>{const pool=meta.deck.filter(c=>isNum(c)&&!c.mod);if(pool.length)pick(pool).mod='steel';return 'One of your cards is now Steel.';}},{label:'No thanks',act:()=>'You back away slowly.'}]},
   wreck:{title:'An Abandoned Caravan',text:'A wrecked caravan sits by the road. Something might be worth taking.',
-    choices:[{label:'Search the cargo',act:()=>{const a=rollCard(true),b=rollCard(false);meta.deck.push(a,b);return `You found ${cardName(a)}${a.mod?` (${MODS[a.mod].name})`:''} and ${cardName(b)}, now in your deck.`;}},{label:'Take the loose caps',act:()=>{meta.caps+=6;return 'You pocket 6 caps.';}}]},
+    choices:[{label:'Search the cargo',act:()=>{const a=runAddCard(rollCard(true)),b=runAddCard(rollCard(false));return `You found ${cardName(a)}${a.mod?` (${MODS[a.mod].name})`:''}${a.ed?` (${EDITIONS[a.ed].name})`:''} and ${cardName(b)}, now in your deck.`;}},{label:'Take the loose caps',act:()=>{meta.caps+=6;return 'You pocket 6 caps.';}}]},
   gambler:{title:'The Coin Flipper',text:'A grinning stranger offers a coin flip: double or nothing on 10 caps.',
     choices:[{label:'Flip (10 caps)',cost:10,act:()=>{if(Math.random()<.5){meta.caps+=20;return 'Heads! You win 20 caps.';}return 'Tails. The stranger laughs and walks off with your caps.';}},{label:'Walk away',act:()=>'Probably wise.'}]},
   shrine:{title:'A Roadside Shrine',text:'An old shrine to a forgotten casino. Leaving an offering here thins your deck of the cards you least need.',
@@ -3854,16 +3910,16 @@ function renderRunShop(){
       <h3 class="sub">Card bundles</h3>
       <div class="plist">${of.bundles.map((b,i)=>`<div class="prow"><div><b>${esc(bundleName(b))}</b><span>${esc(bundleDesc(b))}</span></div>${buyBtn('bundle'+i,disc(BUNDLES[b.id].price))}</div>`).join('')}</div>
       <h3 class="sub">Burn pile</h3>
-      <div class="prow"><div><b>Burn pile</b><span>Throw up to 2 cards from your deck into the fire. A thinner deck draws your best cards more often. Once per visit; your deck can’t go below ${MIN_DECK}.</span></div>${buyBtn('burn',disc(2),r.burnUsed||!burnRoom())}</div>
+      <div class="prow"><div><b>Burn pile</b><span>Throw up to 2 cards from your deck into the fire. A thinner deck draws your best cards more often. Once per visit; your deck can’t go below ${MIN_DECK}.</span></div>${buyBtn('burn',disc(3),r.burnUsed||!burnRoom())}</div>
       <h3 class="sub">Crates</h3>
       <div class="plist">${Object.entries(CRATES).map(([k,c])=>`<div class="prow"><div><b>${c.name}</b><span>${c.desc}</span></div>${buyBtn('crate-'+k,disc(c.price),k==='perk'&&full)}</div>`).join('')}</div>
       <h3 class="sub">Cards</h3>
-      <div class="offers">${of.cards.map((c,i)=>`<div class="offer${sold('card'+i)?' sold':''}">${cardHTML(c)}<div class="what">${c.rank==='JK'?'Joker':isNum(c)?cardName(c):FACE_NAME[c.rank]+' '+SUIT_CH[c.suit]}${c.mod?`<br><b>${MODS[c.mod].name}:</b> ${esc(MODS[c.mod].desc)}`:''}</div>${buyBtn('card'+i,runCardPrice(c))}</div>`).join('')}</div>
+      <div class="offers">${of.cards.map((c,i)=>`<div class="offer${sold('card'+i)?' sold':''}">${cardHTML(c)}<div class="what">${c.rank==='JK'?'Joker':isNum(c)?cardName(c):FACE_NAME[c.rank]+' '+SUIT_CH[c.suit]}${c.mod?`<br><b>${MODS[c.mod].name}:</b> ${esc(MODS[c.mod].desc)}`:''}${c.ed?`<br><b>${EDITIONS[c.ed].name}:</b> ${esc(EDITIONS[c.ed].desc)}`:''}</div>${buyBtn('card'+i,runCardPrice(c))}</div>`).join('')}</div>
       <h3 class="sub">Workbench</h3>
-      <div class="prow"><div><b>${MODS[of.upgrade].name} upgrade</b><span>${esc(MODS[of.upgrade].desc)} Pick a number card from your deck to apply it.</span></div>${r.freeUpgrade?`<button class="btn hot" data-rbuy="upgrade">Free</button>`:buyBtn('upgrade',disc(5))}</div>
+      <div class="prow"><div><b>${MODS[of.upgrade].name} upgrade</b><span>${esc(MODS[of.upgrade].desc)} Pick a number card from your deck to apply it.</span></div>${r.freeUpgrade?`<button class="btn hot" data-rbuy="upgrade">Free</button>`:buyBtn('upgrade',disc(6))}</div>
       <h3 class="sub">Chems</h3>
       <div class="plist">${of.chems.map((id,i)=>`<div class="prow"><div><b>${CHEMS[id].name}${meta.chems[id]?` ×${meta.chems[id]}`:''}</b><span>${esc(CHEMS[id].desc)}</span></div>${buyBtn('chem'+i,chemRunPrice(id),chemTotal()>=chemMax())}</div>`).join('')}</div>
-      ${of.voucher?`<h3 class="sub">Voucher <span class="note">· one per stop, lasts the whole run</span></h3><div class="prow"><div><b>${VOUCHERS[of.voucher].name}</b><span>${esc(VOUCHERS[of.voucher].desc)}</span></div>${buyBtn('voucher',disc(9))}</div>`:''}
+      ${of.voucher?`<h3 class="sub">Voucher <span class="note">· one per stop, lasts the whole run</span></h3><div class="prow"><div><b>${VOUCHERS[of.voucher].name}</b><span>${esc(VOUCHERS[of.voucher].desc)}</span></div>${buyBtn('voucher',VOUCHER_PRICE(of.voucher))}</div>`:''}
       <div class="hubbtns"><button class="btn" data-rreroll ${r.sponsor||r.freeRerolls||meta.caps>=rerollCost()?'':'disabled'}>Reroll shop (${r.sponsor?'free, sponsored':r.freeRerolls?'free':capN(rerollCost())})</button></div>`
     :runShopTab==='deck'?`
       <p class="note">${deckSummary(meta.deck)} ${modCount()?`${modCount()} upgraded.`:''} To remove cards, use the Burn pile in the shop.</p>
@@ -3887,12 +3943,12 @@ function pickerHTML(){
 function pickerDone(){
   const r=run(),pk=r.picker;if(!pk)return;
   if(pk.kind==='burn'){const set=new Set(pk.sel.slice(0,burnRoom()));meta.deck=meta.deck.filter((c,i)=>!set.has(i));if(r.phase==='event')r.eventResult=`You burned ${set.size} card${set.size===1?'':'s'}.`;}
-  else for(const i of pk.sel.slice(0,pk.keep))meta.deck.push({...pk.options[i]});
+  else for(const i of pk.sel.slice(0,pk.keep))runAddCard(pk.options[i]);
   r.picker=null;if(modCount()>=5)unlock('tinker');save();
 }
 function crateHTML(){
   const c=run().crate;
-  const lab=o=>c.kind==='card'?{t:`${o.rank==='JK'?'Joker':cardName(o)}${o.mod?` · ${MODS[o.mod].name}`:''}`,d:o.mod?MODS[o.mod].desc:'Goes into your deck.',card:o}:c.kind==='perk'?{t:PERKS[o].name,d:PERKS[o].desc}:{t:CHEMS[o].name,d:CHEMS[o].desc};
+  const lab=o=>c.kind==='card'?{t:`${o.rank==='JK'?'Joker':cardName(o)}${o.mod?` · ${MODS[o.mod].name}`:''}${o.ed?` · ${EDITIONS[o.ed].name}`:''}`,d:[o.mod?MODS[o.mod].desc:'',edLine(o)].filter(Boolean).join(' ')||'Goes into your deck.',card:o}:c.kind==='perk'?{t:PERKS[o].name,d:PERKS[o].desc}:{t:CHEMS[o].name,d:CHEMS[o].desc};
   return `<div class="overlay"><div class="panel result picker" style="text-align:left"><h2 style="font-size:26px;color:var(--neon)">${CRATES[c.kind].name}${c.free?' (free)':''}</h2><p>Pick one.</p>
     <div class="spoils">${c.options.map((o,i)=>{const l=lab(o);return `<button class="spoil crateopt" data-cratepick="${i}">${l.card?cardHTML(l.card):''}<span><b>${esc(l.t)}</b><span>${esc(l.d)}</span></span></button>`;}).join('')}</div>
     <button class="btn ghost" data-crateskip style="margin-top:10px">Take nothing</button></div></div>`;
@@ -3908,12 +3964,12 @@ function runShopBuy(key){
   const pay=n=>{if(meta.caps<n)return false;meta.caps-=n;return true;};
   if(key.startsWith('perk')){const id=of.perks[+key.slice(4)];if(meta.perks.length>=perkSlots())return;if(!pay(perkRunPrice(id)))return;meta.perks.push(id);meta.equipped=meta.perks;of.sold[key]=1;if(meta.perks.length>=5)unlock('loaded');}
   else if(key.startsWith('bundle')){const b=of.bundles[+key.slice(6)];if(!pay(disc(BUNDLES[b.id].price)))return;of.sold[key]=1;openBundle(b,false);}
-  else if(key==='burn'){if(r.burnUsed||!burnRoom())return;if(!pay(disc(2)))return;r.burnUsed=true;of.sold[key]=1;openBurn(2,'Burn pile','Pick up to 2 cards to burn. They’re gone for the rest of the run.');}
+  else if(key==='burn'){if(r.burnUsed||!burnRoom())return;if(!pay(disc(3)))return;r.burnUsed=true;of.sold[key]=1;openBurn(2,'Burn pile','Pick up to 2 cards to burn. They’re gone for the rest of the run.');}
   else if(key.startsWith('crate-')){const k=key.slice(6);if(!pay(disc(CRATES[k].price)))return;openCrate(k);}
-  else if(key.startsWith('card')){const c=of.cards[+key.slice(4)];if(!pay(runCardPrice(c)))return;meta.deck.push({...c});of.sold[key]=1;}
+  else if(key.startsWith('card')){const c=of.cards[+key.slice(4)];if(!pay(runCardPrice(c)))return;runAddCard(c);of.sold[key]=1;}
   else if(key.startsWith('chem')){const id=of.chems[+key.slice(4)];if(chemTotal()>=chemMax())return;if(!pay(chemRunPrice(id)))return;meta.chems[id]++;}
-  else if(key==='upgrade'){if(r.freeUpgrade){r.freeUpgrade=0;}else if(!pay(disc(5)))return;r.workbench={mod:of.upgrade};of.sold[key]=1;}
-  else if(key==='voucher'){if(!pay(disc(9)))return;r.vouchers.push(of.voucher);r.voucherStop=r.stop;of.sold[key]=1;}
+  else if(key==='upgrade'){if(r.freeUpgrade){r.freeUpgrade=0;}else if(!pay(disc(6)))return;r.workbench={mod:of.upgrade};of.sold[key]=1;}
+  else if(key==='voucher'){if(!pay(VOUCHER_PRICE(of.voucher)))return;r.vouchers.push(of.voucher);r.voucherStop=r.stop;of.sold[key]=1;}
   save();
 }
 function renderRoadRun(){
@@ -4213,6 +4269,7 @@ document.addEventListener('pointerleave',e=>{},true);
 document.addEventListener('pointerout',e=>{const b=e.target.closest&&e.target.closest('.hand .card-btn, .pickcard, .offer .card');if(b&&!b.contains(e.relatedTarget)){b.style.removeProperty('--rx');b.style.removeProperty('--ry');b.style.removeProperty('--sx');}},{passive:true});
 
 function afterRender(prevScreen,prevSnap,fxNow){
+  document.body.classList.toggle('stillfx',!motionOn());
   screenIn(prevScreen);
   ambience();
   if(screen==='match'){animateMatch(prevSnap,fxNow);if(G&&G.over)resultCaps();}
