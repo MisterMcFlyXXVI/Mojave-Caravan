@@ -486,6 +486,9 @@ body[data-screen="home"] .wordmark{visibility:hidden}
 .bets .btn{padding:6px 10px;font-size:13px}
 
 /* ---- The Road: runs ---- */
+.boon{margin-top:8px;padding:6px 9px;border-radius:6px;background:#7fbf5a14;border:1px dashed #7fbf5a66;font-size:12.5px;line-height:1.4;color:var(--bone)}
+.boon b{color:#a9d88b}.boon span{display:block;margin-top:2px}
+.boon.dim{opacity:.7}
 .gcount{display:inline-grid;place-items:center;min-width:18px;height:18px;border-radius:9px;background:var(--neon);color:#2a1a0c;font-size:11px;margin-left:4px;padding:0 4px}
 button.rb{font:inherit;cursor:pointer}
 .goals{display:grid;gap:6px}
@@ -1350,7 +1353,7 @@ function tableRulesHTML(){
 }
 // Goals for the current hand: bounties, town challenges, champion purses, with live progress where it can be tracked.
 function goalsList(){
-  if(!G||G.opp<0)return [];
+  if(!G)return [];
   const st=G.stats||{},out=[];
   const lanes=lanesResult(G),soldP=lanes.filter(x=>x==='p').length;
   const prog=(id)=>{
@@ -1386,13 +1389,14 @@ function goalsList(){
 function goalsHTML(){
   const gs=goalsList();if(!gs.length)return '';
   const lbl={on:'In progress',done:'Done',failed:'Missed',info:''};
-  return `<h3 class="sub">Goals this hand</h3><div class="goals">${gs.map(g=>`<div class="goal ${g.state}"><div><small>${esc(g.kind)}</small><b>${esc(g.name)}</b><span>${esc(g.desc)}</span>${g.note?`<em>${esc(g.note)}</em>`:''}</div><div class="gr"><span class="pill num">${esc(g.reward)}</span>${lbl[g.state]?`<i>${lbl[g.state]}</i>`:''}</div></div>`).join('')}</div>
+  const intro=G.mode==='campaign'?'Side challenges pay extra caps and reputation when you win a hand that meets them.':G.mode==='road'?'Bounties are bonus caps posted at the table. Meet the condition and win the hand to collect.':'';
+  return `${intro?`<p class="note">${intro}</p>`:''}<div class="goals">${gs.map(g=>`<div class="goal ${g.state}"><div><small>${esc(g.kind)}</small><b>${esc(g.name)}</b><span>${esc(g.desc)}</span>${g.note?`<em>${esc(g.note)}</em>`:''}</div><div class="gr"><span class="pill num">${esc(g.reward)}</span>${lbl[g.state]?`<i>${lbl[g.state]}</i>`:''}</div></div>`).join('')}</div>
     <p class="note">Bounties and challenges only pay if you win the hand.</p>`;
 }
 function rulesPopHTML(){
+  if(rulesOpen==='goals')return `<div class="overlay rulespop"><div class="panel result" role="dialog" aria-label="Goals" style="text-align:left"><div class="sect-h"><h2 style="font-size:26px;color:var(--neon)">Goals</h2><button class="btn" data-rulesclose>Close</button></div>${goalsHTML()||'<p class="note">No bounties or challenges at this table.</p>'}<p class="note">Tap <b>Rules</b> for this table’s rules and the full rulebook.</p><button class="btn hot" data-rulesclose style="margin-top:10px;width:100%">Back to the table</button></div></div>`;
   return `<div class="overlay rulespop"><div class="panel result" role="dialog" aria-label="Rules" style="text-align:left">
     <div class="sect-h"><h2 style="font-size:26px;color:var(--neon)">${rulesOpen==='goals'?'Goals':'Rules'}</h2><button class="btn" data-rulesclose>Close</button></div>
-    ${goalsHTML()}
     ${tableRulesHTML()}
     <h3 class="sub">Quick answers</h3>
     <div class="qa">${QUICK_QA.map(([q,a])=>`<details><summary>${esc(q)}</summary><p>${esc(a)}</p></details>`).join('')}</div>
@@ -2273,7 +2277,7 @@ function resumeHTML(){
 const ROAD_RULES=`
   <li>A <b>run</b> is six stops from Goodsprings to the Strip. Every stop has three tables: a Saloon table, a High Stakes table and a Boss table.</li>
   <li><b>Grit:</b> you start each run with 1. Lose a Saloon or High Stakes table and you spend 1 Grit and move on without the reward. Lose a Boss and you spend 1 Grit to try again. <b>With no Grit left, any loss ends the run.</b> Campfires on the road can restore Grit (up to 2).</li>
-  <li>You can <b>skip</b> the Saloon or High Stakes table for a reward tag. The Boss table can’t be skipped.</li>
+  <li>You can <b>skip</b> the Saloon or High Stakes table: you give up its winnings to earn a <b>boon</b> instead (free caps, a free bundle, a free chem, half-price shop, free rerolls or a free card upgrade). Each table shows its boon. The Boss table can’t be skipped.</li>
   <li><b>Bosses</b> bring random rules, and they get nastier the further you go. Read them on the map before you deal in.</li>
   <li>Every run starts with a <b>Plain deck</b> and a few caps. Win tables to earn caps, plus <b>interest</b>: 1 cap for every 5 you hold, up to 5.</li>
   <li>Between tables, the <b>trading post</b> sells perks, single cards, chems, card upgrades and one voucher per stop. Reroll it if you don’t like what’s there.</li>
@@ -3529,7 +3533,7 @@ function applyTag(tag){
   else if(tag==='reroll')r.freeRerolls+=2;
   else if(tag==='crate')r.freeCrate=1;
   else if(tag==='upgrade')r.freeUpgrade=1;
-  toast({label:'Table skipped',name:TAGS[tag].name,desc:TAGS[tag].desc});
+  toast({label:'Boon earned',name:TAGS[tag].name,desc:TAGS[tag].desc});
 }
 // ---- finish a table ----
 function runFinish(winner,ov){
@@ -3704,8 +3708,9 @@ function renderRunMap(){
         <div class="rt-head">${t===2&&d.rival?`<img class="rivalimg" src="${portrait(d.rival)}" alt="">`:''}<div><small>${TABLE_KIND[t]}</small><b>${esc(d.name)}</b><span>${esc(d.blurb)}</span></div></div>
         ${ids.length?`<div class="rulesbar">${ids.map(ruleChip).join('')}${t===2&&d.rival?`<span class="rb house-chip">Rival: ${esc(RIVALS[d.rival].rule)}</span>`:''}</div>`:(t===2&&d.rival?`<div class="rulesbar"><span class="rb house-chip">Rival: ${esc(RIVALS[d.rival].rule)}</span></div>`:'')}
         ${ids.length?`<div class="ruledescs">${ids.map(id=>`<span><b>${BOSS_RULES[id].name}:</b> ${esc(BOSS_RULES[id].desc)}</span>`).join('')}</div>`:''}
+        ${st==='now'&&tag?`<div class="boon"><b>Or skip it:</b> give up this table’s winnings to earn a boon. <span><b>${esc(tag.name)}:</b> ${esc(tag.desc)}</span></div>`:st==='next'&&tag?`<div class="boon dim">Skip boon: <b>${esc(tag.name)}</b>. ${esc(tag.desc)}</div>`:''}
         <div class="rt-foot"><span class="num">Win +${Math.round(tableReward(s,t)*(has('roller')?1.5:1)*winMult())}${t===2?` · Bounty: ${BOUNTIES[r.bounties[s]].name} +${bossBountyPay(s)}`:''}</span>
-          ${st==='now'?`<span class="rt-btns">${tag?`<button class="btn" data-runskip title="${esc(tag.desc)}">Skip: ${esc(tag.name)}</button>`:''}<button class="btn hot" data-runplay>Deal in</button></span>`:st==='done'?'<span class="tag">DONE</span>':''}</div>
+          ${st==='now'?`<span class="rt-btns">${tag?`<button class="btn" data-runskip>Skip for ${esc(tag.name)}</button>`:''}<button class="btn hot" data-runplay>Deal in</button></span>`:st==='done'?'<span class="tag">DONE</span>':''}</div>
       </div>`;}).join('');
     return `<div class="stopcur"><h3>${inBeyond(s)?`Mile ${mileOf(s)}`:s+1}. ${esc(place)}</h3>${tables}</div>`;
   }).join('');
