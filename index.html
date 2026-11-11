@@ -1216,10 +1216,10 @@ const ROAD_STEPS=[
   {title:'Chems',say:'Chems are one-use boosts, one per turn, after the opening. Using one doesn’t end your turn. Tap Spyglass below your hand to see what Jo is holding.',
    why:'Seeing her hand tells you what she can do next. If she’s holding a Jack, your biggest caravan is a target, and it’s better to know before you put more cards into it.',
    move:{t:'chem',id:'spy'}},
-  {title:'Bounties',say:'Now you can see Jo’s hand, and she’s holding a Jack. Every table also posts a bounty for extra caps. This one is Kingmaker: win after playing two Kings. Put your K♠ on your 6♠ in caravan II: 3 + 18 makes 21.',
+  {title:'Bounties',say:'Now you can see Jo’s hand, and she’s holding a Jack. Boss tables also post a bounty for extra caps; this practice table has one too. This one is Kingmaker: win after playing two Kings. Put your K♠ on your 6♠ in caravan II: 3 + 18 makes 21.',
    why:'This one play does two jobs. Caravan II jumps into your sell range, and it’s your second King, so the bounty pays if you win. Spreading strength across caravans also means one Jack can’t wreck your whole hand.',
    move:{t:'face',key:'KS',side:'p',lane:1,idx:1},ai:{t:'face',key:'JH',side:'p',lane:0,idx:1}},
-  {title:'On your own',say:'Jo spent the Jack you spotted on your 9♣. Now you’ve seen the road: every stop has three tables, bosses bring their own rules, perks and chems come from the trading post between tables, and losing a table ends the run. Finish the hand any way you like.',
+  {title:'On your own',say:'Jo spent the Jack you spotted on your 9♣. Now you’ve seen the road: every stop has three tables, bosses bring their own rules, perks and chems come from the trading post between tables, and a little Grit lets you survive a lost table or two. Finish the hand any way you like.',
    why:'Your caravan I is back to 18. Getting it to 20 or more with a heart or a high card puts you back in range. Watch what Jo plays, and remember you can see her hand for the rest of this one.',
    move:null},
 ];
@@ -1369,7 +1369,7 @@ const RULES_HTML=`
 <ul>
 <li>If you have no cards left in your hand or deck, you lose the hand.</li>
 <li>If a Jack or Joker leaves two cards of the same value side by side, the caravan keeps the direction it had.</li>
-<li>Decks hold at least 30 cards. A pack has only one of each card, so you can have as many copies of a card (like J♠) as you own packs: your starter deck plus each pack you’ve earned. Jokers come two per pack.</li>
+<li>Decks hold at least 30 cards. In Classic, a pack has only one of each card, so you can have as many copies of a card (like J♠) as you own packs: your starter deck plus each pack you’ve earned. Jokers come two per pack.</li>
 </ul>`;
 const RULES_LIST=RULES_HTML;
 const QUICK_QA=[
@@ -1511,13 +1511,13 @@ function renderHome(){
     <button class="mode" data-go="classic">
       <span class="mk">Classic</span>
       <span class="mt">Caravan never changes</span>
-      <span class="md">Straight Caravan, the way it’s dealt in the Mojave. Buy your deck with a fixed budget, pick a dealer, play. No perks, no tricks.</span>
+      <span class="md">Straight Caravan, the way it’s dealt in the Mojave. Play a single game, or work a whole campaign from Goodsprings to the Strip. No perks, no tricks.</span>
       <span class="ms num">Record ${meta.classic.wins}W · ${meta.classic.losses}L${meta.classic.deck?` · deck ${meta.classic.deck.length}`:' · no deck yet'}</span>
     </button>
     <button class="mode" data-go="road">
       <span class="mk">Roguelite</span>
       <span class="mt">The Road</span>
-      <span class="md">A roguelite run from Goodsprings to the Strip. Start with a plain deck, build it up between tables, and survive the bosses. One loss and the run is over.</span>
+      <span class="md">A roguelite run from Goodsprings to the Strip. Start with a plain deck, build it up between tables, and survive the bosses. A little Grit gets you past a bad table or two, but run out and the run is over.</span>
       <span class="ms num">${runLive()?`Run in progress · ${meta.run.stop>=RUN_STOPS.length?`mile ${meta.run.stop-RUN_STOPS.length+1} beyond the Strip`:`stop ${meta.run.stop+1} of ${RUN_STOPS.length}`} · ${meta.caps} caps`:`Runs won: ${meta.runsWon||0}`}</span>
     </button>
   </div>
@@ -1652,7 +1652,7 @@ function renderPickChar(){
   <div class="mbar">${backBtn('home','Modes')}${capsHTML(meta.caps)}</div>
   <section class="panel">
     <h2 style="font-size:28px">Who’s playing?</h2>
-    <p class="note">Each character changes the rules a little and meets their own rivals on the Road. Tap a portrait for the full bio. You can switch between hands.</p>
+    <p class="note">Each character changes the rules a little and meets their own rivals on the Road. Tap a portrait for the full bio. You can switch characters before each run.</p>
     <div class="chars">${CHAR_ORDER.map(id=>{const c=CHARS[id],ok=charUnlocked(id),on=meta.char===id;
       return `<div class="charcard${ok?'':' locked'}${on?' on':''}">
         <button class="cimg${ok?'':' shade'}" data-charinfo="${id}" aria-label="${esc(c.name)} bio"><img src="${portrait(id)}" alt="">${ok?'':'<span class="lockbadge" aria-hidden="true">🔒︎</span>'}</button>
@@ -2034,7 +2034,7 @@ let bustArm=null;
 function bustCheck(m){
   if(!meta.opt.confirm||tutActive()||m.side==='a')return false;
   const g2=clone(G);applyMove(g2,'p',m,true);
-  const l=m.lane,hi=G.rules.range.p[1],before=cvValue(G.p.cv[l]),after=cvValue(g2.p.cv[l]);
+  const l=m.lane,hi=laneRange(g2,'p',l)[1],before=cvValue(G.p.cv[l]),after=cvValue(g2.p.cv[l]);
   if(after>hi&&before<=hi){const key=JSON.stringify(m);if(bustArm===key){bustArm=null;return false;}
     bustArm=key;G.log.unshift(`That would bust caravan ${ROMAN[l]} at ${after}. Tap it again to play anyway.`);render();return true;}
   bustArm=null;return false;
@@ -2221,7 +2221,8 @@ function nextToast(){
   if(!el){el=document.createElement('div');el.id='toast';el.className='toast';el.setAttribute('role','status');el.setAttribute('aria-live','polite');document.body.appendChild(el);}
   el.innerHTML=`<span class="medal" aria-hidden="true">★</span><span><small>${esc(a.label||'Achievement unlocked')}</small><b>${esc(a.name)}</b><em>${esc(a.desc)}</em></span>`;
   requestAnimationFrame(()=>el.classList.add('show'));
-  setTimeout(()=>{el.classList.remove('show');setTimeout(nextToast,400);},3600);
+  let done=false;const hide=()=>{if(done)return;done=true;el.classList.remove('show');setTimeout(nextToast,400);};
+  el.onclick=hide;el.title='Tap to dismiss';setTimeout(hide,3600);
 }
 function checkState(){
   const before=Object.keys(meta.ach||{}).length;
@@ -2334,14 +2335,14 @@ const ROAD_RULES=`
   <li>Some cards in the shop have a <b>special finish</b>: <b>Holographic</b> (its caravan can sell 1 higher), <b>Golden</b> (+3 caps each time you play it), <b>Neon</b> (+25% winnings if its caravan sells) or <b>Ghost</b> (doesn’t take a hand slot). The <b>Collector’s bundle</b> only has finished cards. Like everything you buy on the Road, they last for the run.</li>
   <li>Cards you add during a run wear the back of a <b>Pack</b> you’ve earned (or a different Classic back if you haven’t earned any yet), so you can spot them coming off your deck.</li>
   <li><b>Bosses</b> bring random rules, and they get nastier the further you go. Read them on the map before you deal in.</li>
-  <li>Every run starts with a <b>Plain deck</b> and a few caps. Win tables to earn caps, plus <b>interest</b>: 1 cap for every 5 you hold, up to 5.</li>
+  <li>Every run starts with a 54-card deck and a few caps. The <b>Plain deck</b> has no twist; win runs to unlock tougher decks (each with its own twist) and the Silver and Gold difficulties. Win tables to earn caps, plus <b>interest</b>: 1 cap for every 5 you hold, up to 5 (less on some decks and difficulties).</li>
   <li>Between tables, the <b>trading post</b> sells perks, single cards, chems, card upgrades and one voucher per stop. Reroll it if you don’t like what’s there.</li>
-  <li><b>Card bundles</b> show you several cards and let you keep some: a Saddlebag (keep 1 of 3), a Supply crate or Caravan haul (keep 2 of 5), or a themed bundle of one suit or of Kings and Queens. You can always take nothing.</li>
+  <li><b>Card bundles</b> show you several cards and let you keep some: a Saddlebag (keep 1 of 3), a Supply bundle or Caravan haul (keep 2 of 5), a themed bundle of one suit or of Kings and Queens, or a Collector’s bundle (keep 1 of 4, all special finishes). You can always take nothing.</li>
   <li>The <b>Burn pile</b> removes up to 2 cards from your deck for good, once per visit. A thinner deck draws your best cards more often. Watch for free burn barrels on the road, too.</li>
   <li><b>Perks</b> come in four rarities. You start with 3 slots and get a 4th from Boulder City on. Sell a perk to make room.</li>
   <li><b>Card upgrades</b>: Steel can’t be Jacked, Gilded pays caps when it sells, Lucky draws an extra card, Glass is worth double but breaks, Wild matches any suit.</li>
   <li><b>Chems</b> are one-use boosts during a hand, one per turn, after the opening.</li>
-  <li><b>Characters</b> each bend the rules and meet their own rivals (except Matt, who is just Matt). Beat Greg at the Strip as any starting character to unlock him; beat Jeanita there as Greg to unlock her.</li>
+  <li><b>Characters</b> each bend the rules (except Matt, who is just Matt), and each meets a different set of rivals on the way. Beat Greg at the Strip as any starting character to unlock him; beat Jeanita there as Greg to unlock her.</li>
   <li>Win a run and you can keep going <b>Beyond the Strip</b>: endless stops with more boss rules and sharper dealers. Your best distance is saved per difficulty.</li>
   <li><b>Win a run</b> to unlock the next deck on the ladder (each has its own look and twist), new tokens, and the next difficulty: Silver, then Gold.</li>`;
 const FAQ=[
@@ -2397,12 +2398,12 @@ function renderSettings(){
   </section>
   <section class="panel" style="margin-top:14px">
     <h2 style="font-size:24px">Your data</h2>
-    <p class="note">Progress for both modes saves in this browser${syncState==='on'?' and in your account':''}.</p>
+    <p class="note">Progress for every mode saves in this browser${syncState==='on'?' and in your account':''}.</p>
     <button class="btn${armedFold?' armed':''}" data-reset>${armedFold?'Tap again to wipe everything':'Start over'}</button>
   </section>
   <section class="panel" style="margin-top:14px">
     <h2 style="font-size:24px">About</h2>
-    <p class="note">Fan-made tribute to Caravan from <i>Fallout: New Vegas</i>. Not affiliated with or endorsed by Bethesda Softworks or ZeniMax Media. Free to play, no ads.</p>
+    <p class="note">Mojave Caravan is a personal fan project, made to play with friends and family. Three ways to play: Classic single games, the Classic campaign and The Road.</p>
   </section>`;
 }
 function renderCustom(){
@@ -2417,7 +2418,7 @@ function renderCustom(){
     <div class="road">
       ${row('Classic single game',C.deck?`${C.deck.length} cards · bought with a ${CL_BUDGET}-cap budget`:'No deck yet',`<button class="btn" data-build="quick">${C.deck?'Edit':'Buy'}</button>`,C.deck?C.deck.length:'–')}
       ${row('Classic campaign',cp?`${countsSize(cp.deck)} cards in your deck · ${countsSize(cp.coll)} in your collection`:'Start the campaign to get your first set.',cp?`<button class="btn" data-build="camp">Edit</button>`:`<button class="btn" data-go="classic">Go</button>`,cp?countsSize(cp.deck):'–')}
-      ${row('The Road','Your Road deck is rebuilt every run, starting from the Plain deck. Change its look with your Classic Card Back and card face above.','<button class="btn" data-go="road">Go</button>',runLive()?meta.deck.length:'–')}
+      ${row('The Road','Your Road deck is rebuilt every run, starting from the Plain deck. Your starting cards use your Classic Card Back; cards you add during a run use the backs of your Packs.','<button class="btn" data-go="road">Go</button>',runLive()?meta.deck.length:'–')}
     </div>
     <h3 class="sub">Cards &amp; table</h3>
     <div class="road">
@@ -3239,7 +3240,7 @@ const mileOf=s=>s-RUN_STOPS.length+1;
 const PROLOGUE={
   vladmira:'Vladmira laces her boots, shoulders a pack heavier than most people, and squints at the road east. “Six stops to the Strip. I have walked farther for worse reasons.”',
   nuke:'Nuke Skywalker checks the still in his backpack, sniffs a bottle, and puts it back. “Vegas has the best chemistry sets in the Mojave. Also cards, I guess.”',
-  chevy:'Chevy Ford kicks the tire of a car that hasn’t run in two hundred years, for luck. Then she starts walking. “Turret’s loaded. Deck’s shuffled. Let’s roll.”',
+  chevy:'Chevy Ford kicks the tire of a car that hasn’t run in two hundred years, for luck. Then he starts walking. “Turret’s loaded. Deck’s shuffled. Let’s roll.”',
   ronald:'Ronald Raygun clears his throat into a handheld mic. “Good morning, wasteland! This is WRAY, coming to you live from the road to Vegas. Tonight’s program: me, winning.”',
   matt:'Matt looks at the road. The road looks at Matt. Somewhere a molerat sighs. “Okay,” says Matt, and starts walking.',
   greg:'Greg sets Alex the doll on his shoulder so she can see. “Big trip, Alex. We play nice. We win nice.” Alex says nothing, supportively.',
@@ -3248,7 +3249,7 @@ const PROLOGUE={
 const EPILOGUE={
   vladmira:'The High Table goes quiet as Vladmira lays down the last card. She sets her pack down for the first time in six stops. “Now,” she says, “I would like a very large breakfast.”',
   nuke:'Nuke toasts his win with something that glows. The pit boss asks what’s in it. “Science,” says Nuke, and it is the last thing anyone remembers clearly.',
-  chevy:'Chevy pockets the pot and pats her turret. “Told you, baby. Vegas or bust.” Somewhere outside, the old car she kicked for luck finally starts.',
+  chevy:'Chevy pockets the pot and pats his turret. “Told you, baby. Vegas or bust.” Somewhere outside, the old car he kicked for luck finally starts.',
   ronald:'“And that’s the ballgame, folks!” Ronald is broadcasting from the winners’ table, and every radio on the Strip is tuned in. Sales of Raygun’s Reserve triple overnight.',
   matt:'Matt wins. The color doesn’t come back, exactly. But for a second, the neon looks a little pink. “Huh,” says Matt.',
   greg:'Greg wins the Strip and the crowd doesn’t run away, for once. Alex gets a seat of honor at the bar. Greg orders her a milk.',
@@ -3338,10 +3339,10 @@ const VOUCHERS={
 };
 const TAGS={
   caps:{name:'Cap Stash',desc:'Free caps right now (4, plus 1 for each stop you’ve reached).'},
-  crate:{name:'Free Bundle',desc:'A free Supply crate (see 5 cards, keep 2) at the next shop.'},
+  crate:{name:'Free Bundle',desc:'A free Supply bundle (see 5 cards, keep 2) at the next shop.'},
   chem:{name:'Pick-Me-Up',desc:'A free random chem right now.'},
   half:{name:'Clearance Sale',desc:'The next shop is half price.'},
-  reroll:{name:'Rerolls',desc:'Two free rerolls at the next shop.'},
+  reroll:{name:'Rerolls',desc:'Two free shop rerolls, saved until you use them.'},
   upgrade:{name:'Tune-Up',desc:'Upgrade a card for free at the next shop.'},
 };
 const MODS={
@@ -3388,8 +3389,8 @@ Object.assign(PERKS,{
   momentum:{name:'Momentum',desc:'Scales: +1 hand size for every 5 tables you win this run (up to +2).'},
   honest:{name:'Honest Work',desc:'+6 caps when you win without playing a face card.'},
 });
-PERKS.insure={name:'Guardian Angel',desc:'The first table you lose doesn’t end the run. Breaks when used.'};
-PERKS.scav={name:'Scavenger',desc:'+2 caps after every table, win or lose.'};
+PERKS.insure={name:'Guardian Angel',desc:'If you lose with no Grit left, the run doesn’t end: you get another shot at that table. Breaks when used.'};
+PERKS.scav={name:'Scavenger',desc:'+3 caps after every table, win or lose.'};
 
 const run=()=>meta&&meta.run;
 const runV=id=>!!(run()&&run().vouchers.includes(id));
@@ -3439,7 +3440,7 @@ function ensureStop(s){
 function tableRuleIds(s,t){
   ensureStop(s);
   const r=run();const ids=t===2?[...r.bosses[s]]:(r.extra[s][t]?[r.extra[s][t]]:[]);
-  return ids.concat(r.nextRules||[]);
+  return s===r.stop&&t===r.table?ids.concat(r.nextRules||[]):ids;
 }
 function runRules(s,t){
   const r=run(),R=baseRules();
@@ -3452,6 +3453,8 @@ function runRules(s,t){
   if(has('lead'))R.jackproof.p=true;
   if(has('twotone'))R.color.p=true;
   if(has('cool'))R.freeDisband.p=true;
+  if(has('jackrabbit'))R.jackDraw.p=true;
+  if(has('scrapper'))R.discardDraw.p=2;
   if(has('kingpin'))R.range.p=[R.range.p[0],R.range.p[1]+Math.min(3,Math.floor((r.kings||0)/3))];
   if(has('momentum'))R.hand.p+=Math.min(2,Math.floor((r.won||0)/5));
   if(runV('pockets'))R.hand.p+=1;
@@ -3529,7 +3532,7 @@ const chemRunPrice=id=>disc({spy:3,coffee:4,fresh:2,shoe:3}[id]);
 const SUIT_WORD={S:'Spades',H:'Hearts',D:'Diamonds',C:'Clubs'};
 const BUNDLES={
   saddlebag:{name:'Saddlebag',desc:'See 3 cards, keep 1. Mostly number cards.',price:4,see:3,keep:1,w:38},
-  supply:{name:'Supply crate',desc:'See 5 cards, keep 2. Better odds of faces and upgrades.',price:7,see:5,keep:2,w:28},
+  supply:{name:'Supply bundle',desc:'See 5 cards, keep 2. Better odds of faces and upgrades.',price:7,see:5,keep:2,w:28},
   haul:{name:'Caravan haul',desc:'See 5 cards, keep 2. Every card is a face card or an upgraded number.',price:11,see:5,keep:2,w:10},
   suit:{name:'Suit bundle',desc:'See 5 number cards of one suit, keep 2. Some come upgraded.',price:6,see:5,keep:2,w:16},
   royal:{name:'Royal bundle',desc:'See 5 Kings and Queens, keep 2.',price:9,see:5,keep:2,w:8},
@@ -3537,6 +3540,7 @@ const BUNDLES={
 };
 const bundleName=b=>b.id==='suit'?`${SUIT_WORD[b.suit]} bundle`:BUNDLES[b.id].name;
 const bundleDesc=b=>b.id==='suit'?`See 5 ${SUIT_WORD[b.suit].toLowerCase()} number cards, keep 2. Some come upgraded.`:BUNDLES[b.id].desc;
+function twoBundles(){const a=rollBundle();let b=rollBundle();for(let k=0;k<8&&b.id===a.id&&b.suit===a.suit;k++)b=rollBundle();return [a,b];}
 function rollBundle(){const tot=Object.values(BUNDLES).reduce((a,b)=>a+b.w,0);let x=Math.random()*tot;for(const [id,b] of Object.entries(BUNDLES)){x-=b.w;if(x<0)return id==='suit'?{id,suit:pick(SUITS)}:{id};}return {id:'saddlebag'};}
 function genBundleCards(b){
   const out=[],key=c=>c.rank+(c.suit||'')+(c.mod||'')+(c.ed||'');
@@ -3564,13 +3568,13 @@ function openShop(){
   const r=run();
   r.offers={perks:rollPerkOffer(2),cards:[rollCard(true),rollCard(true)],chems:shuffle(Object.keys(CHEMS)).slice(0,2),
     upgrade:pick(Object.keys(MODS)),voucher:r.voucherStop===r.stop?null:pick(Object.keys(VOUCHERS).filter(v=>!r.vouchers.includes(v))),sold:{}};
-  r.offers.bundles=[rollBundle(),rollBundle()];r.burnUsed=false;
+  r.offers.bundles=twoBundles();r.burnUsed=false;
   r.rerolls=0;r.crate=null;r.workbench=null;r.picker=null;r.sponsor=isChar('ronald')?1:0;
   if(r.freeCrate){r.freeCrate=0;openBundle({id:'supply'},true);}
 }
 function rerollShop(){
   const r=run();
-  r.offers.perks=rollPerkOffer(2);r.offers.cards=[rollCard(true),rollCard(true)];r.offers.chems=shuffle(Object.keys(CHEMS)).slice(0,2);r.offers.upgrade=pick(Object.keys(MODS));r.offers.bundles=[rollBundle(),rollBundle()];r.offers.sold={};
+  r.offers.perks=rollPerkOffer(2);r.offers.cards=[rollCard(true),rollCard(true)];r.offers.chems=shuffle(Object.keys(CHEMS)).slice(0,2);r.offers.upgrade=pick(Object.keys(MODS));r.offers.bundles=twoBundles();r.offers.sold={};
 }
 function openCrate(kind){
   const opts=kind==='card'?[rollCard(true),rollCard(true),rollCard(true)]:kind==='perk'?rollPerkOffer(3):shuffle(Object.keys(CHEMS)).slice(0,3);
@@ -3683,11 +3687,11 @@ function runWon(ov){
 // ---- wasteland events ----
 const EVENTS={
   trader:{title:'A Traveling Trader',text:'A trader with a two-headed mule offers to swap one of your plain number cards for an upgraded one.',
-    choices:[{label:'Trade (5 caps)',cost:5,act:()=>{const plain=meta.deck.filter(c=>isNum(c)&&!c.mod);if(plain.length){pick(plain).mod=pick(Object.keys(MODS));}return 'One of your cards came back upgraded.';}},{label:'Keep walking',act:()=>'The trader shrugs and moves on.'}]},
+    choices:[{label:'Trade (5 caps)',cost:5,act:()=>{const plain=meta.deck.filter(c=>isNum(c)&&!c.mod);if(!plain.length){meta.caps+=5;return 'You have no plain number cards left to trade. The trader hands your caps back.';}const c=pick(plain);c.mod=pick(Object.keys(MODS));return `Your ${cardName(c)} came back ${MODS[c.mod].name}.`;}},{label:'Keep walking',act:()=>'The trader shrugs and moves on.'}]},
   toll:{title:'Raider Toll',text:'Raiders block the road and want 10 caps to let you pass.',
     choices:[{label:'Pay up (10 caps)',cost:10,act:()=>'They wave you through.'},{label:'Refuse',act:()=>{run().nextRules=['heavy'];return 'They let you pass, but they tip off the next dealer. Your next table: the dealer opens with 2 extra cards.';}}]},
   doctor:{title:'The Strange Doctor',text:'A doctor in a stained coat offers to “reinforce” a card. Results guaranteed, mostly.',
-    choices:[{label:'Steel a card (6 caps)',cost:6,act:()=>{const pool=meta.deck.filter(c=>isNum(c)&&!c.mod);if(pool.length)pick(pool).mod='steel';return 'One of your cards is now Steel.';}},{label:'No thanks',act:()=>'You back away slowly.'}]},
+    choices:[{label:'Steel a card (6 caps)',cost:6,act:()=>{const pool=meta.deck.filter(c=>isNum(c)&&!c.mod);if(!pool.length){meta.caps+=6;return 'He can’t find a plain card to work on and gives your caps back, looking disappointed.';}const c=pick(pool);c.mod='steel';return `Your ${cardName(c)} is now Steel.`;}},{label:'No thanks',act:()=>'You back away slowly.'}]},
   wreck:{title:'An Abandoned Caravan',text:'A wrecked caravan sits by the road. Something might be worth taking.',
     choices:[{label:'Search the cargo',act:()=>{const a=runAddCard(rollCard(true)),b=runAddCard(rollCard(false));return `You found ${cardName(a)}${a.mod?` (${MODS[a.mod].name})`:''}${a.ed?` (${EDITIONS[a.ed].name})`:''} and ${cardName(b)}, now in your deck.`;}},{label:'Take the loose caps',act:()=>{meta.caps+=6;return 'You pocket 6 caps.';}}]},
   gambler:{title:'The Coin Flipper',text:'A grinning stranger offers a coin flip: double or nothing on 10 caps.',
@@ -3699,7 +3703,7 @@ const EVENTS={
   campfire:{title:'A Quiet Campfire',text:'Somebody left a fire burning by the road, with a coffee pot still warm. A good place to catch your breath, or to swap tall tales with a passing trader.',
     choices:[{label:'Rest a while (restore 1 Grit, up to 2)',act:()=>{const r=run();if((r.grit||0)<2){r.grit=(r.grit||0)+1;return `You feel steadier. Grit: ${r.grit}.`;}return 'You’re as steady as you get. The coffee was good, though.';}},{label:'Swap stories (+4 caps)',act:()=>{meta.caps+=4;return 'The trader liked your story enough to pay for it. +4 caps.';}}]},
   medic:{title:'A Wandering Medic',text:'A medic offers chems from her bag at a fair price.',
-    choices:[{label:'Buy a random chem (2 caps)',cost:2,act:()=>{if(chemTotal()<chemMax()){const id=pick(Object.keys(CHEMS));meta.chems[id]++;return `You got a ${CHEMS[id].name}.`;}return 'Your pouch is full. She keeps the caps anyway. Rude.';}},{label:'Decline',act:()=>'She nods and moves along.'}]},
+    choices:[{label:'Buy a random chem (2 caps)',cost:2,act:()=>{if(chemTotal()<chemMax()){const id=pick(Object.keys(CHEMS));meta.chems[id]++;return `You got a ${CHEMS[id].name}.`;}meta.caps+=2;return 'Your chem pouch is already full. She waves off the caps and wishes you luck.';}},{label:'Decline',act:()=>'She nods and moves along.'}]},
 };
 function eventChoose(i){
   const r=run(),ev=EVENTS[r.event];if(!ev)return;const ch=ev.choices[i];if(!ch)return;
@@ -3815,12 +3819,12 @@ function runPreHandHTML(){
       <dt>Reward</dt><dd>+${Math.round(tableReward(s,t)*(has('roller')?1.5:1)*winMult())} caps, plus interest (1 per 5 caps you hold, up to ${interestCap()})</dd>
       <dt>Sell range</dt><dd>${rangeTxt(R.range.p)===rangeTxt(R.range.a)?rangeTxt(R.range.p):`You ${rangeTxt(R.range.p)} · dealer ${rangeTxt(R.range.a)}`}</dd>
       <dt>Rules</dt><dd>${ids.length?ids.map(id=>`<b>${BOSS_RULES[id].name}:</b> ${esc(BOSS_RULES[id].desc)}`).join('<br>'):'None. Straight Caravan.'}</dd>
-      ${d.rival?`<dt>Rival</dt><dd>${esc(RIVALS[d.rival].rule)}${s===RUN_STOPS.length-1&&d.rival==='greg'?' Beat him to unlock Greg.':''}${s===RUN_STOPS.length-1&&d.rival==='jeanita'?' Beat her to unlock Jeanita.':''}</dd>`:''}
+      ${d.rival?`<dt>Rival</dt><dd>${esc(RIVALS[d.rival].rule)}${s===RUN_STOPS.length-1&&d.rival==='greg'&&!charUnlocked('greg')?' Beat him to unlock Greg.':''}${s===RUN_STOPS.length-1&&d.rival==='jeanita'&&!charUnlocked('jeanita')?' Beat her to unlock Jeanita.':''}</dd>`:''}
       ${t===2?`<dt>Bounty</dt><dd>${BOUNTIES[r.bounties[s]].name}: ${esc(BOUNTIES[r.bounties[s]].desc)} +${bossBountyPay(s)}</dd>`:''}
       <dt>Deck twist</dt><dd>${esc(DECKS[deckIdx(r.deck)].twist)}</dd>
       <dt>Chems</dt><dd>${chems.length?chems.map(([id,n])=>`${CHEMS[id].name} ×${n}`).join(' · '):'None'}</dd>
     </dl>
-    <p class="note" style="text-align:center">${(r.grit||0)>0?(t<2?`Lose this table and you spend 1 Grit (you have ${r.grit}) and move on without the reward.`:`Lose this boss and you spend 1 Grit (you have ${r.grit}) to try again.`):has('insure')?'Lose this table and your Guardian Angel saves you once.':'No Grit left: lose this table and the run ends.'}</p>
+    <p class="note" style="text-align:center">${(r.grit||0)>0?(t<2?`Lose this table and you spend 1 Grit (you have ${r.grit}) and move on without the reward.`:`Lose this boss and you spend 1 Grit (you have ${r.grit}) to try again.`):has('insure')?'No Grit left, but your Guardian Angel will save the run from one loss.':'No Grit left: lose this table and the run ends.'}</p>
     <div class="hubbtns" style="justify-content:center"><button class="btn hot" data-runconfirm>Deal in</button><button class="btn" data-runcancel>Cancel</button></div>
   </div></div>`;
 }
@@ -3837,7 +3841,7 @@ function renderRunSetup(){
     <h3 class="sub">Deck</h3>
     <div class="decklist">${DECKS.map((d,i)=>{const ok=deckUnlocked(d.id),on=nr.deck===d.id;return `<button class="deckopt${on?' on':''}${ok?'':' locked'}" data-rundeck="${d.id}" ${ok?'':'disabled'} aria-pressed="${on}">
       <span class="deckprev" data-deck="${d.id}"><div class="card back"></div>${cardHTML({rank:'K',suit:'H'})}${ok?'':'<i class="lockbadge sm" aria-hidden="true">🔒︎</i>'}</span>
-      <span class="dtxt"><b>${i+1}. ${esc(d.name)}</b><span>${ok?esc(d.twist):`Win a run with the ${esc(DECKS[i-1].name)} to unlock.`}</span></span></button>`;}).join('')}</div>
+      <span class="dtxt"><b>${i+1}. ${esc(d.name)}</b><span>${ok?esc(d.twist):`Win a run with the ${esc(DECKS[i-1].name)}${/deck/i.test(DECKS[i-1].name)?'':' deck'} to unlock.`}</span></span></button>`;}).join('')}</div>
     <h3 class="sub">Difficulty</h3>
     <div class="hubbtns" style="margin-top:0">${TIERS.map(t=>{const ok=tierUnlocked(t.id);return `<button class="btn${nr.tier===t.id?' hot':''}" data-runtier="${t.id}" ${ok?'':'disabled'} title="${esc(t.desc)}">${ok?'':'🔒︎ '}${esc(t.name)}</button>`;}).join('')}</div>
     <p class="note">${esc(TIERS[tierIdx(nr.tier)].desc)}${tierUnlocked('silver')?'':' Win a run to unlock the Silver Road.'}</p>
@@ -3910,7 +3914,7 @@ function renderRunShop(){
       <h3 class="sub">Card bundles</h3>
       <div class="plist">${of.bundles.map((b,i)=>`<div class="prow"><div><b>${esc(bundleName(b))}</b><span>${esc(bundleDesc(b))}</span></div>${buyBtn('bundle'+i,disc(BUNDLES[b.id].price))}</div>`).join('')}</div>
       <h3 class="sub">Burn pile</h3>
-      <div class="prow"><div><b>Burn pile</b><span>Throw up to 2 cards from your deck into the fire. A thinner deck draws your best cards more often. Once per visit; your deck can’t go below ${MIN_DECK}.</span></div>${buyBtn('burn',disc(3),r.burnUsed||!burnRoom())}</div>
+      <div class="prow"><div><b>Toss cards in the fire</b><span>Throw up to 2 cards from your deck into the fire. A thinner deck draws your best cards more often. Once per visit; your deck can’t go below ${MIN_DECK}.</span></div>${buyBtn('burn',disc(3),r.burnUsed||!burnRoom())}</div>
       <h3 class="sub">Crates</h3>
       <div class="plist">${Object.entries(CRATES).map(([k,c])=>`<div class="prow"><div><b>${c.name}</b><span>${c.desc}</span></div>${buyBtn('crate-'+k,disc(c.price),k==='perk'&&full)}</div>`).join('')}</div>
       <h3 class="sub">Cards</h3>
@@ -3923,7 +3927,7 @@ function renderRunShop(){
       <div class="hubbtns"><button class="btn" data-rreroll ${r.sponsor||r.freeRerolls||meta.caps>=rerollCost()?'':'disabled'}>Reroll shop (${r.sponsor?'free, sponsored':r.freeRerolls?'free':capN(rerollCost())})</button></div>`
     :runShopTab==='deck'?`
       <p class="note">${deckSummary(meta.deck)} ${modCount()?`${modCount()} upgraded.`:''} To remove cards, use the Burn pile in the shop.</p>
-      <div class="deckgrid">${deck.map(c=>`<div class="card-btn" aria-label="${cardName(c)}${c.mod?' '+MODS[c.mod].name:''}">${cardHTML(c)}</div>`).join('')}</div>`
+      <div class="deckgrid">${deck.map(c=>`<div class="card-btn" aria-label="${cardName(c)}${c.mod?' '+MODS[c.mod].name:''}${c.ed?' '+EDITIONS[c.ed].name:''}">${cardHTML(c)}</div>`).join('')}</div>`
     :`
       <p class="note">You can run ${slots} perks. Sell one for half its price to make room.</p>
       <div class="plist">${meta.perks.map(id=>`<div class="prow"><div><b>${PERKS[id].name} <i class="rar rar-${PERK_RARITY[id]}">${PERK_RARITY[id]}</i></b><span>${esc(PERKS[id].desc)}</span></div><button class="btn${armedSell==='p:'+id?' armed':''}" data-rsellperk="${id}">${armedSell==='p:'+id?'Tap to sell':'Sell '+capN(perkSellPrice(id))}</button></div>`).join('')||'<p class="note">No perks yet.</p>'}</div>`}
