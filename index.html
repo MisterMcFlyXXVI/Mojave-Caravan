@@ -486,6 +486,18 @@ body[data-screen="home"] .wordmark{visibility:hidden}
 .bets .btn{padding:6px 10px;font-size:13px}
 
 /* ---- The Road: runs ---- */
+.gcount{display:inline-grid;place-items:center;min-width:18px;height:18px;border-radius:9px;background:var(--neon);color:#2a1a0c;font-size:11px;margin-left:4px;padding:0 4px}
+button.rb{font:inherit;cursor:pointer}
+.goals{display:grid;gap:6px}
+.goal{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;padding:8px 10px;border-radius:8px;background:#0003;border-left:3px solid var(--neon)}
+.goal small{display:block;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.goal b{display:block;font-family:var(--display);font-weight:400;font-size:16px}
+.goal span{display:block;font-size:12.5px;color:var(--bone)}
+.goal em{display:block;font-size:12px;color:var(--neon);margin-top:2px}
+.goal .gr{display:grid;justify-items:end;gap:3px}.goal .gr i{font-style:normal;font-size:11px;color:var(--muted)}
+.goal.done{border-left-color:#7fbf5a}.goal.done em,.goal.done .gr i{color:#7fbf5a}
+.goal.failed{border-left-color:#a0503a;opacity:.6}.goal.failed em{color:#e08a7a}
+.goal.info{border-left-color:#6f9be0}
 .mbtns{display:flex;gap:6px;flex:none}
 .rulespop .panel{max-height:88vh;overflow:auto;max-width:640px}
 .qa{display:grid;gap:6px}
@@ -687,6 +699,30 @@ ul.resl{text-align:left;display:inline-block;margin:0 auto 6px}
 .radio .rlbl{font-size:11px;letter-spacing:.14em;color:#7fbf5a}
 .radio p{margin:4px 0 0;font-size:13.5px;line-height:1.45;color:#cfe8bf;font-style:italic}
 .poster .ptaunt{font-style:italic;font-size:13px;margin:-4px 0 8px}
+
+.rundown{max-width:640px;margin:0 auto}
+.rundown h2{font-size:28px;color:var(--neon);margin:6px 0 10px}
+.rd-dots{display:flex;gap:5px;justify-content:center}.rd-dots i{width:8px;height:8px;border-radius:50%;background:#ffffff22}.rd-dots i.on{background:var(--neon)}.rd-dots i.past{background:#ffa44966}
+.rd-art{padding:12px 8px;border-radius:10px;background:var(--mat-bg,#3a2a1a);box-shadow:inset 0 0 30px #0009;margin-bottom:12px;overflow-x:auto}
+.rd-body p,.rd-body li{font-size:15px;line-height:1.55}
+.rd-body ul{padding-left:18px}
+.rd-nav{display:flex;justify-content:space-between;gap:10px;margin-top:14px}
+.rd-skip{display:block;margin:10px auto 0}
+.mrow{display:flex;gap:10px;align-items:flex-start;justify-content:center;flex-wrap:nowrap;margin:4px 0}
+.mlab{writing-mode:vertical-rl;transform:rotate(180deg);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);align-self:center}
+.mcv{--cw:42px;width:78px;display:grid;justify-items:start}
+.mcv small{font-size:10px;letter-spacing:.06em;color:var(--muted);text-transform:uppercase;margin-bottom:2px}
+.mcv-top{display:flex;align-items:baseline;gap:4px;min-height:22px}.mcv-top b{font-size:20px;color:var(--bone)}.mcv-top span{font-size:11px;color:var(--muted)}
+.mtag{font-style:normal;font-size:9px;letter-spacing:.06em;padding:1px 4px;border-radius:3px;background:#a9c08b33;color:#cfe2b4}
+.mtag.behind{background:#ffffff14;color:var(--muted)}.mtag.bust{background:#c0392b44;color:#ff9a8a}
+.mcv-stack{position:relative;height:calc(var(--cw)*1.4 + 40px);width:100%}
+.mcv-card{position:absolute;left:0}
+.mchip{position:absolute;left:calc(var(--cw) + 2px);top:2px;font-size:10px;padding:1px 3px;border-radius:3px;background:#2a1a0c;color:var(--neon);white-space:nowrap}
+.mcv.jack .mcv-card:last-child{left:20px;transform:rotate(12deg)}
+.mrules{display:grid;gap:4px;font-size:13px;align-self:center}.mrules .ok{color:#a9d88b}.mrules .no{color:#ff9a8a}
+.mcap{text-align:center;font-size:12.5px;color:var(--muted);margin:6px 0 0}
+.mhand{display:flex;justify-content:center;gap:6px;--cw:50px;flex-wrap:wrap}
+.marrow{align-self:center;font-size:22px;color:var(--neon)}
 </style>
 </head>
 <body>
@@ -1312,9 +1348,51 @@ function tableRulesHTML(){
     for(const pk of (G.perks||[]))if(PERKS[pk])items.push(`<li><b>${esc(PERKS[pk].name)} (perk):</b> ${esc(PERKS[pk].desc)}</li>`);}
   return `<h3 class="sub">This table</h3><ul class="steps">${items.join('')}</ul>`;
 }
+// Goals for the current hand: bounties, town challenges, champion purses, with live progress where it can be tracked.
+function goalsList(){
+  if(!G||G.opp<0)return [];
+  const st=G.stats||{},out=[];
+  const lanes=lanesResult(G),soldP=lanes.filter(x=>x==='p').length;
+  const prog=(id)=>{
+    switch(id){
+      case 'noface':case 'clean':return st.faces?{state:'failed',note:'You played a face card.'}:{state:'on',note:'No face cards played so far.'};
+      case 'nodiscard':case 'calm':return (st.discards||st.disbands)?{state:'failed',note:'You discarded or disbanded.'}:{state:'on',note:'No discards or disbands so far.'};
+      case 'kings':return {state:(st.kings||0)>=(G.mode==='road'?2:3)?'done':'on',note:`Kings played: ${st.kings||0}/${G.mode==='road'?2:3}`};
+      case 'jacks':return {state:(st.jacks||0)>=2?'done':'on',note:`Jacks played: ${st.jacks||0}/2`};
+      case 'joker':case 'wild':return {state:(st.jokers||0)>=1?'done':'on',note:(st.jokers||0)?'Joker played. Now win.':'No Joker played yet.'};
+      case 'quick':return (st.turns||0)>12?{state:'failed',note:`${st.turns} turns taken.`}:{state:'on',note:`Turns taken: ${st.turns||0}/12`};
+      case 'sweep':return {state:'on',note:`Caravans selling right now: ${soldP}/3`};
+      case 'exact26':case 'p26':{const has26=[0,1,2].some(i=>cvValue(G.p.cv[i])===26);return {state:'on',note:has26?'You have a caravan at exactly 26. Keep it selling.':'No caravan at exactly 26 yet.'};}
+      case 'streak':{const cp=CP(),T=TOWNS[G.cd.ti];return {state:'on',note:`Wins in a row here: ${cp.streak[T.id]||0}. This win would make ${(cp.streak[T.id]||0)+1}/3.`};}
+      case 'bigbet':return G.stake>=G.cd.max?{state:'on',note:'You bet the table limit. Win this.'}:{state:'failed',note:`Not this game: you bet ${G.stake}, the limit is ${G.cd.max}.`};
+    }
+    return {state:'on',note:''};
+  };
+  if(G.bounty){const b=BOUNTIES[G.bounty];out.push({kind:'Bounty',name:b.name,desc:b.desc,reward:`+${G.bountyPay} caps`,...prog(G.bounty)});}
+  if(G.mode==='campaign'&&G.cd){
+    const cp=CP(),T=TOWNS[G.cd.ti],done=cp.chal[cp.plus||0]||{};
+    if(G.cd.slot==='c'&&!beatNow(G.cd.id))out.push({kind:'Champion',name:'Beat '+G.cd.name,desc:'Opens the next town and earns a holotape and a trophy card.',reward:`+${T.purse*(1+(cp.plus||0))} caps purse`,state:'on',note:''});
+    for(const c of T.challenges){const ok=done[`${T.id}:${c}`];out.push({kind:'Challenge',name:CHALLENGES[c].name,desc:CHALLENGES[c].desc,reward:`+${T.chal*(1+(cp.plus||0))} caps`,...(ok?{state:'done',note:'Already completed this circuit.'}:prog(c))});}
+  }
+  if(G.run&&meta.run){
+    const r=meta.run;
+    if(r.deck==='sarsaparilla')out.push({kind:'Deck twist',name:'Sticky Fingers',desc:'Every discard costs 1 cap when the hand ends.',reward:`So far: −${st.discards||0}`,state:'info',note:''});
+    if(r.deck==='blood')out.push({kind:'Deck twist',name:'Blood Money',desc:'Every Jack you play costs 2 caps when the hand ends.',reward:`So far: −${(st.jacks||0)*2}`,state:'info',note:''});
+    if(has('honest'))out.push({kind:'Perk',name:'Honest Work',desc:PERKS.honest.desc,reward:'+6 caps',...prog('noface')});
+    if(has('nose'))out.push({kind:'Perk',name:'Bloodhound',desc:PERKS.nose.desc,reward:'+4 per caravan',...prog('p26')});
+  }
+  return out;
+}
+function goalsHTML(){
+  const gs=goalsList();if(!gs.length)return '';
+  const lbl={on:'In progress',done:'Done',failed:'Missed',info:''};
+  return `<h3 class="sub">Goals this hand</h3><div class="goals">${gs.map(g=>`<div class="goal ${g.state}"><div><small>${esc(g.kind)}</small><b>${esc(g.name)}</b><span>${esc(g.desc)}</span>${g.note?`<em>${esc(g.note)}</em>`:''}</div><div class="gr"><span class="pill num">${esc(g.reward)}</span>${lbl[g.state]?`<i>${lbl[g.state]}</i>`:''}</div></div>`).join('')}</div>
+    <p class="note">Bounties and challenges only pay if you win the hand.</p>`;
+}
 function rulesPopHTML(){
   return `<div class="overlay rulespop"><div class="panel result" role="dialog" aria-label="Rules" style="text-align:left">
-    <div class="sect-h"><h2 style="font-size:26px;color:var(--neon)">Rules</h2><button class="btn" data-rulesclose>Close</button></div>
+    <div class="sect-h"><h2 style="font-size:26px;color:var(--neon)">${rulesOpen==='goals'?'Goals':'Rules'}</h2><button class="btn" data-rulesclose>Close</button></div>
+    ${goalsHTML()}
     ${tableRulesHTML()}
     <h3 class="sub">Quick answers</h3>
     <div class="qa">${QUICK_QA.map(([q,a])=>`<details><summary>${esc(q)}</summary><p>${esc(a)}</p></details>`).join('')}</div>
@@ -1621,7 +1699,7 @@ function rulesBar(){
   if(G.char&&CHARS[G.char])bits.push(`<span class="rb char-chip">${CHARS[G.char].name}</span>`);
   if(o.rival)bits.push(`<span class="rb house-chip">Rival: ${RIVALS[o.rival].rule}</span>`);
   for(const p of (G.perks||[]))bits.push(`<span class="rb perk-chip">${PERKS[p].name}</span>`);
-  if(G.bounty){const b=BOUNTIES[G.bounty];bits.push(`<span class="rb bounty-chip">Bounty: ${b.name} +${G.bountyPay}</span>`);}
+  if(G.bounty){const b=BOUNTIES[G.bounty];bits.push(`<button class="rb bounty-chip" data-goalsopen>Bounty: ${b.name} +${G.bountyPay}</button>`);}
   return `<div class="rulesbar">${bits.join('')}</div>`;
 }
 function chemBar(myTurn){
@@ -1667,7 +1745,7 @@ function renderMatch(){
   app.innerHTML=`
   <div class="mbar">
     <div class="opp">${o.rival?`<img class="rivalimg big" src="${portrait(o.rival)}" alt="">`:''}<h2>${esc(o.name)}</h2><small>${esc(o.place)}${G.stake?` · ${G.mode==='campaign'?'bet':'buy-in'} ${G.stake}`:''}</small></div>
-    <div class="mbtns"><button class="btn ghost" data-rulesopen aria-label="Rules">Rules</button><button class="btn ghost${armedFold?' armed':''}" data-fold>${armedFold?(G.stake?`Fold, lose ${G.stake}`:'Tap to fold'):'Fold'}</button></div>
+    <div class="mbtns">${goalsList().length?`<button class="btn ghost" data-goalsopen aria-label="Goals">Goals${goalsList().filter(g=>g.state!=='failed'&&g.state!=='done').length?` <span class="gcount">${goalsList().filter(g=>g.state!=='failed'&&g.state!=='done').length}</span>`:''}</button>`:''}<button class="btn ghost" data-rulesopen aria-label="Rules">Rules</button><button class="btn ghost${armedFold?' armed':''}" data-fold>${armedFold?(G.stake?`Fold, lose ${G.stake}`:'Tap to fold'):'Fold'}</button></div>
   </div>
   ${rulesBar()}
   ${G.peek&&!G.over?`<div class="peek"><span>Their hand</span><div class="deckgrid">${G.a.hand.map(cardHTML).join('')}</div></div>`:''}
@@ -1754,7 +1832,7 @@ function render(){
   const fxNow=G&&G.fx&&!G.fx.done?{...G.fx}:null, prevScreen=document.body.dataset.screen;
   document.getElementById('sky').style.display=screen==='match'?'none':'block';
   document.body.dataset.screen=screen;
-  const R={help:renderHelp,settings:renderSettings,custom:renderCustom,home:renderHome,road:renderRoadRun,shop:renderRoadRun,classic:renderClassic,build:renderBuild,match:renderMatch,campaign:renderCampaign,town:renderTown,journal:renderJournal,vendor:renderVendor,look:renderLook,ach:renderAch,pickchar:renderPickChar};
+  const R={help:renderHelp,settings:renderSettings,custom:renderCustom,home:renderHome,road:renderRoadRun,shop:renderRoadRun,classic:renderClassic,build:renderBuild,match:renderMatch,campaign:renderCampaign,rundown:renderRundown,town:renderTown,journal:renderJournal,vendor:renderVendor,look:renderLook,ach:renderAch,pickchar:renderPickChar};
   (R[screen]||renderHome)();
   if(screen!=='match')app.insertAdjacentHTML('afterbegin',topbarHTML());
   if(typeof setDeckAttr==='function')setDeckAttr();
@@ -1764,13 +1842,15 @@ function render(){
 
 // ---------- flow ----------
 function enterMatch(){rulesOpen=false;G.intro=true;undoStack=[];turretMode=false;G.stats=Object.assign({faces:0,jokers:0,kings:0,discards:0,disbands:0,turns:0},G.stats||{});sel=null;disbandMode=false;busy=false;armedFold=false;screen='match';save();render();window.scrollTo(0,0);}
-function startMatch(i){
+function startMatch(i,skipRundown){
+  if(i===-1&&!skipRundown){openRundown('road');return;}
   if(i===-2)G=newRoadTutorial();
   else if(i===-1)G=newTutorial('road');
   else return;
   G.stake=0;enterMatch();
 }
-function startClassic(i){
+function startClassic(i,skipRundown){
+  if(i<0&&!skipRundown){openRundown('classic');return;}
   if(i<0){G=newTutorial('classic');G.stake=0;enterMatch();return;}
   const d=CLASSIC_DEALERS[i]; if(!d||!meta.classic.deck)return;
   G=newMatch(withPacks(meta.classic.deck.map(c=>({rank:c.rank,suit:c.suit})),packList()),addFaces(baseNumbers(),d.extra),i,baseRules());
@@ -1921,8 +2001,10 @@ app.addEventListener('click',e=>{
   const t=e.target.closest('button,[data-lane]');
   if(!t)return;
   const d=t.dataset;
+  if(handleRundownClick(d))return;
   if(handleCareerClick(d))return;
   if('rulesopen' in d){rulesOpen=true;render();return;}
+  if('goalsopen' in d){rulesOpen='goals';render();return;}
   if('rulesclose' in d){rulesOpen=false;render();return;}
   if(!('fold' in d)&&screen==='match')armedFold=false;
   if(handleRunClick(d))return;
@@ -2220,7 +2302,7 @@ function renderHelp(){
   <div class="mbar">${backBtn(navFrom,'Back')}</div>
   <section class="panel">
     <h2 style="font-size:28px">Rules &amp; help</h2>
-    <div class="hubbtns"><button class="btn" data-cplay="-1">Replay basics tutorial</button><button class="btn" data-play="-2">Replay Road tutorial</button></div>
+    <div class="hubbtns"><button class="btn hot" data-rundown>How a round works</button><button class="btn" data-cplay="-1">Replay basics tutorial</button><button class="btn" data-play="-2">Replay Road tutorial</button></div>
     <details class="rules" open><summary>How Caravan works</summary><div class="rulebook">${RULES_HTML}</div></details>
     <details class="rules"><summary>The Road</summary><ul>${ROAD_RULES}</ul></details>
     <details class="rules"><summary>Classic campaign</summary><ul>
@@ -4568,6 +4650,73 @@ function handleCareerClick(d){
   if('trophy' in d){const t=cp.trophies[+d.trophy];if(t){if(t.inDeck&&campDeckSize(cp)<=MIN_DECK)return true;t.inDeck=!t.inDeck;save();}render();return true;}
   if('newcircuit' in d){if(armedCut==='newcircuit'){meta.classic.camp=careerInit(freshCamp());armedCut=null;save();screen='campaign';}else armedCut='newcircuit';render();return true;}
   return false;
+}
+
+
+// =====================================================================
+// "How a round works": an illustrated rundown shown before the guided tutorial
+// =====================================================================
+let rundownStep=0, rundownThen=null;
+const mc=(rank,suit)=>cardHTML({rank,suit});
+function miniCv(cards,{v,dir,tag,cls,label}={}){
+  return `<div class="mcv ${cls||''}">${label?`<small>${label}</small>`:''}<div class="mcv-top"><b class="num">${v??''}</b>${dir?`<span>${dir}</span>`:''}${tag?`<i class="mtag ${tag.toLowerCase()}">${tag}</i>`:''}</div>
+    <div class="mcv-stack">${cards.map((c,i)=>`<div class="mcv-card" style="top:${i*18}px">${typeof c==='string'?c:mc(c[0],c[1])}${c[2]?`<span class="mchip">${c[2]}</span>`:''}</div>`).join('')}</div></div>`;
+}
+const RUNDOWN=[
+  {title:'The goal',body:`<p>You and the dealer each build <b>three caravans</b>, side by side. Each of your caravans faces one of theirs.</p>
+    <p>A caravan <b>sells</b> when it’s worth <b>21 to 26</b> and beats the one across from it. Sell <b>two of three</b> and you win the hand.</p>`,
+    art:()=>`<div class="mrow"><div class="mlab">Dealer</div>${miniCv([['10','S'],['9','S']],{v:19,tag:'Behind'})}${miniCv([['9','D','K'],['6','D']],{v:24,tag:'Ahead'})}${miniCv([['10','C'],['9','H'],['8','C']],{v:27,tag:'Bust'})}</div>
+      <div class="mrow"><div class="mlab">You</div>${miniCv([['10','H'],['6','H'],['7','H']],{v:23,tag:'Ahead'})}${miniCv([['10','D'],['8','C']],{v:18,tag:'Behind'})}${miniCv([['7','S'],['8','D'],['10','S']],{v:25,tag:'Ahead'})}</div>
+      <p class="mcap">You’re ahead in I and III. If it ends like this, you win 2–1.</p>`},
+  {title:'Your hand and your turn',body:`<p>You start with <b>8 cards</b> from your deck. After that, you play <b>one card per turn</b> and draw back up to <b>5</b>.</p>
+    <p>On your turn you do exactly one thing:</p>
+    <ul><li><b>Play a number card</b> on one of your caravans.</li><li><b>Play a face card</b> on any caravan, yours or the dealer’s.</li><li><b>Discard</b> a card from your hand.</li><li><b>Disband</b> one of your caravans, clearing it to start over.</li></ul>`,
+    art:()=>`<div class="mhand">${[['4','S'],['9','H'],['K','C'],['Q','D'],['2','H']].map(c=>mc(c[0],c[1])).join('')}</div>`},
+  {title:'The opening',body:`<p>Your first <b>three turns</b> are the opening. Each turn you must start one of your empty caravans with a <b>number card</b>.</p>
+    <p>No face cards, discards or disbands until all three caravans have a card.</p>`,
+    art:()=>`<div class="mrow">${miniCv([['7','S']],{v:7,label:'Turn 1'})}${miniCv([['3','H']],{v:3,label:'Turn 2'})}${miniCv([['A','D']],{v:1,label:'Turn 3'})}</div>`},
+  {title:'Number cards and direction',body:`<p>Aces are 1, numbers are face value. A caravan’s worth is the cards added up.</p>
+    <p>The <b>second card sets the direction</b>: higher than the first is <b>▲ up</b>, lower is <b>▼ down</b>. Every card after that has to keep going that way.</p>
+    <p>Two exceptions: a card of the caravan’s <b>suit</b> can always go on, either way. And you can never play the <b>same value</b> as the top card.</p>`,
+    art:()=>`<div class="mrow">${miniCv([['4','S'],['7','H']],{v:11,dir:'▲ ♥',label:'Going up'})}<div class="mrules"><span class="ok">9♣ ✓ higher</span><span class="no">5♣ ✗ lower</span><span class="ok">2♥ ✓ same suit</span><span class="no">7♦ ✗ same value</span></div></div>`},
+  {title:'Face cards',body:`<p>Face cards attach to a card already in a caravan, <b>yours or the dealer’s</b>.</p>
+    <ul><li><b>King:</b> adds that card’s value again. Two Kings on a 6 makes 24.</li><li><b>Queen:</b> top card only. Flips the direction and changes the suit.</li><li><b>Jack:</b> removes the card it’s on, and anything attached to it.</li><li><b>Joker:</b> on a 2–10, removes every other card of that value from the table. On an Ace, every other card of that suit.</li></ul>`,
+    art:()=>`<div class="mrow">${miniCv([['8','D','K'],['10','D']],{v:26,label:'King on the 8'})}${miniCv([['3','C'],['6','C','Q♥']],{v:9,dir:'▼ ♥',label:'Queen flips it'})}${miniCv([['5','S'],['9','S','J']],{v:'14→5',label:'Jack on the 9'})}</div>`},
+  {title:'Busting and messing with the dealer',body:`<p>Over 26 is a <b>bust</b>. A busted caravan can’t sell until you bring it back down, with a Jack or by disbanding.</p>
+    <p>You can’t put number cards on the dealer’s caravans, but face cards go anywhere. A <b>King on their big card</b> is the classic way to bust them. They’ll do it to you, too.</p>`,
+    art:()=>`<div class="mrow"><div class="mlab">Dealer</div>${miniCv([['10','S'],['8','S','K']],{v:26})}<span class="marrow">→</span>${miniCv([['10','S'],['8','S','K K']],{v:34,tag:'Bust'})}</div><p class="mcap">One more King on their 8 and their 26 becomes 34.</p>`},
+  {title:'How the hand ends',body:`<p>The hand ends only when <b>all three matchups are settled at the same time</b>: in each pair, one side is at 21–26 and beats the other.</p>
+    <p>An exact tie, both sides under 21, or both busting doesn’t count yet. Then whoever sold <b>two or three</b> caravans wins, and the winners get stamped <b>SOLD</b>.</p>
+    <p>During play, tags show <b>AHEAD</b> and <b>BEHIND</b>. Nothing is final until the end.</p>`,
+    art:()=>`<div class="mrow">${miniCv([['10','H'],['9','C']],{v:19,tag:'Behind',label:'Not settled'})}${miniCv([['9','S'],['8','H'],['7','S']],{v:24,tag:'Ahead',label:'Settled'})}${miniCv([['10','D'],['3','D']],{v:13,label:'Not settled'})}</div><p class="mcap">Only one matchup is settled here, so play goes on.</p>`},
+  {title:'Ready to play',body:`<p>That’s the whole game. Now Old Ezra will deal you a real hand and walk you through it <b>one move at a time</b>, explaining why each play makes sense.</p>
+    <p>You can reopen this rundown any time from the help screen, and every game has a <b>Rules</b> button at the top.</p>`,
+    art:()=>`<div class="mhand">${[['10','H'],['K','S'],['Q','D'],['J','C']].map(c=>mc(c[0],c[1])).join('')}${cardHTML({rank:'JK'})}</div>`},
+];
+function openRundown(then){rundownThen=then||null;rundownStep=0;screen='rundown';render();window.scrollTo(0,0);}
+function renderRundown(){
+  const n=RUNDOWN.length,i=Math.max(0,Math.min(rundownStep,n-1)),R=RUNDOWN[i],last=i===n-1;
+  app.innerHTML=`
+  <div class="mbar">${backBtn(rundownThen==='road'?'road':rundownThen==='classic'?'classic':'help','Back')}<span class="pill num">${i+1} / ${n}</span></div>
+  <section class="panel rundown">
+    <div class="rd-dots">${RUNDOWN.map((_,k)=>`<i class="${k===i?'on':k<i?'past':''}"></i>`).join('')}</div>
+    <h2>${esc(R.title)}</h2>
+    <div class="rd-art">${R.art()}</div>
+    <div class="rd-body">${R.body}</div>
+    <div class="rd-nav">
+      <button class="btn" data-rd="prev" ${i?'':'disabled'}>← Back</button>
+      ${last?(rundownThen?`<button class="btn hot" data-rd="start">Start guided play</button>`:`<button class="btn hot" data-go="help">Done</button>`):`<button class="btn hot" data-rd="next">Next →</button>`}
+    </div>
+    ${rundownThen&&!last?`<button class="btn ghost rd-skip" data-rd="start">Skip to guided play</button>`:''}
+  </section>`;
+}
+function handleRundownClick(d){
+  if('rundown' in d){openRundown(null);return true;}
+  if(!('rd' in d))return false;
+  if(d.rd==='next')rundownStep++;
+  else if(d.rd==='prev')rundownStep=Math.max(0,rundownStep-1);
+  else if(d.rd==='start'){const t=rundownThen;rundownThen=null;if(t==='classic')startClassic(-1,true);else startMatch(-1,true);return true;}
+  render();window.scrollTo(0,0);return true;
 }
 
 // ---------- boot ----------
