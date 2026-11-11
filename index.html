@@ -190,6 +190,14 @@ details.rules ul{padding-left:18px;margin:10px 0 0;display:grid;gap:6px;max-widt
 
 /* ---------- shop ---------- */
 .tabs{display:flex;gap:6px;margin:14px 0}
+.reveal{text-align:center;max-width:420px}
+.revealcards{display:flex;justify-content:center;gap:14px;flex-wrap:wrap;margin:14px 0 8px;perspective:600px}
+.rvcard{display:grid;justify-items:center;gap:6px;--cw:clamp(70px,22vw,96px);animation:rvin .55s cubic-bezier(.3,1.4,.5,1) both;animation-delay:calc(var(--i)*.18s + .1s)}
+.rvcard small{font-size:12px;color:var(--muted);max-width:120px}
+.r-change .rvcard .card{box-shadow:0 0 0 2px var(--neon),0 0 18px #f5a74a88}
+.r-remove .rvcard .card{filter:grayscale(.6)}
+@keyframes rvin{from{transform:translateY(-50px) rotateY(90deg) scale(.6);opacity:0}to{transform:none;opacity:1}}
+body.stillfx .rvcard{animation:none}
 .kitpill{cursor:pointer;font:inherit;color:inherit}
 .kitpill::after{content:' ›';opacity:.6}
 .kitbtns{justify-content:center;margin:4px 0 12px}
@@ -1293,6 +1301,8 @@ function freshMeta(){
 function save(){meta.match=G&&!G.over?G:null;meta.updatedAt=Date.now();try{localStorage.setItem(SAVE_KEY,JSON.stringify(meta));}catch(e){}if(typeof schedulePush==='function')schedulePush();}
 function load(){try{const s=localStorage.getItem(SAVE_KEY);if(s)return JSON.parse(s);}catch(e){}return null;}
 function migrate(m){
+  // special finishes are for number cards only
+  if(m&&Array.isArray(m.deck))m.deck.forEach(c=>{if(c&&c.ed&&(c.rank==='JK'||['J','Q','K'].includes(c.rank)))delete c.ed;});
   if(!m.v){ // first version had 5 tables
     const map={0:0,1:2,2:3,3:5,4:9};
     m.beaten=(m.beaten||[]).map(i=>map[i]).filter(i=>i!=null);
@@ -2355,9 +2365,10 @@ const ROAD_RULES=`
   <li>A <b>run</b> is six stops from Goodsprings to the Strip. Every stop has three tables: a Saloon table, a High Stakes table and a Boss table.</li>
   <li><b>Grit:</b> you start each run with 1. Lose a Saloon or High Stakes table and you spend 1 Grit and move on without the reward. Lose a Boss and you spend 1 Grit to try again. <b>With no Grit left, any loss ends the run.</b> Campfires on the road can restore Grit (up to 2).</li>
   <li>You can <b>skip</b> the Saloon or High Stakes table: you give up its winnings to earn a <b>boon</b> instead (caps, cards, a free bundle or chem, a card finish, Grit, shop discounts and more). Boons change every run, and each table shows its boon. The Boss table can’t be skipped.</li>
-  <li>Some cards in the shop have a <b>special finish</b>: <b>Holographic</b> (its caravan can sell 1 higher), <b>Golden</b> (+3 caps each time you play it), <b>Neon</b> (+25% winnings if its caravan sells) or <b>Ghost</b> (doesn’t take a hand slot). The <b>Collector’s bundle</b> only has finished cards. Like everything you buy on the Road, they last for the run.</li>
+  <li>Some number cards in the shop have a <b>special finish</b>: <b>Holographic</b> (its caravan can sell 1 higher), <b>Golden</b> (+3 caps each time you play it), <b>Neon</b> (+25% winnings if its caravan sells) or <b>Ghost</b> (doesn’t take a hand slot). The <b>Collector’s bundle</b> only has finished cards. Like everything you buy on the Road, they last for the run.</li>
   <li>Cards you add during a run wear the back of a <b>Pack</b> you’ve earned (or a different Classic back if you haven’t earned any yet), so you can spot them coming off your deck.</li>
   <li><b>Bosses</b> bring random rules that change every run, and they stack up the further you go. Read them on the map before you deal in.</li>
+  <li>Win a table with <b>all three caravans sold</b> and you get a <b>triple sale</b> bonus: half the table’s base winnings on top.</li>
   <li>Every run starts with a 54-card deck and a few caps. The <b>Plain deck</b> has no twist; win runs to unlock tougher decks (each with its own twist) and the Silver and Gold difficulties. Win tables to earn caps, plus <b>interest</b>: 1 cap for every 5 you hold, up to 5 (less on some decks and difficulties).</li>
   <li>Between tables, the <b>trading post</b> sells perks, single cards, chems, card upgrades and one voucher per stop. Reroll it if you don’t like what’s there.</li>
   <li><b>Card bundles</b> show you several cards and let you keep some: a Saddlebag (keep 1 of 3), a Supply bundle or Caravan haul (keep 2 of 5), a themed bundle of one suit or of Kings and Queens, or a Collector’s bundle (keep 1 of 4, all special finishes). You can always take nothing.</li>
@@ -3376,7 +3387,7 @@ const TAGS={
   reroll:{name:'Rerolls',desc:'Two free shop rerolls, saved until you use them.'},
   upgrade:{name:'Tune-Up',desc:'Upgrade a card for free at the next shop.'},
   cards:{name:'Card Drop',desc:'Two random cards join your deck right now, one of them upgraded.'},
-  shiny:{name:'Polish',desc:'A random card in your deck gets a special finish (Holo, Golden, Neon or Ghost).'},
+  shiny:{name:'Polish',desc:'A random number card in your deck gets a special finish (Holo, Golden, Neon or Ghost).'},
   collector:{name:'Collector’s Pick',desc:'A free Collector’s bundle (keep 1 of 4 finished cards) at the next shop.'},
   nest:{name:'Nest Egg',desc:'Extra interest right now: 1 cap for every 5 you hold, up to 10.'},
   grit:{name:'Second Wind',desc:'+1 Grit right now (up to 2).'},
@@ -3388,7 +3399,7 @@ const MODS={
   glass:{name:'Glass',desc:'Worth double, but breaks after the hand it’s played in.',tag:'GLS'},
   wild:{name:'Wild',desc:'Counts as any suit for the suit rule.',tag:'WLD'},
 };
-// Editions: a special finish on any card, separate from upgrades. Road only, and only for the run.
+// Editions: a special finish on number cards (A–10), separate from upgrades. Road only, and only for the run.
 const EDITIONS={
   holo:{name:'Holographic',tag:'HOLO',desc:'The caravan it’s in can sell 1 point higher.',price:3,w:12},
   gold:{name:'Golden',tag:'GOLD',desc:'+3 caps every time you play it (paid when the table ends).',price:4,w:7},
@@ -3538,6 +3549,8 @@ function interestCap(){
   return (r.tier==='gold'?3:5)+(runV('tin')?3:0)+(has('prospector')?3:0);
 }
 const tableReward=(s,t)=>[5,7,11][t]+Math.round(s*1.5);
+// Selling all three caravans pays half the table's base reward on top (at least 3).
+const sweepBonus=(s,t)=>Math.max(3,Math.ceil(tableReward(s,t)/2));
 const bossBountyPay=s=>Math.round((4+s)*(has('hunter')?2:1)*(isChar('vladmira')?0.5:1));
 
 function plainDeck(){return addFaces(baseNumbers(),{J:4,Q:4,K:4,JK:2});}
@@ -3576,7 +3589,7 @@ function rollCard(withMod){
   if(r<.07)rank='JK';else if(r<.22)rank='K';else if(r<.36)rank='J';else if(r<.45)rank='Q';else rank=pick(['10','10','9','9','8','7','6','5','4','A']);
   const c={rank,suit:rank==='JK'?null:pick(SUITS)};
   if(withMod&&isNum(c)&&Math.random()<.45)c.mod=pick(Object.keys(MODS));
-  if(withMod){const e=rollEdition(23);if(e)c.ed=e;}
+  if(withMod&&isNum(c)){const e=rollEdition(30);if(e)c.ed=e;}
   return c;
 }
 function runCardPrice(c){
@@ -3593,7 +3606,7 @@ const BUNDLES={
   haul:{name:'Caravan haul',desc:'See 5 cards, keep 2. Every card is a face card or an upgraded number.',price:11,see:5,keep:2,w:10},
   suit:{name:'Suit bundle',desc:'See 5 number cards of one suit, keep 2. Some come upgraded.',price:6,see:5,keep:2,w:16},
   royal:{name:'Royal bundle',desc:'See 5 Kings and Queens, keep 2.',price:9,see:5,keep:2,w:8},
-  collector:{name:'Collector’s bundle',desc:'See 4 cards, keep 1. Every card has a special finish: Holographic, Golden, Neon or Ghost.',price:14,see:4,keep:1,w:6},
+  collector:{name:'Collector’s bundle',desc:'See 4 number cards, keep 1. Every one has a special finish: Holographic, Golden, Neon or Ghost.',price:14,see:4,keep:1,w:6},
 };
 const bundleName=b=>b.id==='suit'?`${SUIT_WORD[b.suit]} bundle`:BUNDLES[b.id].name;
 const bundleDesc=b=>b.id==='suit'?`See 5 ${SUIT_WORD[b.suit].toLowerCase()} number cards, keep 2. Some come upgraded.`:BUNDLES[b.id].desc;
@@ -3611,8 +3624,8 @@ function genBundleCards(b){
     if(Math.random()<face){const r=Math.random();return r<.12?{rank:'JK',suit:null}:{rank:pick(['K','J','Q','J','K']),suit:pick(SUITS)};}
     const c={rank:numRank(),suit:pick(SUITS)};if(Math.random()<up)c.mod=mod();return c;
   };
-  for(let k=0;k<60&&out.length<BUNDLES[b.id].see;k++){const c=b.id==='collector'?rollCard(false):make();
-    const e=b.id==='collector'?rollEdition(null):rollEdition(4);if(e)c.ed=e;
+  for(let k=0;k<60&&out.length<BUNDLES[b.id].see;k++){const c=b.id==='collector'?{rank:pick(['A','4','5','6','7','8','9','10','10','9']),suit:pick(SUITS)}:make();
+    if(isNum(c)){const e=b.id==='collector'?rollEdition(null):rollEdition(4);if(e)c.ed=e;}
     if(!out.some(o=>key(o)===key(c)))out.push(c);}
   return out;
 }
@@ -3667,16 +3680,51 @@ function skipTable(){
   r.skips++;r.table++;if(r.skips>=3)unlock('skip3');
   save();
 }
+// ---------- card reveal: shows cards that were added, changed or removed without you picking them ----------
+// Quick fly-in for cards you picked yourself (shop singles, bundle picks): a copy slides into the Deck count.
+function flyToDeck(els){
+  if(!motionOn())return;const dest=document.querySelector('.kitpill[data-kitopen="deck"]');if(!dest)return;
+  const b=dest.getBoundingClientRect();
+  els.forEach((el,i)=>{if(!el)return;const a=el.getBoundingClientRect();const g=el.cloneNode(true);
+    Object.assign(g.style,{position:'fixed',left:a.left+'px',top:a.top+'px',width:a.width+'px',height:a.height+'px',margin:0,zIndex:90,pointerEvents:'none'});
+    document.body.appendChild(g);
+    const dx=b.left+b.width/2-(a.left+a.width/2),dy=b.top+b.height/2-(a.top+a.height/2);
+    g.animate([{transform:'none',opacity:1},{transform:'translateY(-14px) scale(1.08)',opacity:1,offset:.25},{transform:`translate(${dx}px,${dy}px) scale(.2) rotate(${i%2?14:-14}deg)`,opacity:.15}],{duration:700,delay:i*90,easing:'cubic-bezier(.45,0,.6,1)',fill:'forwards'}).finished.then(()=>g.remove(),()=>g.remove());});
+}
+function showReveal(mode,title,note,cards){const r=run();if(!r)return;r.reveal={mode,title,note,cards:cards.map(c=>({...c}))};}
+function revealHTML(){
+  const v=run().reveal,head={add:'Added to your deck',change:'Card changed',remove:'Removed from your deck'}[v.mode];
+  return `<div class="overlay reveal-wrap"><div class="panel result reveal r-${v.mode}" role="dialog" aria-label="${esc(v.title)}">
+    <small class="eyebrow">${head}</small><h2 style="margin:4px 0 6px">${esc(v.title)}</h2>
+    <div class="revealcards">${v.cards.map((c,i)=>`<div class="rvcard" style="--i:${i}">${cardHTML(c)}<small>${esc(cardName(c))}${c.mod?` · ${MODS[c.mod].name}`:''}${c.ed?` · ${EDITIONS[c.ed].name}`:''}</small></div>`).join('')}</div>
+    <p class="note">${esc(v.note)}</p>
+    <button class="btn hot" data-revealok>${v.mode==='add'?'Into the deck':v.mode==='remove'?'Let them go':'Nice'}</button>
+  </div></div>`;
+}
+function closeReveal(){
+  const r=run();if(!r||!r.reveal)return;
+  const done=()=>{r.reveal=null;save();render();};
+  const cards=[...document.querySelectorAll('.rvcard')],dest=document.querySelector('.kitpill[data-kitopen="deck"]');
+  if(!motionOn()||!cards.length){done();return;}
+  const mode=r.reveal.mode,anims=cards.map((el,i)=>{const a=el.getBoundingClientRect();
+    if(mode==='add'&&dest){const b=dest.getBoundingClientRect();const dx=b.left+b.width/2-(a.left+a.width/2),dy=b.top+b.height/2-(a.top+a.height/2);
+      return el.animate([{transform:'none',opacity:1},{transform:`translate(${dx}px,${dy}px) scale(.2) rotate(${i%2?12:-12}deg)`,opacity:.2}],{duration:520,delay:i*90,easing:'cubic-bezier(.5,0,.75,0)',fill:'forwards'});}
+    if(mode==='remove')return el.animate([{transform:'none',opacity:1,filter:'none'},{transform:'translateY(-30px) scale(.8)',opacity:0,filter:'sepia(1) brightness(.4)'}],{duration:500,delay:i*80,fill:'forwards'});
+    return el.animate([{transform:'none'},{transform:'scale(1.08)'},{transform:'scale(.9)',opacity:0}],{duration:360,fill:'forwards'});});
+  const wrap=document.querySelector('.reveal-wrap');if(wrap)wrap.animate([{background:getComputedStyle(wrap).backgroundColor},{background:'transparent'}],{duration:560,fill:'forwards'});
+  document.querySelector('.reveal')?.querySelectorAll('h2,small.eyebrow,.note,button').forEach(e=>e.style.visibility='hidden');
+  Promise.all(anims.map(a=>a.finished)).then(done,done);
+}
 function applyTag(tag){
   const r=run();
   if(tag==='caps')meta.caps+=4+r.stop;
-  else if(tag==='chem'){if(chemTotal()<chemMax())meta.chems[pick(Object.keys(CHEMS))]=(meta.chems[pick(Object.keys(CHEMS))]||0)+1;}
+  else if(tag==='chem'){if(chemTotal()<chemMax()){const id=pick(Object.keys(CHEMS));meta.chems[id]=(meta.chems[id]||0)+1;}}
   else if(tag==='half')r.halfShop=true;
   else if(tag==='reroll')r.freeRerolls+=2;
   else if(tag==='crate')r.freeCrate=1;
   else if(tag==='collector')r.freeCrate='collector';
-  else if(tag==='cards'){runAddCard(rollCard(true));const c=rollCard(false);if(isNum(c))c.mod=pick(Object.keys(MODS));runAddCard(c);}
-  else if(tag==='shiny'){const pool=meta.deck.filter(c=>!c.ed);if(pool.length)pick(pool).ed=rollEdition(null);}
+  else if(tag==='cards'){const a=runAddCard(rollCard(true));const b=runAddCard({rank:pick(['A','4','5','6','7','8','9','10']),suit:pick(SUITS),mod:pick(Object.keys(MODS))});showReveal('add','Card Drop','These join your deck.',[a,b]);}
+  else if(tag==='shiny'){const pool=meta.deck.filter(c=>isNum(c)&&!c.ed);if(pool.length){const c=pick(pool);c.ed=rollEdition(null);showReveal('change','Polish',`Your ${cardName(c)} is now ${EDITIONS[c.ed].name}. ${EDITIONS[c.ed].desc}`,[c]);}}
   else if(tag==='nest')meta.caps+=Math.min(10,Math.floor(meta.caps/5));
   else if(tag==='grit')r.grit=Math.min(2,Math.max(r.grit||0,(r.grit||0)+1));
   else if(tag==='upgrade')r.freeUpgrade=1;
@@ -3695,6 +3743,7 @@ function runFinish(winner,ov){
   if(winner==='p'){
     const neon=[0,1,2].reduce((n,l)=>n+(lanes[l]==='p'?edIn(G.p.cv[l],'neon'):0),0);
     const w=Math.round(tableReward(s,t)*(has('roller')?1.5:1)*winMult()*(1+0.25*neon));meta.caps+=w;ov.win=w;if(neon)extras.push(`Neon: winnings +${25*neon}%`);
+    if(lanes.every(x=>x==='p')){const sw=sweepBonus(s,t);meta.caps+=sw;extras.push(`Triple sale: all three caravans sold, +${sw}`);}
     if(G.bounty&&bountyMet(G.bounty,lanes)){ov.bountyWon=G.bountyPay;meta.caps+=G.bountyPay;}
     let gild=0;[0,1,2].forEach(l=>{if(lanes[l]==='p')for(const e of G.p.cv[l])if(e.card.mod==='gilded')gild+=3;});
     if(gild){meta.caps+=gild;extras.push(`${gild} from Gilded cards`);}
@@ -3751,17 +3800,17 @@ function runWon(ov){
 // ---- wasteland events ----
 const EVENTS={
   trader:{title:'A Traveling Trader',text:'A trader with a two-headed mule offers to swap one of your plain number cards for an upgraded one.',
-    choices:[{label:'Trade (5 caps)',cost:5,act:()=>{const plain=meta.deck.filter(c=>isNum(c)&&!c.mod);if(!plain.length){meta.caps+=5;return 'You have no plain number cards left to trade. The trader hands your caps back.';}const c=pick(plain);c.mod=pick(Object.keys(MODS));return `Your ${cardName(c)} came back ${MODS[c.mod].name}.`;}},{label:'Keep walking',act:()=>'The trader shrugs and moves on.'}]},
+    choices:[{label:'Trade (5 caps)',cost:5,act:()=>{const plain=meta.deck.filter(c=>isNum(c)&&!c.mod);if(!plain.length){meta.caps+=5;return 'You have no plain number cards left to trade. The trader hands your caps back.';}const c=pick(plain);c.mod=pick(Object.keys(MODS));showReveal('change','Traded',`${MODS[c.mod].name}: ${MODS[c.mod].desc}`,[c]);return `Your ${cardName(c)} came back ${MODS[c.mod].name}.`;}},{label:'Keep walking',act:()=>'The trader shrugs and moves on.'}]},
   toll:{title:'Raider Toll',text:'Raiders block the road and want 10 caps to let you pass.',
     choices:[{label:'Pay up (10 caps)',cost:10,act:()=>'They wave you through.'},{label:'Refuse',act:()=>{run().nextRules=['heavy'];return 'They let you pass, but they tip off the next dealer. Your next table: the dealer opens with 2 extra cards.';}}]},
   doctor:{title:'The Strange Doctor',text:'A doctor in a stained coat offers to “reinforce” a card. Results guaranteed, mostly.',
-    choices:[{label:'Steel a card (6 caps)',cost:6,act:()=>{const pool=meta.deck.filter(c=>isNum(c)&&!c.mod);if(!pool.length){meta.caps+=6;return 'He can’t find a plain card to work on and gives your caps back, looking disappointed.';}const c=pick(pool);c.mod='steel';return `Your ${cardName(c)} is now Steel.`;}},{label:'No thanks',act:()=>'You back away slowly.'}]},
+    choices:[{label:'Steel a card (6 caps)',cost:6,act:()=>{const pool=meta.deck.filter(c=>isNum(c)&&!c.mod);if(!pool.length){meta.caps+=6;return 'He can’t find a plain card to work on and gives your caps back, looking disappointed.';}const c=pick(pool);c.mod='steel';showReveal('change','Reinforced',`Steel: ${MODS.steel.desc}`,[c]);return `Your ${cardName(c)} is now Steel.`;}},{label:'No thanks',act:()=>'You back away slowly.'}]},
   wreck:{title:'An Abandoned Caravan',text:'A wrecked caravan sits by the road. Something might be worth taking.',
-    choices:[{label:'Search the cargo',act:()=>{const a=runAddCard(rollCard(true)),b=runAddCard(rollCard(false));return `You found ${cardName(a)}${a.mod?` (${MODS[a.mod].name})`:''}${a.ed?` (${EDITIONS[a.ed].name})`:''} and ${cardName(b)}, now in your deck.`;}},{label:'Take the loose caps',act:()=>{meta.caps+=6;return 'You pocket 6 caps.';}}]},
+    choices:[{label:'Search the cargo',act:()=>{const a=runAddCard(rollCard(true)),b=runAddCard(rollCard(false));showReveal('add','From the wreck','You pull these out of the cargo. They join your deck.',[a,b]);return `You found ${cardName(a)}${a.mod?` (${MODS[a.mod].name})`:''}${a.ed?` (${EDITIONS[a.ed].name})`:''} and ${cardName(b)}, now in your deck.`;}},{label:'Take the loose caps',act:()=>{meta.caps+=6;return 'You pocket 6 caps.';}}]},
   gambler:{title:'The Coin Flipper',text:'A grinning stranger offers a coin flip: double or nothing on 10 caps.',
     choices:[{label:'Flip (10 caps)',cost:10,act:()=>{if(Math.random()<.5){meta.caps+=20;return 'Heads! You win 20 caps.';}return 'Tails. The stranger laughs and walks off with your caps.';}},{label:'Walk away',act:()=>'Probably wise.'}]},
   shrine:{title:'A Roadside Shrine',text:'An old shrine to a forgotten casino. Leaving an offering here thins your deck of the cards you least need.',
-    choices:[{label:'Leave an offering',act:()=>{const lows=meta.deck.map((c,i)=>({c,i})).filter(o=>isNum(o.c)&&!o.c.mod&&val(o.c)<=3).slice(0,3).map(o=>o.i);if(meta.deck.length-lows.length>=MIN_DECK)meta.deck=meta.deck.filter((c,i)=>!lows.includes(i));else return 'Your deck is too thin to give anything up.';return `You removed ${lows.length} low cards from your deck.`;}},{label:'Move on',act:()=>'You tip your hat and keep going.'}]},
+    choices:[{label:'Leave an offering',act:()=>{const lows=meta.deck.map((c,i)=>({c,i})).filter(o=>isNum(o.c)&&!o.c.mod&&val(o.c)<=3).slice(0,3).map(o=>o.i);if(!lows.length)return 'You have no low plain cards to offer. The shrine stays quiet.';if(meta.deck.length-lows.length>=MIN_DECK){const gone=lows.map(i=>meta.deck[i]);meta.deck=meta.deck.filter((c,i)=>!lows.includes(i));showReveal('remove','The offering','These leave your deck for good.',gone);}else return 'Your deck is too thin to give anything up.';return `You removed ${lows.length} low cards from your deck.`;}},{label:'Move on',act:()=>'You tip your hat and keep going.'}]},
   barrel:{title:'A Burn Barrel',text:'A barrel fire crackles by the roadside, and nobody’s watching it. A good place to get rid of cards you don’t want.',
     choices:[{label:'Burn up to 3 cards (free)',act:()=>{openBurn(3,'Burn barrel','Pick up to 3 cards to burn. They’re gone for the rest of the run.');return null;}},{label:'Warm your hands and move on',act:()=>'You warm up and hit the road.'}]},
   campfire:{title:'A Quiet Campfire',text:'Somebody left a fire burning by the road, with a coffee pot still warm. A good place to catch your breath, or to swap tall tales with a passing trader.',
@@ -3859,7 +3908,7 @@ function renderRunMap(){
         ${ids.length?`<div class="rulesbar">${ids.map(ruleChip).join('')}${t===2&&d.rival?`<span class="rb house-chip">Rival: ${esc(RIVALS[d.rival].rule)}</span>`:''}</div>`:(t===2&&d.rival?`<div class="rulesbar"><span class="rb house-chip">Rival: ${esc(RIVALS[d.rival].rule)}</span></div>`:'')}
         ${ids.length?`<div class="ruledescs">${ids.map(id=>`<span><b>${BOSS_RULES[id].name}:</b> ${esc(BOSS_RULES[id].desc)}</span>`).join('')}</div>`:''}
         ${st==='now'&&tag?`<div class="boon"><b>Or skip it:</b> give up this table’s winnings to earn a boon. <span><b>${esc(tag.name)}:</b> ${esc(tag.desc)}</span></div>`:st==='next'&&tag?`<div class="boon dim">Skip boon: <b>${esc(tag.name)}</b>. ${esc(tag.desc)}</div>`:''}
-        <div class="rt-foot"><span class="num">Win +${Math.round(tableReward(s,t)*(has('roller')?1.5:1)*winMult())}${t===2?` · Bounty: ${BOUNTIES[r.bounties[s]].name} +${bossBountyPay(s)}`:''}</span>
+        <div class="rt-foot"><span class="num">Win +${Math.round(tableReward(s,t)*(has('roller')?1.5:1)*winMult())} · Sell all 3: +${sweepBonus(s,t)} more${t===2?` · Bounty: ${BOUNTIES[r.bounties[s]].name} +${bossBountyPay(s)}`:''}</span>
           ${st==='now'?`<span class="rt-btns">${tag?`<button class="btn" data-runskip>Skip for ${esc(tag.name)}</button>`:''}<button class="btn hot" data-runplay>Deal in</button></span>`:st==='done'?'<span class="tag">DONE</span>':''}</div>
       </div>`;}).join('');
     return `<div class="stopcur"><h3>${inBeyond(s)?`Mile ${mileOf(s)}`:s+1}. ${esc(place)}</h3>${tables}</div>`;
@@ -3872,6 +3921,7 @@ function renderRunMap(){
   <section class="panel trailmap"><div class="maplabel">Goodsprings → The Strip</div>${rows}</section>
   ${runPre?runPreHandHTML():''}
   ${kitOpen?kitHTML():''}
+  ${r.reveal?revealHTML():''}
   ${runStoryHTML()}`;
 }
 function runPreHandHTML(){
@@ -3959,6 +4009,7 @@ function renderEvent(){
   <div class="hubbtns kitbtns"><button class="btn" data-kitopen="deck">Your deck, perks & chems</button></div>
   ${r.picker?pickerHTML():''}
   ${kitOpen?kitHTML():''}
+  ${r.reveal?revealHTML():''}
   ${runStoryHTML()}`;
 }
 let runShopTab='shop', armedSell=null, kitOpen=null;
@@ -4036,7 +4087,7 @@ function renderRunShop(){
       <p class="note">You can run ${slots} perks. Sell one for half its price to make room.</p>
       <div class="plist">${meta.perks.map(id=>`<div class="prow"><div><b>${PERKS[id].name} <i class="rar rar-${PERK_RARITY[id]}">${PERK_RARITY[id]}</i></b><span>${esc(PERKS[id].desc)}</span></div><button class="btn${armedSell==='p:'+id?' armed':''}" data-rsellperk="${id}">${armedSell==='p:'+id?'Tap to sell':'Sell '+capN(perkSellPrice(id))}</button></div>`).join('')||'<p class="note">No perks yet.</p>'}</div>`}
   </section>
-  ${r.crate?crateHTML():''}${r.workbench?workbenchHTML():''}${r.picker?pickerHTML():''}${kitOpen?kitHTML():''}${runStoryHTML()}`;
+  ${r.crate?crateHTML():''}${r.workbench?workbenchHTML():''}${r.picker?pickerHTML():''}${kitOpen?kitHTML():''}${r.reveal?revealHTML():''}${runStoryHTML()}`;
 }
 function pickerHTML(){
   const pk=run().picker,burn=pk.kind==='burn';
@@ -4129,13 +4180,14 @@ function handleRunClick(d){
   if('runshopback' in d){if(r.offers&&r.phase==='table'){r.phase='shop';runPre=false;kitOpen=null;save();render();window.scrollTo(0,0);}return true;}
   if('kitopen' in d){kitOpen=d.kitopen||'deck';render();return true;}
   if('kitclose' in d){kitOpen=null;render();return true;}
+  if('revealok' in d){closeReveal();return true;}
   if('rtab' in d){runShopTab=d.rtab;armedSell=null;render();return true;}
-  if('rbuy' in d){runShopBuy(d.rbuy);render();return true;}
+  if('rbuy' in d){const k=d.rbuy,el=k.startsWith('card')?document.querySelector(`[data-rbuy="${k}"]`)?.closest('.offer')?.querySelector('.card'):null,before=meta.deck.length;runShopBuy(k);if(el&&meta.deck.length>before)flyToDeck([el]);render();return true;}
   if('rreroll' in d){if(r.sponsor){r.sponsor=0;}else if(r.freeRerolls){r.freeRerolls--;}else{const c=rerollCost();if(meta.caps<c)return true;meta.caps-=c;r.rerolls=(r.rerolls||0)+1;}rerollShop();save();render();return true;}
   if('cratepick' in d){takeCrate(+d.cratepick);render();return true;}
   if('crateskip' in d){r.crate=null;save();render();return true;}
   if('pickc' in d){const pk=r.picker;if(pk){const i=+d.pickc,k=pk.sel.indexOf(i);if(k>=0)pk.sel.splice(k,1);else if(pk.sel.length<(pk.kind==='burn'?Math.min(pk.keep,burnRoom()):pk.keep))pk.sel.push(i);}render();return true;}
-  if('pickdone' in d){const pk=r.picker;if(pk&&pk.kind==='burn'){const els=[...document.querySelectorAll('#app .pickcard.on')];burnCards(els,()=>{pickerDone();render();});}else{pickerDone();render();}return true;}
+  if('pickdone' in d){const pk=r.picker;if(pk&&pk.kind==='burn'){const els=[...document.querySelectorAll('#app .pickcard.on')];burnCards(els,()=>{pickerDone();render();});}else{const els=[...document.querySelectorAll('#app .pickcard.on .card')];pickerDone();flyToDeck(els);render();}return true;}
   if('pickskip' in d){if(r.picker&&r.picker.kind==='burn'&&r.phase==='event')r.eventResult='You leave the fire burning and move on.';r.picker=null;save();render();return true;}
   if('wbpick' in d){const c=meta.deck[+d.wbpick];if(c&&r.workbench){c.mod=r.workbench.mod;r.workbench=null;if(modCount()>=5)unlock('tinker');save();}render();return true;}
   if('wbcancel' in d){r.workbench=null;save();render();return true;}
@@ -4367,7 +4419,8 @@ function wantedPoster(cb){
   if(motionOn())p.animate([{transform:'scale(1.8) rotate(-9deg)',opacity:0},{transform:'scale(.96) rotate(-2deg)',opacity:1,offset:.7},{transform:'rotate(-2deg)'}],{duration:420,easing:'cubic-bezier(.3,1.4,.5,1)',fill:'both'});
   setTimeout(()=>{sfx('stamp');buzz(30);},300);
   let gone=false;const go=()=>{if(gone)return;gone=true;el.remove();cb();};
-  el.addEventListener('click',go);setTimeout(go,3200);
+  // stays up until tapped; ignore taps in the first half-second so the deal-in tap doesn't dismiss it
+  const t0=Date.now();el.addEventListener('click',()=>{if(Date.now()-t0>500)go();});
 }
 
 // ---------- hand cards catch the light ----------
