@@ -190,6 +190,12 @@ details.rules ul{padding-left:18px;margin:10px 0 0;display:grid;gap:6px;max-widt
 
 /* ---------- shop ---------- */
 .tabs{display:flex;gap:6px;margin:14px 0}
+.kitpill{cursor:pointer;font:inherit;color:inherit}
+.kitpill::after{content:' ›';opacity:.6}
+.kitbtns{justify-content:center;margin:4px 0 12px}
+.kitpop{max-height:86vh;overflow:auto}
+.kitpop .tabs{flex-wrap:wrap}
+.kitpop .deckgrid{--cw:clamp(40px,11vw,56px)}
 .tabs .btn[aria-pressed="true"]{background:var(--neon);color:var(--ink);border-color:var(--neon)}
 .offers{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px}
 .offer{display:grid;justify-items:center;gap:8px;padding:12px 8px;border-radius:8px;background:var(--dust);border:1px solid #ffffff10;text-align:center}
@@ -875,7 +881,7 @@ function legalMoves(g,side){
   });
   if(!setup){
     if(!(R.noDiscard&&R.noDiscard[side]))me.hand.forEach((c,ci)=>moves.push({t:'discard',ci}));
-    for(let l=0;l<3;l++)if(me.cv[l].length)moves.push({t:'disband',lane:l});
+    if(!(R.noDisband&&R.noDisband[side]))for(let l=0;l<3;l++)if(me.cv[l].length)moves.push({t:'disband',lane:l});
   }else if(!moves.length){
     me.hand.forEach((c,ci)=>moves.push({t:'discard',ci}));
   }
@@ -1704,6 +1710,15 @@ function laneHTML(side,l,lanes,selMoves,proj){
     <div class="stack" style="height:calc(var(--ch) + var(--off) * ${h})">${cv.length?entries:`<div class="slot">${ROMAN[l]}</div>`}${w===side&&G.over?`<div class="stampmark" data-k="${side}${l}">SOLD</div>`:''}</div>
   </div>`;
 }
+// If a number card can go on a caravan only because of the suit rule (not its direction), say why.
+function suitOnly(cv,c){
+  if(cv.length<2||c.mod==='wild'||!canPlayNum(cv,c,G.rules.color.p))return null;
+  const top=cv[cv.length-1].card,{dir,suit,wild}=cvState(cv);
+  if(dir===0||(dir>0?val(c)>val(top):val(c)<val(top)))return null;
+  if(wild)return 'the top card is Wild';
+  if(c.suit===suit)return `${SUIT_CH[suit]} matches`;
+  return `same color as ${SUIT_CH[suit]}, Two-Tone`;
+}
 function whyNot(cv,c){
   if(!cv.length)return null;
   if(canPlayNum(cv,c,G.rules.color.p))return null;
@@ -1728,7 +1743,8 @@ function hintText(selMoves){
   if(isNum(c)&&!setup){
     const blocked=[0,1,2].map(l=>{const r=whyNot(G.p.cv[l],c);return r?`${ROMAN[l]}: ${r}`:null;}).filter(Boolean);
     if(!plays.length)return `${cardName(c)} can’t go anywhere. ${blocked.join('. ')}. Discard it, or pick another card.`;
-    return `Tap a glowing caravan to play it.${blocked.length?` Not ${blocked.join('. Not ')}.`:''}`;
+    const bySuit=[0,1,2].map(l=>{const r=suitOnly(G.p.cv[l],c);return r?`${ROMAN[l]} works by the suit rule (${r})`:null;}).filter(Boolean);
+    return `Tap a glowing caravan to play it.${bySuit.length?` ${bySuit.join('. ')}.`:''}${blocked.length?` Not ${blocked.join('. Not ')}.`:''}`;
   }
   if(!plays.length)return setup?'Openings take number cards only. Pick a number card.':`${cardName(c)} has nowhere legal to go. Discard it, or pick another.`;
   if(isNum(c))return 'Tap a glowing caravan to play it.';
@@ -2331,10 +2347,10 @@ function resumeHTML(){
 const ROAD_RULES=`
   <li>A <b>run</b> is six stops from Goodsprings to the Strip. Every stop has three tables: a Saloon table, a High Stakes table and a Boss table.</li>
   <li><b>Grit:</b> you start each run with 1. Lose a Saloon or High Stakes table and you spend 1 Grit and move on without the reward. Lose a Boss and you spend 1 Grit to try again. <b>With no Grit left, any loss ends the run.</b> Campfires on the road can restore Grit (up to 2).</li>
-  <li>You can <b>skip</b> the Saloon or High Stakes table: you give up its winnings to earn a <b>boon</b> instead (free caps, a free bundle, a free chem, half-price shop, free rerolls or a free card upgrade). Each table shows its boon. The Boss table can’t be skipped.</li>
+  <li>You can <b>skip</b> the Saloon or High Stakes table: you give up its winnings to earn a <b>boon</b> instead (caps, cards, a free bundle or chem, a card finish, Grit, shop discounts and more). Boons change every run, and each table shows its boon. The Boss table can’t be skipped.</li>
   <li>Some cards in the shop have a <b>special finish</b>: <b>Holographic</b> (its caravan can sell 1 higher), <b>Golden</b> (+3 caps each time you play it), <b>Neon</b> (+25% winnings if its caravan sells) or <b>Ghost</b> (doesn’t take a hand slot). The <b>Collector’s bundle</b> only has finished cards. Like everything you buy on the Road, they last for the run.</li>
   <li>Cards you add during a run wear the back of a <b>Pack</b> you’ve earned (or a different Classic back if you haven’t earned any yet), so you can spot them coming off your deck.</li>
-  <li><b>Bosses</b> bring random rules, and they get nastier the further you go. Read them on the map before you deal in.</li>
+  <li><b>Bosses</b> bring random rules that change every run, and they stack up the further you go. Read them on the map before you deal in.</li>
   <li>Every run starts with a 54-card deck and a few caps. The <b>Plain deck</b> has no twist; win runs to unlock tougher decks (each with its own twist) and the Silver and Gold difficulties. Win tables to earn caps, plus <b>interest</b>: 1 cap for every 5 you hold, up to 5 (less on some decks and difficulties).</li>
   <li>Between tables, the <b>trading post</b> sells perks, single cards, chems, card upgrades and one voucher per stop. Reroll it if you don’t like what’s there.</li>
   <li><b>Card bundles</b> show you several cards and let you keep some: a Saddlebag (keep 1 of 3), a Supply bundle or Caravan haul (keep 2 of 5), a themed bundle of one suit or of Kings and Queens, or a Collector’s bundle (keep 1 of 4, all special finishes). You can always take nothing.</li>
@@ -3319,6 +3335,12 @@ const BOSS_RULES={
   noking:{name:'No Kings',desc:'Kings can’t be played.',apply:R=>{R.banned.push('K');}},
   noqueen:{name:'No Queens',desc:'Queens can’t be played.',apply:R=>{R.banned.push('Q');}},
   heavy:{name:'Heavy Hitter',desc:'The dealer opens with 2 extra cards.',apply:R=>{R.deal.a+=2;}},
+  nojack:{name:'No Jacks',desc:'Jacks can’t be played.',apply:R=>{R.banned.push('J');}},
+  light:{name:'Light Pockets',desc:'You hold 4 cards instead of 5.',apply:R=>{R.hand.p=Math.max(3,R.hand.p-1);}},
+  floor:{name:'High Floor',desc:'Caravans sell at 23–26.',apply:R=>{R.range.p=[23,26];R.range.a=[23,26];}},
+  stubborn:{name:'No Backing Out',desc:'Nobody can disband a caravan.',apply:R=>{R.noDisband={p:true,a:true};}},
+  mirror:{name:'Crooked Crown',desc:'The dealer’s Kings triple instead of double.',apply:R=>{R.kingMult.a=3;}},
+  greedy:{name:'Greedy House',desc:'The dealer’s caravans sell up to 1 point higher.',apply:R=>{R.range.a=[R.range.a[0],R.range.a[1]+1];}},
 };
 const BOSS_POOL=Object.keys(BOSS_RULES);
 const GENERIC_DEALERS=[
@@ -3344,6 +3366,11 @@ const TAGS={
   half:{name:'Clearance Sale',desc:'The next shop is half price.'},
   reroll:{name:'Rerolls',desc:'Two free shop rerolls, saved until you use them.'},
   upgrade:{name:'Tune-Up',desc:'Upgrade a card for free at the next shop.'},
+  cards:{name:'Card Drop',desc:'Two random cards join your deck right now, one of them upgraded.'},
+  shiny:{name:'Polish',desc:'A random card in your deck gets a special finish (Holo, Golden, Neon or Ghost).'},
+  collector:{name:'Collector’s Pick',desc:'A free Collector’s bundle (keep 1 of 4 finished cards) at the next shop.'},
+  nest:{name:'Nest Egg',desc:'Extra interest right now: 1 cap for every 5 you hold, up to 10.'},
+  grit:{name:'Second Wind',desc:'+1 Grit right now (up to 2).'},
 };
 const MODS={
   steel:{name:'Steel',desc:'Can’t be removed by Jacks.',tag:'STL'},
@@ -3412,29 +3439,43 @@ function bossDealer(s){
   if(rv)return {name:CHARS[rv].name,blurb:RIVALS[rv].blurb,rival:rv};
   const o=ROAD[RUN_STOPS[s]];return {name:o.name,blurb:o.blurb,rival:null};
 }
+// Rules that can't share a table (they'd cancel out or make no sense together).
+const RULE_CLASH=[['tight','long','floor'],['royal','noking','mirror'],['nojack','iron'],['stacked','light']];
+const RANGE_RULES=['tight','long','floor'];
 function drawRules(n,avoid=[]){
-  const out=[];const pool=shuffle(BOSS_POOL.filter(x=>!avoid.includes(x)));
+  const out=[];let pool=shuffle(BOSS_POOL.filter(x=>!avoid.includes(x)));
+  if(pool.length<n)pool=shuffle(BOSS_POOL.slice());
   for(const id of pool){if(out.length>=n)break;
-    if((id==='tight'&&out.includes('long'))||(id==='long'&&out.includes('tight')))continue;
-    if(id==='royal'&&out.includes('noking'))continue;if(id==='noking'&&out.includes('royal'))continue;
+    if(RULE_CLASH.some(g=>g.includes(id)&&out.some(o=>o!==id&&g.includes(o))))continue;
     out.push(id);}
-  return out;
+  // range-setting rules go first so modifiers like Greedy House stack on top of them
+  return out.sort((a,b)=>(RANGE_RULES.includes(b)?1:0)-(RANGE_RULES.includes(a)?1:0));
 }
+// Skip boons: weighted, never the same boon twice at one stop, and at most twice per run.
+const TAG_WEIGHT={caps:10,crate:9,chem:8,half:7,reroll:8,upgrade:8,cards:8,shiny:5,collector:4,nest:6,grit:3};
+function pickTag(used,stopTags){
+  const ok=Object.keys(TAG_WEIGHT).filter(k=>TAGS[k]&&!stopTags.includes(k)&&(used[k]||0)<2);
+  const pool=ok.length?ok:Object.keys(TAG_WEIGHT);
+  let x=Math.random()*pool.reduce((a,k)=>a+TAG_WEIGHT[k],0);
+  for(const k of pool){x-=TAG_WEIGHT[k];if(x<0){used[k]=(used[k]||0)+1;return k;}}
+  return pool[0];
+}
+function tagPair(r){const used={};for(const st of (r.skipTags||[]))if(st)for(const k of st)used[k]=(used[k]||0)+1;const a=pickTag(used,[]);return [a,pickTag(used,[a])];}
 function genRun(){
   const r=run(), t=tierIdx(r.tier);
-  r.bosses=RUN_STOPS.map((_,s)=>drawRules((s<2?1:s<4?2:3)+(t>=1?1:0)+(r.deck==='gold'?1:0)));
+  r.bosses=[];RUN_STOPS.forEach((_,s)=>{r.bosses[s]=drawRules((s<2?1:s<4?2:3)+(t>=1?1:0)+(r.deck==='gold'?1:0),s?r.bosses[s-1]:[]);});
   r.extra=RUN_STOPS.map(()=>t>=2?[drawRules(1)[0],drawRules(1)[0]]:[null,null]);
   const names=shuffle(GENERIC_DEALERS.slice());
   r.dealers=RUN_STOPS.map((_,s)=>[0,1].map(k=>{const d=names[(s*2+k)%names.length];return {name:d[0],blurb:d[1],rival:null};}));
-  r.skipTags=RUN_STOPS.map(()=>[pick(Object.keys(TAGS)),pick(Object.keys(TAGS))]);
+  r.skipTags=[];RUN_STOPS.forEach((_,s)=>{r.skipTags[s]=tagPair(r);});
   r.bounties=RUN_STOPS.map((_,s)=>{const b=r.bosses[s];return pick(Object.keys(BOUNTIES).filter(k=>k!=='wild'&&!(k==='p26'&&b.includes('tight'))&&!(k==='kings'&&b.includes('noking'))&&!(k==='calm'&&b.includes('drought'))));});
 }
 function ensureStop(s){
   const r=run();if(r.bosses[s])return;const t=tierIdx(r.tier),k=s-RUN_STOPS.length;
-  r.bosses[s]=drawRules(Math.min(6,3+Math.floor(k/2)+(t>=1?1:0)+(r.deck==='gold'?1:0)));
+  r.bosses[s]=drawRules(Math.min(6,3+Math.floor(k/2)+(t>=1?1:0)+(r.deck==='gold'?1:0)),r.bosses[s-1]||[]);
   r.extra[s]=[drawRules(1)[0],k>=2||t>=2?drawRules(1)[0]:null];
   const names=shuffle(GENERIC_DEALERS.slice());r.dealers[s]=[0,1].map(i=>({name:names[i][0],blurb:names[i][1],rival:null}));
-  r.skipTags[s]=[pick(Object.keys(TAGS)),pick(Object.keys(TAGS))];
+  r.skipTags[s]=tagPair({skipTags:r.skipTags.slice(Math.max(0,s-5),s)});
   r.bounties[s]=pick(Object.keys(BOUNTIES).filter(x=>x!=='wild'&&!(x==='p26'&&r.bosses[s].includes('tight'))&&!(x==='kings'&&r.bosses[s].includes('noking'))&&!(x==='calm'&&r.bosses[s].includes('drought'))));
 }
 function tableRuleIds(s,t){
@@ -3570,7 +3611,7 @@ function openShop(){
     upgrade:pick(Object.keys(MODS)),voucher:r.voucherStop===r.stop?null:pick(Object.keys(VOUCHERS).filter(v=>!r.vouchers.includes(v))),sold:{}};
   r.offers.bundles=twoBundles();r.burnUsed=false;
   r.rerolls=0;r.crate=null;r.workbench=null;r.picker=null;r.sponsor=isChar('ronald')?1:0;
-  if(r.freeCrate){r.freeCrate=0;openBundle({id:'supply'},true);}
+  if(r.freeCrate){const id=r.freeCrate==='collector'?'collector':'supply';r.freeCrate=0;openBundle({id},true);}
 }
 function rerollShop(){
   const r=run();
@@ -3592,6 +3633,7 @@ const modCount=()=>meta.deck.filter(c=>c.mod).length;
 // ---- start a table ----
 function startRunTable(){
   const r=run();if(!r||r.phase!=='table')return;
+  r.offers=null;r.halfShop=false;kitOpen=null;
   const s=r.stop,t=r.table,ri=riOf(s);ensureStop(s);
   const R=runRules(s,t);
   const dealer=t===2?bossDealer(s):r.dealers[s][t];
@@ -3604,6 +3646,7 @@ function startRunTable(){
 }
 function skipTable(){
   const r=run();if(!r||r.phase!=='table'||r.table>1)return;
+  r.offers=null;r.halfShop=false;
   const tag=r.skipTags[r.stop][r.table];applyTag(tag);
   r.skips++;r.table++;if(r.skips>=3)unlock('skip3');
   save();
@@ -3615,6 +3658,11 @@ function applyTag(tag){
   else if(tag==='half')r.halfShop=true;
   else if(tag==='reroll')r.freeRerolls+=2;
   else if(tag==='crate')r.freeCrate=1;
+  else if(tag==='collector')r.freeCrate='collector';
+  else if(tag==='cards'){runAddCard(rollCard(true));const c=rollCard(false);if(isNum(c))c.mod=pick(Object.keys(MODS));runAddCard(c);}
+  else if(tag==='shiny'){const pool=meta.deck.filter(c=>!c.ed);if(pool.length)pick(pool).ed=rollEdition(null);}
+  else if(tag==='nest')meta.caps+=Math.min(10,Math.floor(meta.caps/5));
+  else if(tag==='grit')r.grit=Math.min(2,Math.max(r.grit||0,(r.grit||0)+1));
   else if(tag==='upgrade')r.freeUpgrade=1;
   toast({label:'Boon earned',name:TAGS[tag].name,desc:TAGS[tag].desc});
 }
@@ -3774,8 +3822,8 @@ const ruleChip=id=>`<span class="rb house-chip" title="${esc(BOSS_RULES[id].desc
 function runHeaderHTML(){
   const r=run(),slots=perkSlots();
   return `<div class="charstrip"><img src="${portrait(r.char)}" alt=""><div><small>${esc(TIERS[tierIdx(r.tier)].name)} · ${esc(DECKS[deckIdx(r.deck)].name)}</small><b>${esc(CHARS[r.char].name)}</b>
-      <span>${inBeyond(r.stop)?`Beyond the Strip · mile ${mileOf(r.stop)}`:`Stop ${r.stop+1} of ${RUN_STOPS.length}`} · ${r.won} tables won · Grit ${'●'.repeat(r.grit||0)||'none'}</span></div></div>
-    <div class="hubbar">${capsHTML(meta.caps)}<span class="pill num">Deck ${meta.deck.length}${modCount()?` · ${modCount()} upgraded`:''}</span><span class="pill num">Perks ${meta.perks.length}/${slots}</span><span class="pill num">Chems ${chemTotal()}/${chemMax()}</span></div>
+      <span>${inBeyond(r.stop)?`Beyond the Strip · mile ${mileOf(r.stop)}`:`Stop ${r.stop+1} of ${RUN_STOPS.length}`} · ${r.won} table${r.won===1?'':'s'} won · Grit ${'●'.repeat(r.grit||0)||'none'}</span></div></div>
+    <div class="hubbar">${capsHTML(meta.caps)}<button class="pill num kitpill" data-kitopen="deck">Deck ${meta.deck.length}${modCount()?` · ${modCount()} upgraded`:''}</button><button class="pill num kitpill" data-kitopen="perks">Perks ${meta.perks.length}/${slots}</button><button class="pill num kitpill" data-kitopen="chems">Chems ${chemTotal()}/${chemMax()}</button></div>
     ${meta.perks.length?`<div class="rulesbar" style="justify-content:center">${meta.perks.map(p=>`<span class="rb perk-chip rar-${PERK_RARITY[p]}" title="${esc(PERKS[p].desc)}">${PERKS[p].name}</span>`).join('')}${r.vouchers.map(v=>`<span class="rb char-chip" title="${esc(VOUCHERS[v].desc)}">${VOUCHERS[v].name}</span>`).join('')}</div>`:''}`;
 }
 let runArmed=false, runPre=false;
@@ -3804,8 +3852,10 @@ function renderRunMap(){
   <div class="mbar">${backBtn('home','Modes')}<button class="btn ghost${runArmed?' armed':''}" data-runabandon>${runArmed?'Tap again to abandon':'Abandon run'}</button></div>
   <section class="hero small"><div class="neon sm">The Road</div></section>
   ${runHeaderHTML()}
+  <div class="hubbtns kitbtns"><button class="btn" data-kitopen="deck">Your deck, perks & chems</button>${r.offers?`<button class="btn" data-runshopback>← Back to the trading post</button>`:''}</div>
   <section class="panel trailmap"><div class="maplabel">Goodsprings → The Strip</div>${rows}</section>
   ${runPre?runPreHandHTML():''}
+  ${kitOpen?kitHTML():''}
   ${runStoryHTML()}`;
 }
 function runPreHandHTML(){
@@ -3890,10 +3940,48 @@ function renderEvent(){
     ${r.eventResult?`<p class="ex">${esc(r.eventResult)}</p><button class="btn hot" data-eventdone>Continue to the shop</button>`:
       `<div class="spoils">${ev.choices.map((c,i)=>`<button class="spoil" data-eventpick="${i}" ${c.cost&&meta.caps<c.cost?'disabled':''}><b>${esc(c.label)}</b>${c.cost&&meta.caps<c.cost?'<span>Not enough caps.</span>':''}</button>`).join('')}</div>`}
   </section>
+  <div class="hubbtns kitbtns"><button class="btn" data-kitopen="deck">Your deck, perks & chems</button></div>
   ${r.picker?pickerHTML():''}
+  ${kitOpen?kitHTML():''}
   ${runStoryHTML()}`;
 }
-let runShopTab='shop', armedSell=null;
+let runShopTab='shop', armedSell=null, kitOpen=null;
+// "Your kit": everything you're carrying on this run, viewable from the map between tables.
+function kitHTML(){
+  const r=run(),tab=kitOpen,slots=perkSlots(),back=r.offers&&r.phase==='table';
+  const deck=meta.deck.map((c,i)=>({...c,i})).sort(sortSpec);
+  const chems=Object.entries(meta.chems).filter(([,n])=>n>0);
+  const extras=[
+    `Grit: ${r.grit||0}${(r.grit||0)?' (lose a table and you spend 1 instead of ending the run)':' (no safety net left)'}`,
+    r.freeRerolls?`${r.freeRerolls} free shop reroll${r.freeRerolls>1?'s':''} saved up`:null,
+    r.freeUpgrade?'A free card upgrade at your next shop':null,
+    r.freeCrate?`A free ${r.freeCrate==='collector'?'Collector’s':'Supply'} bundle at your next shop`:null,
+    r.halfShop&&!r.offers?'Your next shop is half price':null,
+    (r.nextRules||[]).length?`Next table: ${r.nextRules.map(id=>`${BOSS_RULES[id].name} (${BOSS_RULES[id].desc})`).join(', ')}`:null,
+  ].filter(Boolean);
+  const tabBtn=(k,l)=>`<button class="btn" data-kitopen="${k}" aria-pressed="${tab===k}">${l}</button>`;
+  return `<div class="overlay"><div class="panel result kitpop" role="dialog" aria-label="Your kit" style="text-align:left">
+    <div class="sect-h"><h2 style="font-size:24px;margin:0">Your kit</h2><button class="btn" data-kitclose>Close</button></div>
+    <div class="tabs" role="group" aria-label="Kit section">${tabBtn('deck',`Deck (${meta.deck.length})`)}${tabBtn('perks',`Perks (${meta.perks.length}/${slots})`)}${tabBtn('chems',`Chems & more`)}</div>
+    ${tab==='deck'?`
+      <p class="note">${deckSummary(meta.deck)} ${modCount()?`${modCount()} upgraded.`:''} ${meta.deck.filter(c=>c.ed).length?`${meta.deck.filter(c=>c.ed).length} with a special finish.`:''}</p>
+      <p class="note">On the Road your deck changes at the trading post: add cards from bundles and singles, upgrade them at the workbench, and thin it out with the Burn pile.${back?' You can still go back to this stop’s trading post.':''}</p>
+      <div class="deckgrid">${deck.map(c=>`<div class="card-btn" aria-label="${cardName(c)}${c.mod?' '+MODS[c.mod].name:''}${c.ed?' '+EDITIONS[c.ed].name:''}">${cardHTML(c)}</div>`).join('')}</div>`
+    :tab==='perks'?`
+      ${meta.perks.length?`<div class="plist">${meta.perks.map(id=>`<div class="prow"><div><b>${PERKS[id].name} <i class="rar rar-${PERK_RARITY[id]}">${PERK_RARITY[id]}</i></b><span>${esc(PERKS[id].desc)}</span></div></div>`).join('')}</div>`:'<p class="note">No perks yet. Buy them at the trading post.</p>'}
+      <p class="note">${slots-meta.perks.length>0?`${slots-meta.perks.length} empty slot${slots-meta.perks.length>1?'s':''}.`:'All slots full. Sell one at the trading post to make room.'}</p>
+      ${r.vouchers.length?`<h3 class="sub">Vouchers</h3><div class="plist">${r.vouchers.map(v=>`<div class="prow"><div><b>${VOUCHERS[v].name}</b><span>${esc(VOUCHERS[v].desc)}</span></div></div>`).join('')}</div>`:''}
+      <h3 class="sub">${esc(CHARS[r.char].name)}</h3>
+      <ul class="traits">${CHARS[r.char].traits.map(([k,n,dsc])=>`<li class="${k==='+'?'pro':k==='='?'meh':'con'}"><b>${k} ${esc(n)}</b> ${esc(dsc)}</li>`).join('')}</ul>
+      <p class="note"><b>Deck twist:</b> ${esc(DECKS[deckIdx(r.deck)].twist)}</p>`
+    :`
+      <h3 class="sub" style="margin-top:0">Chems <span class="note">${chemTotal()}/${chemMax()}</span></h3>
+      ${chems.length?`<div class="plist">${chems.map(([id,n])=>`<div class="prow"><div><b>${CHEMS[id].name} ×${n}</b><span>${esc(CHEMS[id].desc)}</span></div></div>`).join('')}</div><p class="note">Use them during a hand, one per turn, after the opening.</p>`:'<p class="note">No chems. Buy them at the trading post.</p>'}
+      <h3 class="sub">Run status</h3>
+      <ul class="steps">${extras.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`}
+    <div class="hubbtns" style="justify-content:center">${back?`<button class="btn hot" data-runshopback>← Back to the trading post</button>`:''}<button class="btn" data-kitclose>Close</button></div>
+  </div></div>`;
+}
 function renderRunShop(){
   const r=run(),o=r.offers;if(!o)openShop();
   const of=r.offers,slots=perkSlots(),full=meta.perks.length>=slots;
@@ -3932,7 +4020,7 @@ function renderRunShop(){
       <p class="note">You can run ${slots} perks. Sell one for half its price to make room.</p>
       <div class="plist">${meta.perks.map(id=>`<div class="prow"><div><b>${PERKS[id].name} <i class="rar rar-${PERK_RARITY[id]}">${PERK_RARITY[id]}</i></b><span>${esc(PERKS[id].desc)}</span></div><button class="btn${armedSell==='p:'+id?' armed':''}" data-rsellperk="${id}">${armedSell==='p:'+id?'Tap to sell':'Sell '+capN(perkSellPrice(id))}</button></div>`).join('')||'<p class="note">No perks yet.</p>'}</div>`}
   </section>
-  ${r.crate?crateHTML():''}${r.workbench?workbenchHTML():''}${r.picker?pickerHTML():''}${runStoryHTML()}`;
+  ${r.crate?crateHTML():''}${r.workbench?workbenchHTML():''}${r.picker?pickerHTML():''}${kitOpen?kitHTML():''}${runStoryHTML()}`;
 }
 function pickerHTML(){
   const pk=run().picker,burn=pk.kind==='burn';
@@ -4021,7 +4109,10 @@ function handleRunClick(d){
   if('runcontinue' in d){G=null;screen='road';render();window.scrollTo(0,0);return true;}
   if('eventpick' in d){eventChoose(+d.eventpick);render();return true;}
   if('eventdone' in d){eventDone();render();return true;}
-  if('runnext' in d){r.phase='table';r.offers=null;r.halfShop=false;armedSell=null;runShopTab='shop';save();render();window.scrollTo(0,0);return true;}
+  if('runnext' in d){r.phase='table';armedSell=null;runShopTab='shop';save();render();window.scrollTo(0,0);return true;}
+  if('runshopback' in d){if(r.offers&&r.phase==='table'){r.phase='shop';runPre=false;kitOpen=null;save();render();window.scrollTo(0,0);}return true;}
+  if('kitopen' in d){kitOpen=d.kitopen||'deck';render();return true;}
+  if('kitclose' in d){kitOpen=null;render();return true;}
   if('rtab' in d){runShopTab=d.rtab;armedSell=null;render();return true;}
   if('rbuy' in d){runShopBuy(d.rbuy);render();return true;}
   if('rreroll' in d){if(r.sponsor){r.sponsor=0;}else if(r.freeRerolls){r.freeRerolls--;}else{const c=rerollCost();if(meta.caps<c)return true;meta.caps-=c;r.rerolls=(r.rerolls||0)+1;}rerollShop();save();render();return true;}
