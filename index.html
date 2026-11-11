@@ -1732,7 +1732,7 @@ function hintText(selMoves){
   }
   if(!plays.length)return setup?'Openings take number cards only. Pick a number card.':`${cardName(c)} has nowhere legal to go. Discard it, or pick another.`;
   if(isNum(c))return 'Tap a glowing caravan to play it.';
-  return {J:'Tap a card to knock it out, with anything stacked on it.',Q:'Tap the top card of a caravan to flip its direction.',K:`Tap a card to multiply it by ${G.rules.kingMult.p}.`,JK:'Tap a card. Ace wipes its suit, 2–10 wipes its value.'}[c.rank];
+  return {J:'Tap a card to knock it out, with anything stacked on it.',Q:'Tap the top card of a caravan to flip its direction and change its suit to the Queen’s.',K:`Tap a card to multiply it by ${G.rules.kingMult.p}.`,JK:`Tap a card. On an Ace, it clears every other card of that suit; on a 2–10, every other card of that value. The card it’s on stays${G.rules.jokerproof&&G.rules.jokerproof.p?' (yours are safe).':'. Hits both sides.'}`}[c.rank];
 }
 function coachHTML(){
   const S=tutSteps(), n=G.tut.step, step=S[n];
