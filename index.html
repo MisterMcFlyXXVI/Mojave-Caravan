@@ -103,6 +103,22 @@ b.lg-common{color:#ffa449}b.lg-rare{color:#5ec8ff}b.lg-legendary{color:#ff5ec4}
 .gearopt .compart{width:100%;aspect-ratio:4/5;object-fit:cover;border-radius:4px;border:1px solid #ffffff22}
 .nslot .compart.sm{width:44px;height:44px;aspect-ratio:auto;border-radius:50%;margin:0 auto;object-fit:cover;border:1px solid var(--neon)}
 .lgopt>.card{align-self:center;margin-bottom:4px}
+.compchip{display:flex;align-items:center;gap:10px;margin:6px auto;max-width:440px;padding:6px 10px;border:1px solid #ffa44966;border-radius:8px;background:#00000040;box-shadow:0 0 8px #ffa44922;text-align:left}
+.compchip img,.compchip .compdot{width:42px;height:42px;border-radius:50%;object-fit:cover;border:1px solid var(--neon);flex:none}
+.compchip .compdot{display:grid;place-items:center;font:700 18px Georgia,serif;color:var(--neon)}
+.compchip>div{flex:1;display:flex;flex-direction:column;gap:2px;font-size:13px}.compchip .chem-note{margin:0}
+.compchip .btn{flex:none;padding:5px 12px}
+.legendflash{position:fixed;left:50%;top:38%;transform:translate(-50%,-50%);z-index:9999;pointer-events:none;text-align:center;padding:18px 28px;border-radius:12px;background:#0d0a08ee;border:2px solid #5ec8ff;box-shadow:0 0 30px #5ec8ffaa,inset 0 0 20px #5ec8ff44;animation:lgflash 1.9s ease-out forwards}
+.legendflash.lg-legendary{border-color:#ff5ec4;box-shadow:0 0 40px #ff5ec4cc,inset 0 0 24px #ff5ec455}
+.legendflash small{display:block;font:700 11px system-ui,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:#ffd9a8;margin-bottom:6px}
+.legendflash b{font:700 clamp(22px,7vw,34px) Georgia,serif;color:#fff;text-shadow:0 0 12px #ffffffaa}
+@keyframes lgflash{0%{opacity:0;transform:translate(-50%,-50%) scale(.6)}12%{opacity:1;transform:translate(-50%,-50%) scale(1.06)}20%{transform:translate(-50%,-50%) scale(1)}80%{opacity:1}100%{opacity:0;transform:translate(-50%,-50%) scale(1.04)}}
+.vouchrow{align-items:center;gap:10px}.vouchrow>div{flex:1}
+html[data-pip="1"] body{filter:grayscale(1) sepia(1) hue-rotate(62deg) saturate(3.2) brightness(.92) contrast(1.08)}
+html[data-pip="1"] body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:99999;background:repeating-linear-gradient(0deg,rgba(0,0,0,.18) 0 1px,transparent 1px 3px);mix-blend-mode:multiply;animation:pipflick 6s infinite}
+@keyframes pipflick{0%,96%,100%{opacity:1}97%{opacity:.82}98%{opacity:.95}}
+.wcclock{max-width:520px;margin:4px auto 12px;text-align:center;padding:10px;border:1px solid #5ec8ff66;border-radius:8px;background:#0a1a2a88;box-shadow:0 0 10px #5ec8ff33}
+.wcclock b{font-size:30px;color:#8fd8ff;text-shadow:0 0 8px #5ec8ff88;margin-right:6px}.wcclock span{display:block;font-size:12px;color:var(--muted)}
 .slotstrip{display:grid;grid-template-columns:repeat(auto-fit,minmax(92px,1fr));gap:10px;max-width:760px;margin:6px auto 16px;padding:0 6px}
 .nslot{border:2px solid #ffa44966;border-radius:8px;padding:10px 6px;min-height:64px;text-align:center;display:flex;flex-direction:column;justify-content:center;gap:4px;background:#00000040;box-shadow:0 0 6px #ffa44922,inset 0 0 6px #ffa44911}
 .nslot small{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
@@ -872,7 +888,8 @@ function addFaces(spec,extra){
 // Rules can differ per side (perks for you, house rules for the table).
 function baseRules(){
   return {range:{p:[21,26],a:[21,26]},kingMult:{p:2,a:2},hand:{p:5,a:5},deal:{p:8,a:8},
-    color:{p:false,a:false},jackproof:{p:false,a:false},jokerproof:{p:false,a:false},freeDisband:{p:false,a:false},noDiscard:{p:false,a:false},jackDraw:{p:false,a:false},discardDraw:{p:1,a:1},banned:[],hideOpp:false};
+    color:{p:false,a:false},jackproof:{p:false,a:false},jokerproof:{p:false,a:false},freeDisband:{p:false,a:false},noDiscard:{p:false,a:false},jackDraw:{p:false,a:false},discardDraw:{p:1,a:1},banned:[],hideOpp:false,
+    kingproof:{p:false,a:false},queenproof:{p:false,a:false},allproof:{p:false,a:false},noJoker:{p:false,a:false},queenDraw:{p:false,a:false},luckyDraw:{p:1,a:1},bigJoker:{p:false,a:false},spareParts:{p:false,a:false},tieWin:{p:false,a:false},anyOrder:{p:false,a:false},dead:{p:[],a:[]}};
 }
 const RULES=g=>g.rules||baseRules();
 
@@ -908,6 +925,7 @@ function canPlayFace(cv,idx,card){
 const inR=(v,r)=>v>=r[0]&&v<=r[1];
 function laneWinner(pv,av,R){
   const pi=inR(pv,R.range.p),ai=inR(av,R.range.a);
+  if(pi&&ai&&pv===av&&R.tieWin&&R.tieWin.p)return 'p';
   if(pi&&(!ai||pv>av))return 'p';
   if(ai&&(!pi||av>pv))return 'a';
   return null;
@@ -915,7 +933,7 @@ function laneWinner(pv,av,R){
 const edIn=(cv,ed)=>cv.reduce((n,e)=>n+(e.card.ed===ed?1:0)+e.faces.filter(f=>f.ed===ed).length,0);
 function laneRange(g,side,l){const r=RULES(g).range[side],h=edIn(g[side].cv[l],'holo');return h?[r[0],r[1]+h]:r;}
 function lanesResult(g){const R=RULES(g);return [0,1,2].map(l=>{const pr=laneRange(g,'p',l);if(pr===R.range.p)return laneWinner(cvValue(g.p.cv[l]),cvValue(g.a.cv[l]),R);
-  return laneWinner(cvValue(g.p.cv[l]),cvValue(g.a.cv[l]),{range:{p:pr,a:R.range.a}});});}
+  return laneWinner(cvValue(g.p.cv[l]),cvValue(g.a.cv[l]),{range:{p:pr,a:R.range.a},tieWin:R.tieWin});});}
 function winnerOf(g){
   if(g.setupLeft.p>0||g.setupLeft.a>0)return null;
   const r=lanesResult(g); if(r.some(x=>!x))return null;
@@ -925,14 +943,16 @@ function legalMoves(g,side){
   const R=RULES(g),me=g[side],moves=[],setup=g.setupLeft[side]>0;
   me.hand.forEach((c,ci)=>{
     if(isNum(c)){
+      if(R.dead&&R.dead[side]&&R.dead[side].includes(c.rank))return;
       for(let l=0;l<3;l++){
         const cv=me.cv[l];
         if(setup){if(cv.length===0)moves.push({t:'num',ci,lane:l});}
-        else if(canPlayNum(cv,c,R.color[side]))moves.push({t:'num',ci,lane:l});
+        else if((R.anyOrder&&R.anyOrder[side])||canPlayNum(cv,c,R.color[side]))moves.push({t:'num',ci,lane:l});
       }
-    }else if(!c.legend&&!setup&&!R.banned.includes(c.rank)){
+    }else if(!c.legend&&!setup&&!R.banned.includes(c.rank)&&!(c.rank==='JK'&&R.noJoker&&R.noJoker[side])){
       for(const s of ['p','a']){
         if(c.rank==='J'&&s!==side&&R.jackproof[s])continue;
+        if(s!==side&&((c.rank==='K'&&R.kingproof&&R.kingproof[s])||(c.rank==='Q'&&R.queenproof&&R.queenproof[s])||(R.allproof&&R.allproof[s])))continue;
         for(let l=0;l<3;l++){
           const cv=g[s].cv[l];
           for(let i=0;i<cv.length;i++)if(canPlayFace(cv,i,c)&&!(c.rank==='J'&&cv[i].card.mod==='steel'))moves.push({t:'face',ci,side:s,lane:l,idx:i});
@@ -954,6 +974,7 @@ function applyMove(g,side,m,sim){
   const R=RULES(g),me=g[side];
   if(m.t==='disband'){me.cv[m.lane]=[];return;}
   if(m.t==='turret'){g[other(side)].cv[m.lane].pop();return;}
+  if(m.t==='boone'){const cv=g[other(side)].cv[m.lane];for(let i=cv.length-1;i>=0;i--){const k=cv[i].faces.map(f=>f.rank).lastIndexOf('K'),q=cv[i].faces.map(f=>f.rank).lastIndexOf('Q'),j=Math.max(k,q);if(j>=0){cv[i].faces.splice(j,1);break;}}return;}
   const wasSetup=g.setupLeft[side]>0;
   const card=me.hand.splice(m.ci,1)[0];
   if(!sim&&side==='p'&&card.ed==='gold'&&(m.t==='num'||m.t==='face'))g.goldCaps=(g.goldCaps||0)+3;
@@ -962,14 +983,17 @@ function applyMove(g,side,m,sim){
     if(wasSetup)g.setupLeft[side]--;
   }else if(m.t==='face'){
     const cv=g[m.side].cv[m.lane],e=cv[m.idx];
-    if(card.rank==='J'){cv.splice(m.idx,1);}
+    if(card.rank==='J'){const gone=cv.splice(m.idx,1)[0];if(!sim&&gone&&m.side==='p'&&side==='a')g.lastLost={lane:m.lane,e:gone};if(!sim&&m.side!==side&&R.spareParts&&R.spareParts[m.side]&&gone)g[m.side].hand.push(gone.card);}
     else if(card.rank==='JK'){
       e.faces.push(card);
       const tv=val(e.card),ts=e.card.suit;
       for(const s of ['p','a'])for(let l=0;l<3;l++){
         if(R.jokerproof&&R.jokerproof[s])continue;
-        g[s].cv[l]=g[s].cv[l].filter(x=>x===e||!(tv===1?x.card.suit===ts:val(x.card)===tv));
+        const keep=g[s].cv[l].filter(x=>x===e||!(tv===1?x.card.suit===ts:val(x.card)===tv));
+        if(!sim&&s==='p'&&side==='a'&&keep.length<g[s].cv[l].length){const lost=g[s].cv[l].filter(x=>!keep.includes(x));g.lastLost={lane:l,e:lost[lost.length-1]};}
+        g[s].cv[l]=keep;
       }
+      if(R.bigJoker&&R.bigJoker[side]&&m.side!==side){const cvT=g[m.side].cv[m.lane],k=cvT.indexOf(e);if(k>=0)cvT.splice(k,1);}
     }else{
       if(card.rank==='K')card.m=R.kingMult[side];
       e.faces.push(card);
@@ -978,7 +1002,8 @@ function applyMove(g,side,m,sim){
   if(sim)return;
   if(m.t==='discard'){const n=(R.discardDraw&&R.discardDraw[side])||1;for(let i=0;i<n&&me.deck.length;i++)me.hand.push(me.deck.pop());}
   else if(!(m.t==='num'&&wasSetup))drawTo(g,side,R.hand[side]);
-  if(me.deck.length&&((m.t==='num'&&card.mod==='lucky')||(m.t==='face'&&card.rank==='J'&&R.jackDraw&&R.jackDraw[side])))me.hand.push(me.deck.pop());
+  if(m.t==='num'&&card.mod==='lucky')for(let i=0;i<((R.luckyDraw&&R.luckyDraw[side])||1)&&me.deck.length;i++)me.hand.push(me.deck.pop());
+  if(me.deck.length&&m.t==='face'&&((card.rank==='J'&&R.jackDraw&&R.jackDraw[side])||(card.rank==='Q'&&R.queenDraw&&R.queenDraw[side])))me.hand.push(me.deck.pop());
 }
 // AI heuristics
 function laneScore(v,r){
@@ -1143,7 +1168,10 @@ const LOOKS={
     {id:'uraniumfever',name:'Uranium Fever',art:true,unlock:'blind'},
     {id:'greatkhans',name:'Great Khans',art:true,unlock:'jacks25'},
     {id:'ncr',name:'NCR',art:true,unlock:'bounty10'},
-    {id:'legion',name:'Caesar’s Legion',art:true,unlock:'wins50'}],
+    {id:'legion',name:'Caesar’s Legion',art:true,unlock:'wins50'},
+    {id:'waterchip',name:'Water Chip',art:true,unlock:'wc_saved'},
+    {id:'cathedral',name:'Children of the Cathedral',art:true,unlock:'wc_100'},
+    {id:'junktown',name:'Junktown',art:true,unlock:'wc_both'}],
   mat:[{id:'leather',name:'Saddle leather'},{id:'felt',name:'Casino felt'},{id:'navy',name:'Midnight felt'},{id:'wood',name:'Barn wood'},{id:'desert',name:'Desert sand'}],
 };
 const lookUnlocked=item=>!item.unlock||!!(meta.ach&&meta.ach[item.unlock])||meta.look.unlocked.includes(item.id);
@@ -1151,14 +1179,14 @@ const backReward=achId=>LOOKS.back.find(b=>b.unlock===achId);
 function applyLook(){
   {const b=LOOKS.back.find(o=>o.id===meta.look.back);if(!b||b.art||!lookUnlocked(b))meta.look.back=starterBack();}
   const L=meta.look, el=document.documentElement;
-  el.dataset.font=L.font||'deco'; el.dataset.face=L.face; el.dataset.back=L.back; el.dataset.mat=L.mat; el.dataset.four=L.four?'1':'0';
+  el.dataset.font=L.font||'deco'; el.dataset.face=L.face; el.dataset.back=L.back; el.dataset.mat=L.mat; el.dataset.four=L.four?'1':'0';el.dataset.pip=L.pip?'1':'0';
 }
 let lookFrom='home';
 
 const PERKS={
-  wide:{name:'Wide Margin',desc:'Your caravans sell one point lower and one higher (20–27 at a normal table).',price:70},
+  wide:{name:'Wide Margin',desc:'Your caravans sell from 19 instead of 21.',price:70},
   royal:{name:'Royal Blood',desc:'Your Kings multiply one step more: ×3 instead of ×2.',price:80},
-  steady:{name:'Steady Hands',desc:'You draw back up to 6 cards instead of 5.',price:65},
+  steady:{name:'Steady Hands',desc:'Draw a card whenever you play a Queen.',price:65},
   shark:{name:'Card Shark',desc:'You’re dealt 9 cards to open instead of 8.',price:40},
   lead:{name:'Lead Lined',desc:'The dealer’s Jacks can’t touch your caravans.',price:90},
   twotone:{name:'Two-Tone',desc:'Any card of the same color counts as matching suit for you.',price:45},
@@ -1204,12 +1232,16 @@ const CHARS={
     traits:[['+','Party Line','The receivers fused to her head pick up everything: you always see the dealer’s hand.'],['+','Rad-Proof','Jokers can never remove your cards.']]},
 };
 CHARS.snipsnip={name:'Snip Snip',tag:'Mr. Handy surgical unit',bio:'Three eyes, three arms, one setting: surgery. Very enthusiastic about trimming things. Including caravans.',locked:true,unlock:'Win a run without using a single chem.',
-  traits:[['+','Self-Repair','Once per hand, take back your last turn, and the dealer’s reply with it.'],['+','Chassis Plating','Start every run with 1 extra Grit.'],['−','No Organics','He’s a robot. He can’t carry or use chems.']]};
+  traits:[['+','Self-Repair','Once per hand, take back your last turn, and the dealer’s reply with it.'],['+','Spare Parts','When the dealer’s Jack knocks one of your cards off, it comes back to your hand.'],['−','No Organics','He’s a robot. He can’t carry or use chems.']]};
 CHARS.threedog={name:'Three Dog',tag:'Galaxy News Radio DJ',bio:'Ow-ooooo! The voice of the Capital Wasteland, fighting the good fight one card at a time, live on air.',locked:true,unlock:'Make it to the Strip with three different characters.',
-  traits:[['+','Request Line','Once per hand, swap a card in your hand for the top card of your deck. Doesn’t use your turn.'],['+','The Good Fight','Boss tables pay 50% more.'],['−','Public Enemy','Every boss table has one extra boss rule. Talon Company listens to the radio too.']]};
+  traits:[['+','Request Line','Once per hand, swap a card in your hand for the top card of your deck. Doesn’t use your turn.'],['+','The Good Fight','Every boss you beat pays 2 extra NCR dollars.'],['−','Public Enemy','Every boss table has one extra boss rule. Talon Company listens to the radio too.']]};
 CHARS.benny={name:'Benny',tag:'Chairmen boss · checkered suit',bio:'Ring-a-ding-ding, baby. Smooth talker, sharp dresser, and he’s holding a chip that isn’t his.',locked:true,unlock:'Make it to the Strip on the Silver Road or harder.',
-  traits:[['+','Ring-a-Ding-Ding','Table winnings pay 25% more.'],['+','The Platinum Chip','Starts every run with the Platinum Chip Legend card in his deck.'],['−','Double-Crosser','Nobody trusts him: he starts every run with 1 less Grit.']]};
-const CHAR_ORDER=['vladmira','nuke','chevy','ronald','matt','snipsnip','threedog','benny','greg','jeanita'];
+  traits:[['+','Ring-a-Ding-Ding','Ties go to Benny: if your caravan matches the dealer’s, you sell it.'],['+','The Platinum Chip','Starts every run with the Platinum Chip Legend card in his deck.'],['−','Double-Crosser','Nobody trusts him: he starts every run with 1 less Grit.']]};
+CHARS.vaultdweller={name:'Vault Dweller',tag:'Vault 13 · blue and gold',bio:'Born and raised underground. Sent out with a canteen and a deadline to save everyone they know.',locked:true,unlock:'Save Vault 13 on the Water Chip run.',
+  traits:[['+','Tag Skills','At the start of every run, choose 1 of 3 perks for free.'],['+','Vault Rations','A free Saddlebag bundle at every trading post.'],['−','Fresh Out of the Vault','Starts every run with 5 fewer caps.']]};
+CHARS.harold={name:'Harold',tag:'Ghoul · has a tree named Bob',bio:'An old ghoul with a tree growing out of his head. He named it Bob. They get along.',locked:true,unlock:'On the Water Chip run, beat Set at Necropolis without losing a table.',
+  traits:[['+','Bob the Tree','Once per hand, regrow the last card the dealer knocked off your caravans.'],['+','Rad-Rich','Neon cards pay double.'],['−','Old Bones','Holds 4 cards instead of 5.']]};
+const CHAR_ORDER=['vladmira','nuke','chevy','ronald','matt','snipsnip','threedog','benny','vaultdweller','harold','greg','jeanita'];
 const CHAR_BIO={
   vladmira:{stats:[10,2,9,7,5],quote:'You want to arm-wrestle for it? No? Then deal.',
     story:'Born and raised in a sealed vault, Vladmira spent her teens hauling reactor coolant by hand. That explains the arms, and the faint green glow. When the doors finally opened she walked out first and hasn’t stopped talking since. Folks can’t say no to her, mostly because they can’t get a word in.'},
@@ -1232,6 +1264,10 @@ CHAR_BIO.threedog={stats:[5,7,10,6,8],quote:'Ow-ooooo! This is Three Dog, and yo
   story:'Three Dog has been telling the truth to the Capital Wasteland one broadcast at a time, playing the same handful of records between news of who’s winning and who’s getting shot. He came west chasing a story about a card game on the Strip, and figured he might as well sit down and play it.'};
 CHAR_BIO.benny={stats:[4,7,10,3,9],quote:'Ring-a-ding-ding, baby. The house always wins, and tonight I’m the house.',
   story:'Benny runs the Chairmen out of the Tops, wears a checkered suit you can see from orbit, and carries a platinum chip that a certain courier would very much like back. He plays Caravan the way he does business: all charm up front and a knife behind the back.'};
+CHAR_BIO.vaultdweller={stats:[6,6,6,6,6],quote:'The Overseer said 150 days. I’m going to need about 149 of them.',
+  story:'The Vault Dweller had never seen the sky until the vault door rolled open. Now they have a canteen, a Pip-Boy 2000, a blue jumpsuit with a big yellow 13 on the back, and a whole vault counting on them. They learned Caravan from a trader in Shady Sands and turned out to be annoyingly good at it.'};
+CHAR_BIO.harold={stats:[4,8,7,10,5],quote:'Don’t mind Bob. He’s friendly.',
+  story:'Harold has been wandering the wasteland since before most people were born, getting a little greener and a little leafier every year. The tree on his head is named Bob. Harold talks to Bob. Bob, so far, has not talked back, which Harold takes as a sign of good manners.'};
 const STAT_NAMES=['Strength','Smarts','Charm','Grit','Luck'];
 const ORIGINALS=['vladmira','nuke','chevy','ronald','matt'];
 // Rival roster: who you meet on the Road depends on who you play.
@@ -1244,7 +1280,9 @@ const RIVALS={
   greg:{blurb:'The final table. Greg just wants to be friends. Alex is keeping score.',rule:'Big Hands: holds one extra card. Gentle Giant: his Jacks can’t touch yours.',fn:R=>{R.hand.a+=1;R.jackproof.p=true;}},
   jeanita:{blurb:'Her receivers crackle with every card you hold. She already knows.',rule:'Rad-Proof: Jokers can’t remove her cards. Party Line: holds one extra card.',fn:R=>{R.jokerproof.a=true;R.hand.a+=1;}},
 };
-const NEWCOMERS=['snipsnip','threedog','benny'];
+const NEWCOMERS=['snipsnip','threedog','benny','vaultdweller','harold'];
+RIVALS.vaultdweller={blurb:'Fresh out of the vault and squinting at the sun. Plays by the book.',rule:'Vault-Tec Training: holds one extra card.',fn:R=>{R.hand.a+=1;}};
+RIVALS.harold={blurb:'Talks to the tree on his head between hands. The tree seems to be winning.',rule:'Bob the Tree: his caravans sell up to 27.',fn:R=>{R.range.a=[R.range.a[0],R.range.a[1]+1];}};
 RIVALS.snipsnip={blurb:'Hovers over the table humming to himself. Every so often a scalpel twitches.',rule:'Precision: his caravans sell up to 27.',fn:R=>{R.range.a=[R.range.a[0],R.range.a[1]+1];}};
 RIVALS.threedog={blurb:'Broadcasting the hand live. The whole wasteland is listening.',rule:'Request Line: holds one extra card.',fn:R=>{R.hand.a+=1;}};
 RIVALS.benny={blurb:'Flips a platinum chip between his fingers. Smiles too much.',rule:'Ring-a-Ding-Ding: his Kings triple.',fn:R=>{R.kingMult.a=3;}};
@@ -1254,16 +1292,18 @@ const CHAR_UNLOCK={
   snipsnip:()=>!!(meta.charFlags||{}).noChem,
   threedog:()=>new Set((meta.stripBy||[]).filter(c=>CHARS[c])).size>=3,
   benny:()=>!!(meta.charFlags||{}).silver,
+  vaultdweller:()=>!!(meta.charFlags||{}).vault,
+  harold:()=>!!(meta.charFlags||{}).harold,
 };
 const charUnlocked=id=>CHAR_UNLOCK[id]?CHAR_UNLOCK[id]():true;
 const isChar=id=>meta&&meta.char===id;
-const chemMax=()=>isChar('snipsnip')?0:(isChar('nuke')?5:CHEM_MAX)+(runLive()&&runV('pouch')?2:0)+(gear('labcoat')?1:0);
-const disc=n=>{let m=isChar('vladmira')?0.8:1;if(runLive()){const r=meta.run;if(runV('haggle'))m*=0.75;if(r.halfShop)m*=0.5;if(r.tier==='gold')m*=1.25;if(gear('jeans'))m*=0.9;}return Math.max(1,Math.ceil(n*m));};
+const chemMax=()=>isChar('snipsnip')?0:(isChar('nuke')?5:CHEM_MAX)+0;
+const disc=n=>{let m=isChar('vladmira')?0.8:1;if(runLive()){const r=meta.run;if(r.halfShop)m*=0.5;if(r.tier==='gold')m*=1.25;}return Math.max(1,Math.ceil(n*m));};
 const runLive=()=>!!(meta&&meta.run&&meta.run.phase!=='over');
-const winMult=()=>isChar('nuke')?0.8:isChar('chevy')?0.9:isChar('benny')?1.25:1;
+const winMult=()=>isChar('nuke')?0.8:isChar('chevy')?0.9:1;
 
 const pick=a=>a[Math.floor(Math.random()*a.length)];
-const perkSlots=()=>runLive()?3+(meta.run.stop>=3?1:0)+(isChar('chevy')?1:0)+(runV('rack')?1:0)+(gear('beret')?1:0):2+(meta.beaten.length>=4?1:0)+(meta.beaten.length>=8?1:0)+(isChar('chevy')?1:0);
+const perkSlots=()=>runLive()?3+(meta.run.stop>=3?1:0)+(isChar('chevy')?1:0):2+(meta.beaten.length>=4?1:0)+(meta.beaten.length>=8?1:0)+(isChar('chevy')?1:0);
 const has=id=>(runLive()?meta.perks:meta.equipped).includes(id);
 const chemTotal=()=>Object.values(meta.chems).reduce((a,b)=>a+b,0);
 
@@ -1413,7 +1453,10 @@ function migrate(m){
   m.deckWon=m.deckWon||{};
   if(typeof m.scrip!=='number'||m.scrip<0)m.scrip=0;
   m.gear=Object.assign({owned:[],on:{}},m.gear||{});
-  m.legends=m.legends||[];m.charFlags=m.charFlags||{};
+  // Star Bottle Cap and Strength Bobblehead are back: undo the short-lived rename to Gold Bar / Mesmetron.
+  {const L=(m.legends||[]).map(id=>id==='goldbar'?'starcap':id);if(L.includes('mesmetron')&&!m.legendsFixed)L.push('bobble');m.legends=[...new Set(L)];m.legendsFixed=1;}
+  if(m.run&&Array.isArray(m.deck))m.deck.forEach(c=>{if(c&&c.legend==='goldbar')c.legend='starcap';});
+  m.charFlags=m.charFlags||{};
   return m;
 }
 
@@ -1604,6 +1647,7 @@ function renderLook(){
     <h3 class="sub">Play mat</h3>
     <div class="opts">${LOOKS.mat.map(o=>opt('mat',o,'<div class="table swatch"></div>')).join('')}</div>
     <h3 class="sub">Suit colors</h3>
+    <button class="prow toggle" data-togglepip aria-pressed="${!!L.pip}"><div><b>Pip-Boy terminal ${L.pip?'on':'off'}</b><span>Turns the whole game into a green Pip-Boy screen, with scanlines.</span></div><span class="sw" aria-hidden="true"></span></button>
     <button class="prow toggle" data-togglefour aria-pressed="${L.four}"><div><b>Four-color suits ${L.four?'on':'off'}</b><span>Diamonds turn blue and clubs turn green, so suits are easier to tell apart at a glance.</span></div><span class="sw" aria-hidden="true"></span></button>
 
   </section>`;
@@ -1794,6 +1838,8 @@ function laneHTML(side,l,lanes,selMoves,proj){
   else if(side==='p')tag=v>r[1]?'<span class="tag lose">BUST</span>':inR(v,r)?'<span class="tag">IN RANGE</span>':'';
   let can=false;
   if(side==='a'&&legendTarget!=null&&cv.length)can=true;
+  if(side==='a'&&booneMode&&cv.some(e=>e.faces.some(f=>f.rank==='K'||f.rank==='Q')))can=true;
+  if(side==='p'&&batMode&&cv.length)can=true;
   if(side==='p'){
     if(disbandMode&&cv.length)can=true;
     if(selMoves.some(m=>m.t==='num'&&m.lane===l))can=true;
@@ -1848,6 +1894,8 @@ function hintText(selMoves){
   if(G.turn!=='p')return `${OPP().name.split(' ').slice(-1)[0]} is thinking…`;
   const setup=G.setupLeft.p>0;
   if(disbandMode)return 'Tap one of your caravans to disband it. Tap Disband again to cancel.';
+  if(booneMode)return 'Boone’s aiming. Tap a dealer caravan with a King or Queen on it.';
+  if(batMode)return 'Tap one of your caravans to knock its top card off.';
   if(sel!=null&&G.p.hand[sel]&&G.p.hand[sel].legend)return legendTarget!=null?'Tap one of the dealer’s caravans to aim it.':'A Legend card. Play it with the button below, or discard it.';
   if(sel==null){
     if(setup)return `Opening: put a number card on each empty caravan (${3-G.setupLeft.p}/3).`;
@@ -1901,66 +1949,103 @@ function chemBar(myTurn){
     return `<button class="btn chem" data-chem="${id}" ${off?'disabled':''} title="${esc(CHEMS[id].desc)}">${CHEMS[id].name} ×${pouch[id]}</button>`;}).join('')}
     <span class="chem-note">${G.setupLeft.p>0?'Chems unlock after the opening.':G.chemTurn?'One chem per turn.':''}</span></div>`;
 }
-let turretMode=false,legendTarget=null;
+let turretMode=false,legendTarget=null,booneMode=false,batMode=false;
 // ---- Legend cards: Road-only cards with one-off powers. Playing one doesn't use your turn; you draw a replacement. ----
 const LEGENDS={
-  pipboy:{name:'Pip-Boy 3000',rar:'common',desc:'See the dealer’s hand for the rest of this hand.'},
-  starcap:{name:'Star Bottle Cap',rar:'common',desc:'Pocket 8 caps right now.'},
-  bobble:{name:'Strength Bobblehead',rar:'common',desc:'Kings you play this hand multiply one step more.'},
-  quantum:{name:'Nuka-Cola Quantum',rar:'rare',desc:'Draw 3 cards.'},
-  repeater:{name:'Lincoln’s Repeater',rar:'rare',desc:'Shoot the top card off one of the dealer’s caravans.',target:true},
-  yesman:{name:'Yes Man',rar:'rare',desc:'“Of course!” The dealer skips their next turn.'},
-  stealth:{name:'Stealth Boy',rar:'rare',desc:'The dealer’s Jacks and Jokers can’t touch your caravans for the rest of this hand.'},
+  repeater:{name:'Lincoln’s Repeater',rar:'rare',desc:'Shoot any one card out of a dealer caravan, along with everything attached to it.',target:true},
+  stealth:{name:'Stealth Boy',rar:'rare',desc:'For the rest of this hand, the dealer can’t play anything on your caravans.'},
   house:{name:'Mr. House',rar:'rare',desc:'The House always wins: take 2 random cards from the dealer’s hand.'},
-  platinum:{name:'Platinum Chip',rar:'legendary',desc:'Draw 2 cards and pocket 10 caps.'},
+  quantum:{name:'Nuka-Cola Quantum',rar:'rare',desc:'Your hand fills up to 8 cards.'},
+  pipboy:{name:'Pip-Boy 3000',rar:'rare',desc:'V.A.T.S. targeting: your deck is stacked so your next 3 draws are your strongest cards left.'},
+  mesmetron:{name:'Mesmetron',rar:'rare',desc:'The dealer is mesmerized: they throw away their whole hand and draw just 3.'},
+  starcap:{name:'Star Bottle Cap',rar:'rare',desc:'A rare Sunset Sarsaparilla star cap. Pocket 25 caps.'},
+  bobble:{name:'Strength Bobblehead',rar:'rare',desc:'Every King already on your caravans multiplies one more time.'},
+  platinum:{name:'Platinum Chip',rar:'legendary',desc:'For the rest of this hand, your caravans sell anywhere from 18 to 30.'},
   fatman:{name:'Fat Man',rar:'legendary',desc:'Wipe out one of the dealer’s caravans completely.',target:true},
   stranger:{name:'Mysterious Stranger',rar:'legendary',desc:'Shoots the top card off every one of the dealer’s caravans.'},
   prime:{name:'Liberty Prime',rar:'legendary',desc:'Strips every face card off the dealer’s caravans.'},
+  yesman:{name:'Yes Man',rar:'legendary',desc:'“Of course!” Swap one of your caravans with the dealer’s caravan across from it.',target:true},
+  redryder:{name:'Red Ryder LE BB Gun',rar:'rare',found:'Beat Garl at Vault 15 on the Water Chip run.',desc:'Ping! The newest face card on every dealer caravan falls off.'},
+  plasma:{name:'Turbo Plasma Rifle',rar:'rare',found:'Beat Decker at the Hub on the Water Chip run.',desc:'Melts the top half of the dealer’s biggest caravan.'},
+  powerarmor:{name:'Power Armor',rar:'legendary',found:'Beat the Lieutenant at Mariposa on the Water Chip run.',desc:'For the rest of this hand, your caravans ignore the rules for card order and suit.'},
+  alienblaster:{name:'Alien Blaster',rar:'legendary',found:'Search a crashed flying saucer on the Water Chip run.',desc:'Tap a dealer card: every card of that value disappears from their caravans.',target:true},
+  waterchip:{name:'Water Chip',rar:'legendary',found:'Save Vault 13 on the Water Chip run.',desc:'On the Water Chip run: +30 days of water. Anywhere else: +1 Grit (up to 2).'},
 };
-const LEGEND_PRICE={common:{ncr:20,caps:8},rare:{ncr:35,caps:14},legendary:{ncr:60,caps:22}};
-function playLegend(ci,lane){
+const LEGEND_PRICE={common:{ncr:20,caps:8},rare:{ncr:40,caps:18},legendary:{ncr:75,caps:30}};
+
+function masterShift(){
+  const base=JSON.parse(G.masterBase),keep=G.rules,id=pick(MASTER_POOL.filter(x=>x!==G.masterRule));
+  BOSS_RULES[id].apply(base);
+  for(const k of ['allproof','jackproof','jokerproof','anyOrder'])if(keep[k]&&keep[k].p)base[k].p=true;
+  base.kingMult.p=Math.max(base.kingMult.p,keep.kingMult.p);if(G.platinum)base.range.p=[Math.min(18,base.range.p[0]),Math.max(30,base.range.p[1])];
+  G.rules=base;G.masterRule=id;G.ruleIds=(G.ruleIds||[]).filter(x=>!MASTER_POOL.includes(x)).concat(id);
+  G.log.unshift(`The Master’s voices shift. New rule: ${BOSS_RULES[id].name} (${BOSS_RULES[id].desc})`);
+}
+function playLegend(ci,lane,idx){
   if(!G||G.over||G.turn!=='p'||busy||G.setupLeft.p>0)return;
   const c=G.p.hand[ci];if(!c||!c.legend)return;const L=LEGENDS[c.legend];if(!L)return;
   if(L.target&&(lane==null||!G.a.cv[lane].length))return;
+  if(c.legend==='yesman'&&!G.p.cv[lane].length&&!G.a.cv[lane].length)return;
   if(undoable()||(G.mode==='road'&&G.char==='snipsnip'&&!G.repairUsed)){undoStack.push(JSON.stringify(G));if(undoStack.length>8)undoStack.shift();}
   G.p.hand.splice(ci,1);
-  const who=OPP().name.split(' ').slice(-1)[0];let msg='',snd='clink';
-  const draw=n=>{for(let i=0;i<n&&G.p.deck.length;i++)G.p.hand.push(G.p.deck.pop());};
+  const who=OPP().name.split(' ').slice(-1)[0];let msg='',snd='clink',primeN=0;
   switch(c.legend){
-    case 'pipboy':G.peek=true;msg='Your Pip-Boy picks up their hand.';break;
-    case 'starcap':meta.caps+=8;msg='A Star Bottle Cap! +8 caps.';break;
-    case 'bobble':G.rules.kingMult.p+=1;msg=`Your Kings multiply ×${G.rules.kingMult.p} this hand.`;break;
-    case 'quantum':draw(3);msg='Nuka-Cola Quantum: you draw 3 cards.';break;
-    case 'repeater':G.a.cv[lane].pop();snd='jack';msg=`Lincoln’s Repeater shoots the top card off their caravan ${ROMAN[lane]}.`;break;
-    case 'yesman':G.hugPending=true;G.yesMan=true;msg=`Yes Man talks ${who} into skipping their next turn.`;break;
-    case 'stealth':G.rules.jackproof.p=true;G.rules.jokerproof.p=true;msg='Stealth Boy on: their Jacks and Jokers can’t find your caravans.';break;
+    case 'repeater':{const cv=G.a.cv[lane],k=idx!=null&&idx<cv.length?idx:cv.length-1;cv.splice(k,1);snd='jack';msg=`Lincoln’s Repeater: one clean shot into their caravan ${ROMAN[lane]}.`;break;}
+    case 'stealth':G.rules.allproof.p=true;G.rules.jackproof.p=true;G.rules.jokerproof.p=true;msg='Stealth Boy on. The dealer can’t find your caravans for the rest of the hand.';break;
     case 'house':{const n=Math.min(2,G.a.hand.length);for(let i=0;i<n;i++){const k=Math.floor(Math.random()*G.a.hand.length);G.p.hand.push(G.a.hand.splice(k,1)[0]);}msg=`Mr. House takes ${n} card${n===1?'':'s'} from ${who}’s hand.`;break;}
-    case 'platinum':draw(2);meta.caps+=10;msg='The Platinum Chip: you draw 2 cards and pocket 10 caps.';break;
+    case 'quantum':while(G.p.hand.length<8&&G.p.deck.length)G.p.hand.push(G.p.deck.pop());msg='Nuka-Cola Quantum! Your hand fills up.';break;
+    case 'pipboy':{const d=G.p.deck,score=c2=>c2.rank==='K'?20:c2.rank==='JK'?19:c2.rank==='J'?16:c2.rank==='Q'?12:isNum(c2)?val(c2):0;
+      const top=[...d].sort((a,b)=>score(b)-score(a)).slice(0,3);for(const t of top)d.splice(d.indexOf(t),1);d.push(...top.reverse());msg='V.A.T.S. locked on: your next 3 draws are your best cards.';break;}
+    case 'mesmetron':{G.a.deck.unshift(...G.a.hand);G.a.hand=[];for(let i=0;i<3&&G.a.deck.length;i++)G.a.hand.push(G.a.deck.pop());msg=`${who} stares into the Mesmetron and drops their hand. They hold 3 cards now.`;break;}
+    case 'starcap':meta.caps+=25;msg='A Sunset Sarsaparilla star cap! +25 caps.';break;
+    case 'bobble':{let n=0;for(const cv of G.p.cv)for(const e of cv)for(const f of e.faces)if(f.rank==='K'){f.m=(f.m||2)*2;n++;}msg=n?`Strength Bobblehead: ${n} King${n>1?'s':''} on your caravans just got stronger.`:'Strength Bobblehead: no Kings on your caravans yet. Nothing to pump up.';break;}
+    case 'platinum':G.platinum=true;G.rules.range.p=[Math.min(18,G.rules.range.p[0]),Math.max(30,G.rules.range.p[1])];msg='The Platinum Chip: your caravans sell from 18 to 30 this hand.';break;
     case 'fatman':G.a.cv[lane]=[];snd='jack';msg=`Fat Man! Their caravan ${ROMAN[lane]} is gone.`;break;
     case 'stranger':for(const cv of G.a.cv)if(cv.length)cv.pop();snd='jack';msg='The Mysterious Stranger fires three shots. Each of their caravans loses its top card.';break;
-    case 'prime':for(const cv of G.a.cv)for(const e of cv)e.faces=[];snd='jack';msg='Liberty Prime: “Democracy is non-negotiable.” Every face card on their caravans is gone.';break;
+    case 'prime':primeN=G.a.cv.reduce((n,cv)=>n+cv.reduce((m,e)=>m+e.faces.length,0),0);for(const cv of G.a.cv)for(const e of cv)e.faces=[];snd='jack';msg='Liberty Prime: “Democracy is non-negotiable.” Every face card on their caravans is gone.';break;
+    case 'redryder':{let n=0;for(const cv of G.a.cv){for(let i=cv.length-1;i>=0;i--){if(cv[i].faces.length){cv[i].faces.pop();n++;break;}}}snd='jack';msg=n?`Ping! ${n} face card${n>1?'s':''} knocked off.`:'Ping! Nothing to hit.';break;}
+    case 'plasma':{let best=-1,bv=-1;G.a.cv.forEach((cv,l)=>{if(cv.length&&cvValue(cv)>bv){bv=cvValue(cv);best=l;}});if(best>=0){const n=Math.ceil(G.a.cv[best].length/2);G.a.cv[best].splice(G.a.cv[best].length-n,n);msg=`The Turbo Plasma Rifle melts ${n} card${n>1?'s':''} off their caravan ${ROMAN[best]}.`;}else msg='Nothing to melt.';snd='jack';break;}
+    case 'powerarmor':G.rules.anyOrder.p=true;msg='Power Armor on. Your caravans take any card, in any order, this hand.';break;
+    case 'alienblaster':{const cv=G.a.cv[lane],e=cv[idx!=null&&idx<cv.length?idx:cv.length-1],v=val(e.card);let n=0;for(let l=0;l<3;l++){const before=G.a.cv[l].length;G.a.cv[l]=G.a.cv[l].filter(x=>val(x.card)!==v);n+=before-G.a.cv[l].length;}snd='jack';msg=`The Alien Blaster disintegrates every ${e.card.rank==='A'?'Ace':v} on their side: ${n} card${n>1?'s':''} gone.`;break;}
+    case 'waterchip':{const r=run();if(r&&r.special==='waterchip'){r.days=(r.days||0)+30;msg='The Water Chip! 30 more days of water.';}else{r.grit=Math.min(2,(r.grit||0)+1);msg='The Water Chip: you feel refreshed. +1 Grit.';}break;}
+    case 'yesman':{const t=G.p.cv[lane];G.p.cv[lane]=G.a.cv[lane];G.a.cv[lane]=t;msg=`Yes Man swaps your caravan ${ROMAN[lane]} with theirs. Of course!`;break;}
   }
+
   drawTo(G,'p',RULES(G).hand.p);
   meta.legendPlays=(meta.legendPlays||0)+1;
-  G.log.unshift(msg);sel=null;legendTarget=null;sfx(snd,'p');
+  G.usedLegends=G.usedLegends||[];G.usedLegends.push(c.legend);if(G.usedLegends.length>=2)unlock('leg_two');
+  if(c.legend==='prime'&&primeN>=4)unlock('leg_prime');
+  G.log.unshift(msg);sel=null;legendTarget=null;sfx(snd,'p');legendFlash(L);
   const w=winnerOf(G);
   if(w){const r=lanesResult(G),n=r.filter(x=>x==='p').length;finish(w,w==='p'?`You sold ${n} of 3 caravans against ${OPP().name}.`:`${OPP().name} sold ${3-n} of 3 caravans.`);render();return;}
   save();render();
 }
+function legendFlash(L){try{const el=document.createElement('div');el.className='legendflash lg-'+L.rar;el.innerHTML=`<small>Legend · ${L.rar}</small><b>${esc(L.name)}</b>`;document.body.appendChild(el);setTimeout(()=>el.remove(),1900);buzz&&buzz([30,40,60]);}catch(e){}}
 function legendTipHTML(c){
   const L=LEGENDS[c.legend],my=G.turn==='p'&&!G.over&&!busy,setup=G.setupLeft.p>0;
   return `<div class="seltip lgtip"><p><b class="lg-${L.rar}">${esc(L.name)}</b> <span class="ptag lgt-${L.rar}">${L.rar}</span></p><p>${esc(L.desc)} Doesn’t use your turn; you draw a replacement.</p>
-    ${legendTarget!=null?`<p class="note">Tap one of the dealer’s caravans.</p><button class="btn" data-legendcancel>Cancel</button>`:`<button class="btn hot" data-legend ${my&&!setup?'':'disabled'}>${setup?'Play it after the opening':'Play '+esc(L.name)}</button>`}</div>`;
+    ${legendTarget!=null?`<p class="note">${c.legend==='repeater'||c.legend==='alienblaster'?'Tap the card you want gone in a dealer caravan.':c.legend==='yesman'?'Tap the dealer caravan to swap with yours across from it.':'Tap one of the dealer’s caravans.'}</p><button class="btn" data-legendcancel>Cancel</button>`:`<button class="btn hot" data-legend ${my&&!setup?'':'disabled'}>${setup?'Play it after the opening':'Play '+esc(L.name)}</button>`}</div>`;
 }
 function abilityBar(myTurn){
   if(G.mode!=='road'||G.opp<0||!G.char)return '';
   const ready=myTurn&&G.setupLeft.p===0,out=[];
-  if(G.char==='chevy'||G.boone){const nm=G.char==='chevy'?'turret':'Boone';out.push(`<div class="chems"><button class="btn ability${turretMode?' armed':''}" data-turret ${(!G.turretUsed&&ready)||turretMode?'':'disabled'}>${G.turretUsed?(G.char==='chevy'?'Turret spent':'Boone reloading'):turretMode?'Cancel':(G.char==='chevy'?'Fire turret':'Boone: take the shot')}</button><span class="chem-note">${turretMode?'Tap the top card of a dealer caravan.':G.turretUsed?'':'Once per hand. Uses your turn.'}</span></div>`);}
-  if(G.char==='snipsnip')out.push(`<div class="chems"><button class="btn ability" data-repair ${myTurn&&!G.repairUsed&&undoStack.length?'':'disabled'}>${G.repairUsed?'Repairs used':'Self-repair'}</button><span class="chem-note">${G.repairUsed?'':undoStack.length?'Once per hand. Takes back your last turn and the dealer’s reply.':'Once per hand, after you’ve made a play.'}</span></div>`);
-  if(G.char==='threedog'){const c=sel!=null&&G.p.hand[sel];out.push(`<div class="chems"><button class="btn ability" data-request ${myTurn&&!G.requestUsed&&c&&G.p.deck.length?'':'disabled'}>${G.requestUsed?'Request played':'Request line'}</button><span class="chem-note">${G.requestUsed?'':c?`Swap ${esc(cardName(c))} for the top card of your deck. Doesn’t use your turn.`:'Once per hand. Select a card in your hand to swap it.'}</span></div>`);}
-  if(out.length&&G.char!=='greg')return out.join('');
-  if(G.char==='greg')return out.join('')+`<div class="chems"><button class="btn ability" data-hug ${!G.hugUsed&&ready?'':'disabled'}>${G.hugUsed?(G.hugPending?'Hug coming…':'Hug given'):'Bear hug'}</button><span class="chem-note">${G.hugPending?'The dealer skips their next turn.':G.hugUsed?'':'Once per hand. Doesn’t use your turn.'}</span></div>`;
-  return '';
+  const row=(btn,note)=>`<div class="chems">${btn}<span class="chem-note">${note}</span></div>`;
+  if(G.char==='chevy')out.push(row(`<button class="btn ability${turretMode?' armed':''}" data-turret ${(!G.turretUsed&&ready)||turretMode?'':'disabled'}>${G.turretUsed?'Turret spent':turretMode?'Cancel':'Fire turret'}</button>`,turretMode?'Tap the top card of a dealer caravan.':G.turretUsed?'':'Once per hand. Uses your turn.'));
+  if(G.char==='snipsnip')out.push(row(`<button class="btn ability" data-repair ${myTurn&&!G.repairUsed&&undoStack.length?'':'disabled'}>${G.repairUsed?'Repairs used':'Self-repair'}</button>`,G.repairUsed?'':undoStack.length?'Once per hand. Takes back your last turn and the dealer’s reply.':'Once per hand, after you’ve made a play.'));
+  if(G.char==='threedog'){const c=sel!=null&&G.p.hand[sel];out.push(row(`<button class="btn ability" data-request ${myTurn&&!G.requestUsed&&c&&G.p.deck.length?'':'disabled'}>${G.requestUsed?'Request played':'Request line'}</button>`,G.requestUsed?'':c?`Swap ${esc(cardName(c))} for the top card of your deck. Doesn’t use your turn.`:'Once per hand. Select a card in your hand to swap it.'));}
+  if(G.char==='greg')out.push(row(`<button class="btn ability" data-hug ${!G.hugUsed&&ready?'':'disabled'}>${G.hugUsed?(G.hugPending?'Hug coming…':'Hug given'):'Bear hug'}</button>`,G.hugPending?'The dealer skips their next turn.':G.hugUsed?'':'Once per hand. Doesn’t use your turn.'));
+  if(G.char==='harold')out.push(row(`<button class="btn ability" data-regrow ${myTurn&&!G.regrowUsed&&G.lastLost?'':'disabled'}>${G.regrowUsed?'Bob is resting':'Bob: regrow'}</button>`,G.regrowUsed?'':G.lastLost?`Put back your ${esc(cardName(G.lastLost.e.card))}. Once per hand, doesn’t use your turn.`:'Once per hand, after the dealer knocks one of your cards off.'));
+  if(G.bat)out.push(row(`<button class="btn ability${batMode?' armed':''}" data-bat ${(!G.batUsed&&ready)||batMode?'':'disabled'}>${G.batUsed?'Slugger swung':batMode?'Cancel':'Louisville Slugger'}</button>`,batMode?'Tap one of your caravans.':G.batUsed?'':'Once per hand: knock the top card off one of your caravans. Doesn’t use your turn.'));
+  if(G.canWalk&&!G.over)out.push(row(`<button class="btn ability" data-walk ${ready?'':'disabled'}>Walk away</button>`,'Pre-War Sneakers: lose this table without losing Grit. Once per stop.'));
+  // companion chip
+  if(G.comp&&GEAR[G.comp]){const id=G.comp,x=GEAR[id];let btn='',note='';
+    if(id==='boone'){btn=`<button class="btn ability${booneMode?' armed':''}" data-boone ${(!G.booneUsed&&ready)||booneMode?'':'disabled'}>${G.booneUsed?'Reloading':booneMode?'Cancel':'Take the shot'}</button>`;note=booneMode?'Tap a dealer caravan with a King or Queen on it.':G.booneUsed?'':'Once per hand. Uses your turn.';}
+    else if(id==='ede'){btn=`<button class="btn ability" data-zap ${myTurn&&!G.zapUsed&&G.a.hand.length?'':'disabled'}>${G.zapUsed?'Recharging':'Zap'}</button>`;note=G.zapUsed?'':'Once per hand: a random card leaves the dealer’s hand.';}
+    else if(id==='nick'){const nx=G.a.deck[G.a.deck.length-1];note=nx?`Dealer draws next: <b>${esc(cardName(nx))}</b>`:'The dealer’s deck is empty.';}
+    else if(id==='codsworth')note=G.tidyUsed?'Tidied up this hand.':'Your next discard doesn’t use your turn.';
+    else note=esc(x.desc);
+    out.push(`<div class="compchip">${ART.comp[id]?`<img src="${ART.comp[id]}" alt="">`:`<span class="compdot">${esc(x.name[0])}</span>`}<div><b>${esc(x.name)}</b><span class="chem-note">${note}</span></div>${btn}</div>`);}
+  return out.join('');
 }
 const packAttr=c=>c&&c.pack?` data-back="${c.pack}"`:'';
 function pileHTML(n,label,cls,deck){
@@ -2000,7 +2085,7 @@ function renderMatch(){
     <div class="mid"><span class="turn${G.turn==='p'?' mine':''}">${G.over?'Hand over':G.turn==='p'?'Your move':'Their move'}</span><span class="log">${esc(G.log[0]||'Sell two caravans in range to win.')}</span></div>
     <div class="side">${[0,1,2].map(l=>laneHTML('p',l,lanes,selMoves,proj)).join('')}</div>
     <div class="deckrow bottom">
-      <span class="decklabel">${(G.char==='nuke'||G.edePeek)&&G.mode==='road'&&G.p.deck.length?`Next draw ${cardHTML(G.p.deck[G.p.deck.length-1])}`:'Your deck'}</span>
+      <span class="decklabel">${G.char==='nuke'&&G.mode==='road'&&G.p.deck.length?`Next draw ${cardHTML(G.p.deck[G.p.deck.length-1])}`:'Your deck'}</span>
       ${capStackHTML()}
       ${pileHTML(G.p.deck.length,'Your deck','mine',G.p.deck)}
     </div>
@@ -2083,7 +2168,7 @@ function render(){
 }
 
 // ---------- flow ----------
-function enterMatch(){rulesOpen=false;G.intro=true;undoStack=[];turretMode=false;legendTarget=null;G.stats=Object.assign({faces:0,jokers:0,kings:0,discards:0,disbands:0,turns:0},G.stats||{});sel=null;disbandMode=false;busy=false;armedFold=false;screen='match';save();render();window.scrollTo(0,0);}
+function enterMatch(){rulesOpen=false;G.intro=true;undoStack=[];turretMode=false;legendTarget=null;booneMode=false;batMode=false;G.stats=Object.assign({faces:0,jokers:0,kings:0,discards:0,disbands:0,turns:0},G.stats||{});sel=null;disbandMode=false;busy=false;armedFold=false;screen='match';save();render();window.scrollTo(0,0);}
 function startMatch(i,skipRundown){
   if(i===-1&&!skipRundown){openRundown('road');return;}
   if(i===-2)G=newRoadTutorial();
@@ -2103,6 +2188,7 @@ function describe(side,m){
   const who=side==='p'?'You':OPP().name.split(' ').slice(-1)[0];
   const whose=s=>s==='p'?'your':'their';
   if(m.t==='turret')return `${side==='p'?'Your turret':'A turret'} shot the top card off their caravan ${ROMAN[m.lane]}.`;
+  if(m.t==='boone')return `Boone shot a face card off their caravan ${ROMAN[m.lane]}.`;
   if(m.t==='disband')return `${who} disbanded ${side==='p'?'your':'their'} caravan ${ROMAN[m.lane]}.`;
   const c=G[side].hand[m.ci];
   if(m.t==='discard')return `${who} discarded ${side==='p'?cardName(c):'a card'}.`;
@@ -2175,11 +2261,16 @@ function doMove(side,m){
   const beforeA=G.a.cv.reduce((n,cv)=>n+cv.length,0);
   applyMove(G,side,m,false);
   try{achOnMove(side,m,beforeA);}catch(e){}
+  if(G.comp==='ian'&&!G.ianDone&&G.setupLeft.p===0&&G.setupLeft.a===0){G.ianDone=true;
+    const mine=Math.random()<0.25,sd=mine?'p':'a',lanes=[0,1,2].filter(l=>G[sd].cv[l].length);
+    if(lanes.length){const l=pick(lanes);G[sd].cv[l].pop();G.log.unshift(mine?`Ian opens fire… and clips your own caravan ${ROMAN[l]}. “Sorry!”`:`Ian opens fire and shoots the top card off their caravan ${ROMAN[l]}.`);}}
+  if(G.master&&side==='p'){G.masterN=(G.masterN||0)+1;if(G.masterN%3===0)masterShift();}
   G.log.unshift(d);
   G.fx={side:m.t==='face'?m.side:side,lane:m.t==='discard'?-1:m.lane,kind:m.t,rank:pc&&pc.rank,card:pc?{rank:pc.rank,suit:pc.suit,pack:pc.pack}:null,idx:m.idx,by:side,done:false};
   if(side==='p'){G.dealt=G.p.hand.filter(c=>!handIds.has(c.id)).map(c=>c.id);G.dealtDone=false;}
-  sfx(m.t==='face'?(pc.rank==='J'?'jack':'face'):m.t==='discard'?'swish':(m.t==='disband'||m.t==='turret')?'jack':'snap',side);
-  if(m.t==='turret'){G.turretUsed=true;G.fx={side:'a',lane:m.lane,kind:'turret',by:'p',done:false};}
+  sfx(m.t==='face'?(pc.rank==='J'?'jack':'face'):m.t==='discard'?'swish':(m.t==='disband'||m.t==='turret'||m.t==='boone')?'jack':'snap',side);
+  if(m.t==='turret'){G.turretUsed=true;meta.st.turrets=(meta.st.turrets||0)+1;G.fx={side:'a',lane:m.lane,kind:'turret',by:'p',done:false};}
+  if(m.t==='boone'){G.booneUsed=true;G.fx={side:'a',lane:m.lane,kind:'turret',by:'p',done:false};}
   const w=winnerOf(G);
   if(w){
     const r=lanesResult(G),n=r.filter(x=>x==='p').length;
@@ -2190,6 +2281,8 @@ function doMove(side,m){
   let keep=false;
   if(side==='p'&&m.t==='disband'&&G.rules.freeDisband.p)keep=true;
   else if(side==='p'&&G.extra&&m.t!=='disband'){G.extra=false;keep=true;}
+  else if(side==='p'&&m.t==='face'&&m._card&&m._card.rank==='J'&&G.sawedoff){keep=true;G.log.unshift('Sawed-Off: your Jack didn’t use your turn.');}
+  else if(side==='p'&&m.t==='discard'&&G.codsworth&&!G.tidyUsed){G.tidyUsed=true;keep=true;G.log.unshift('Codsworth tidies up. That discard was on the house.');}
   if(!keep&&side==='p'&&G.hugPending){G.hugPending=false;keep=true;G.log.unshift(G.yesMan?`${OPP().name.split(' ').slice(-1)[0]} is busy agreeing with Yes Man. Your turn again.`:`${OPP().name.split(' ').slice(-1)[0]} is still recovering from Greg’s hug. Your turn again.`);G.yesMan=false;}
   if(!keep){G.turn=other(side);if(G.turn==='p'){G.chemTurn=false;if(side==='a'){setTimeout(()=>sfx('turn'),180);buzz(12);}}}
   if(!G[G.turn].hand.length){
@@ -2207,6 +2300,7 @@ function aiTurn(){
     const step=tutSteps()[G.tut.step];
     if(step&&step.ai){m=resolveSpec(step.ai,'a');G.tut.step++;}
   }
+  if(!m&&G.duster&&!G.dustUsed&&G.setupLeft.a===0){const ms=legalMoves(G,'a').filter(x=>x.t!=='disband');if(ms.length){m=pick(ms);G.dustUsed=true;G.log.unshift('Dust in their eyes: the dealer’s play is a wild guess.');}}
   if(!m)m=chooseAIMove(G,'a',OPP().noise);
   busy=false;
   if(!m){finish('p',`${OPP().name} has no move left.`);render();return;}
@@ -2236,7 +2330,9 @@ function useChem(id){
   else if(id==='shoe'){if(!me.deck.length)return;for(let i=0;i<2&&me.deck.length;i++)me.hand.push(me.deck.pop());G.log.unshift('Stimpak: you drew 2 cards.');}
   else if(id==='buff'){if(G.buffed)return;G.buffed=true;G.rules.kingMult.p+=1;G.log.unshift(`Buffout: your Kings now multiply ×${G.rules.kingMult.p} this hand.`);}
   else if(id==='medx'){if(G.rules.jackproof.p)return;G.rules.jackproof.p=true;G.log.unshift('Med-X: the dealer’s Jacks can’t touch your caravans this hand.');}
-  pouch[id]--; G.chemTurn=true; sel=null; sfx('clink'); if(!G.localChems)meta.st.chems++; checkState();
+  if(G.mode==='road'&&runLive()&&runV('pouch')&&Math.random()<1/3)G.log.unshift('Chem Set: that one didn’t get used up.');else pouch[id]--;
+  if(G.mode==='road'&&gear('labcoat')&&me.deck.length){me.hand.push(me.deck.pop());G.log.unshift('Lab Coat: you drew a card.');}
+  G.chemTurn=true; sel=null; sfx('clink'); if(!G.localChems)meta.st.chems++; checkState();
   if(tutActive()){const st=tutSteps()[G.tut.step];if(st.move&&st.move.t==='chem')G.tut.step++;}
   save(); render();
 }
@@ -2259,6 +2355,7 @@ app.addEventListener('click',e=>{
   if('choose' in d){const pc=pendingChoice;pendingChoice=null;if(!pc)return;
     if(d.choose==='cloud'){adoptCloud(pc.cloud);render();}else{save();pushNow();render();}return;}
   if('look' in d){const [k,v]=d.look.split(':');const item=LOOKS[k]&&LOOKS[k].find(o=>o.id===v);if(item&&lookUnlocked(item)&&!(k==='back'&&item.art)){meta.look[k]=v;if(k==='back'&&!item.art)meta.look.starter=v;applyLook();if(k!=='face')unlock('style');save();}render();return;}
+  if('togglepip' in d){meta.look.pip=!meta.look.pip;applyLook();save();render();return;}
   if('togglefour' in d){meta.look.four=!meta.look.four;applyLook();if(meta.look.four)unlock('four');save();render();return;}
   if('go' in d){
     if(d.go==='look'&&screen!=='look')lookFrom=screen;
@@ -2310,9 +2407,14 @@ app.addEventListener('click',e=>{
   if(G.over||G.turn!=='p'||busy)return;
   if('chem' in d){useChem(d.chem);return;}
   if('turret' in d){turretMode=!turretMode&&!G.turretUsed;sel=null;disbandMode=false;render();return;}
-  if('hug' in d){if(!G.hugUsed&&G.setupLeft.p===0){G.hugUsed=true;G.hugPending=true;G.log.unshift(`Greg gives ${OPP().name.split(' ').slice(-1)[0]} a big hug. Alex approves.`);sfx('clink');save();}render();return;}
-  if('repair' in d){if(G.char==='snipsnip'&&!G.repairUsed&&undoStack.length){G=JSON.parse(undoStack.pop());undoStack=[];G.repairUsed=true;G.fx=null;G.dealt=null;sel=null;disbandMode=false;turretMode=false;legendTarget=null;G.log.unshift('Snip Snip whirs backward. Your last turn never happened.');sfx('clink');save();render();}return;}
-  if('request' in d){if(G.char==='threedog'&&!G.requestUsed&&sel!=null&&G.p.hand[sel]&&G.p.deck.length){const c=G.p.hand.splice(sel,1)[0];G.p.deck.unshift(c);G.p.hand.push(G.p.deck.pop());G.requestUsed=true;sel=null;G.log.unshift(`Three Dog takes a request: ${cardName(c)} goes back in the deck.`);sfx('swish');save();}render();return;}
+  if('hug' in d){if(!G.hugUsed&&G.setupLeft.p===0){G.hugUsed=true;meta.st.hugs=(meta.st.hugs||0)+1;G.hugPending=true;G.log.unshift(`Greg gives ${OPP().name.split(' ').slice(-1)[0]} a big hug. Alex approves.`);sfx('clink');save();}render();return;}
+  if('regrow' in d){if(G.char==='harold'&&!G.regrowUsed&&G.lastLost){const L=G.lastLost;G.p.cv[L.lane].push(L.e);G.lastLost=null;G.regrowUsed=true;G.log.unshift(`Bob rustles. Your ${cardName(L.e.card)} grows back on caravan ${ROMAN[L.lane]}.`);sfx('snap');save();}render();return;}
+  if('boone' in d){booneMode=!booneMode&&!G.booneUsed;batMode=false;turretMode=false;legendTarget=null;sel=null;render();return;}
+  if('bat' in d){batMode=!batMode&&!G.batUsed;booneMode=false;turretMode=false;legendTarget=null;sel=null;render();return;}
+  if('zap' in d){if(G.ede&&!G.zapUsed&&G.a.hand.length){const k=Math.floor(Math.random()*G.a.hand.length);G.a.hand.splice(k,1);G.zapUsed=true;G.log.unshift('ED-E zaps a card out of the dealer’s hand.');sfx('jack');save();}render();return;}
+  if('walk' in d){if(G.canWalk&&!G.over&&G.setupLeft.p===0){G.walked=true;unlock('walk');G.canWalk=false;finish('a','You walked away from the table.');render();}return;}
+  if('repair' in d){if(G.char==='snipsnip'&&!G.repairUsed&&undoStack.length){G=JSON.parse(undoStack.pop());undoStack=[];G.repairUsed=true;meta.st.repairs=(meta.st.repairs||0)+1;G.fx=null;G.dealt=null;sel=null;disbandMode=false;turretMode=false;legendTarget=null;G.log.unshift('Snip Snip whirs backward. Your last turn never happened.');sfx('clink');save();render();}return;}
+  if('request' in d){if(G.char==='threedog'&&!G.requestUsed&&sel!=null&&G.p.hand[sel]&&G.p.deck.length){const c=G.p.hand.splice(sel,1)[0];G.p.deck.unshift(c);G.p.hand.push(G.p.deck.pop());G.requestUsed=true;meta.st.requests=(meta.st.requests||0)+1;sel=null;G.log.unshift(`Three Dog takes a request: ${cardName(c)} goes back in the deck.`);sfx('swish');save();}render();return;}
   if('legend' in d){if(G.setupLeft.p===0&&sel!=null&&G.p.hand[sel]&&G.p.hand[sel].legend){if(LEGENDS[G.p.hand[sel].legend].target){legendTarget=legendTarget===sel?null:sel;render();}else playLegend(sel,null);}return;}
   if('legendcancel' in d){legendTarget=null;render();return;}
   if('undo' in d){if(undoStack.length){G=JSON.parse(undoStack.pop());G.fx=null;G.dealt=null;sel=null;disbandMode=false;G.log.unshift('You took back your last move.');save();render();}return;}
@@ -2321,7 +2423,9 @@ app.addEventListener('click',e=>{
   if('discard' in d){const m=legal.find(x=>x.t==='discard'&&x.ci===sel);if(m){sel=null;playerMove(m);}return;}
   if('disband' in d){disbandMode=!disbandMode;sel=null;render();return;}
   const entry=e.target.closest('.entry'), lane=e.target.closest('.lane');
-  if(legendTarget!=null){const L=entry||lane;if(L&&L.dataset.side==='a'&&G.a.cv[+L.dataset.lane].length)playLegend(legendTarget,+L.dataset.lane);return;}
+  if(booneMode){const L=entry||lane;if(L&&L.dataset.side==='a'){const l=+L.dataset.lane;if(G.a.cv[l].some(e=>e.faces.some(f=>f.rank==='K'||f.rank==='Q'))){booneMode=false;playerMove({t:'boone',lane:l});}}return;}
+  if(batMode){const L=entry||lane;if(L&&L.dataset.side==='p'){const l=+L.dataset.lane;if(G.p.cv[l].length){G.p.cv[l].pop();G.batUsed=true;batMode=false;G.log.unshift(`Louisville Slugger: you knocked the top card off your caravan ${ROMAN[l]}.`);sfx('jack');save();render();}}return;}
+  if(legendTarget!=null){const L=entry||lane;if(L&&L.dataset.side==='a'&&G.a.cv[+L.dataset.lane].length)playLegend(legendTarget,+L.dataset.lane,entry&&entry.dataset.side==='a'?+entry.dataset.idx:null);return;}
   if(turretMode){if(entry&&entry.dataset.side==='a'&&+entry.dataset.idx===G.a.cv[+entry.dataset.lane].length-1&&!G.turretUsed){turretMode=false;playerMove({t:'turret',lane:+entry.dataset.lane});}return;}
   if(disbandMode&&lane&&lane.dataset.side==='p'){
     const m=legal.find(x=>x.t==='disband'&&x.lane===+lane.dataset.lane);
@@ -2344,7 +2448,12 @@ app.addEventListener('keydown',e=>{
 app.addEventListener('input',e=>{if(e.target.id==='auth-email')authForm.email=e.target.value;if(e.target.id==='auth-pass')authForm.pass=e.target.value;});
 app.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.target.id==='auth-pass'||e.target.id==='auth-email')){e.preventDefault();doAuth('login');}});
 // ---------- achievements ----------
-const ACH_CATS=['Getting started','At the table','Milestones','Classic','The Road','Style'];
+const ACH_CATS=['Getting started','At the table','Milestones','Classic','The Road','Style','Characters','Mojave Express & Legends','Road feats','The Water Chip'];
+// Cap vouchers: an achievement with no card-back reward pays a voucher you cash in at any Road trading post.
+const ACH_CAPS_BY_CAT=[5,8,12,12,10,5,15,12,20,20];
+function checkJunk(){const j=meta.junkFaced||{};if(j.killian&&j.gizmo)unlock('wc_both');}
+const achCaps=a=>a.caps||ACH_CAPS_BY_CAT[a.cat]||8;
+const lifetimeNCR=()=>(meta.scrip||0)+((meta.st&&meta.st.ncrSpent)||0);
 const stv=k=>(meta.st&&meta.st[k])||0;
 const ACH=[
   {id:'first_hand',cat:0,name:'Pull Up a Chair',desc:'Finish your first hand.'},
@@ -2398,6 +2507,68 @@ const ACH=[
   {id:'jeanita',cat:4,name:'Long Distance Call',desc:'Unlock Jeanita.'},
   {id:'style',cat:5,name:'Dressed to Deal',desc:'Change your Classic Card Back or play mat.'},
   {id:'four',cat:5,name:'Seeing in Color',desc:'Try four-color suits.'},
+  // ---- Characters ----
+  {id:'snipsnip',cat:6,name:'Snip Snip!',desc:'Unlock Snip Snip by winning a run without using a chem.'},
+  {id:'threedog',cat:6,name:'Ow-ooooo!',desc:'Unlock Three Dog.'},
+  {id:'benny',cat:6,name:'Ring-a-Ding-Ding',desc:'Unlock Benny.'},
+  {id:'strip_vladmira',cat:6,name:'Heavy Lifting',desc:'Reach the Strip as Vladmira.'},
+  {id:'strip_nuke',cat:6,name:'Peer Reviewed',desc:'Reach the Strip as Nuke Skywalker.'},
+  {id:'strip_chevy',cat:6,name:'Built to Last',desc:'Reach the Strip as Chevy Ford.'},
+  {id:'strip_ronald',cat:6,name:'Last Call',desc:'Reach the Strip as Ronald.'},
+  {id:'strip_matt',cat:6,name:'Just Winning',desc:'Reach the Strip as Matt.'},
+  {id:'strip_snipsnip',cat:6,name:'Operation Successful',desc:'Reach the Strip as Snip Snip.'},
+  {id:'strip_threedog',cat:6,name:'Breaking News',desc:'Reach the Strip as Three Dog.'},
+  {id:'strip_benny',cat:6,name:'The Chairman',desc:'Reach the Strip as Benny.'},
+  {id:'strip_greg',cat:6,name:'Alex Approves',desc:'Reach the Strip as Greg.'},
+  {id:'strip_jeanita',cat:6,name:'Please Hold',desc:'Reach the Strip as Jeanita.'},
+  {id:'strip_all',cat:6,name:'The Whole Gang',desc:'Reach the Strip with every character.',caps:60,prog:()=>[CHAR_ORDER.filter(c=>(meta.stripBy||[]).includes(c)).length,CHAR_ORDER.length]},
+  {id:'repairs10',cat:6,name:'Have You Tried Turning It Off',desc:'Use Snip Snip’s Self-Repair 10 times.',prog:()=>[stv('repairs'),10]},
+  {id:'requests10',cat:6,name:'Caller, You’re On the Air',desc:'Take 10 requests as Three Dog.',prog:()=>[stv('requests'),10]},
+  {id:'benny_tie',cat:6,name:'Rigged From the Start',desc:'Win a caravan on a tie as Benny.'},
+  {id:'hugs10',cat:6,name:'Big Softie',desc:'Give 10 Bear Hugs as Greg.',prog:()=>[stv('hugs'),10]},
+  {id:'turret10',cat:6,name:'Fire in the Hole',desc:'Fire Chevy’s turret 10 times.',prog:()=>[stv('turrets'),10]},
+  // ---- Mojave Express & Legends ----
+  {id:'ncr100',cat:7,name:'Payday',desc:'Earn 100 NCR dollars in total.',prog:()=>[lifetimeNCR(),100]},
+  {id:'ncr500',cat:7,name:'Republic Treasury',desc:'Earn 500 NCR dollars in total.',caps:30,prog:()=>[lifetimeNCR(),500]},
+  {id:'gear1',cat:7,name:'Suited Up',desc:'Buy your first piece of gear at the Mojave Express.'},
+  {id:'gear_full',cat:7,name:'Dressed for the Wasteland',desc:'Go on a run wearing something in all eight slots.',caps:25},
+  {id:'gear_all',cat:7,name:'Walking Armory',desc:'Own every piece of gear.',caps:50,prog:()=>[Object.keys(GEAR).filter(id=>GEAR[id].slot!=='comp'&&meta.gear.owned.includes(id)).length,Object.keys(GEAR).filter(id=>GEAR[id].slot!=='comp').length]},
+  {id:'comp1',cat:7,name:'Travelling Companion',desc:'Hire your first companion.'},
+  {id:'comp_all',cat:7,name:'Lonesome No More',desc:'Hire every companion.',caps:40,prog:()=>[Object.keys(GEAR).filter(id=>GEAR[id].slot==='comp'&&meta.gear.owned.includes(id)).length,Object.keys(GEAR).filter(id=>GEAR[id].slot==='comp').length]},
+  {id:'leg_buy',cat:7,name:'Stuff of Legend',desc:'Add your first Legend card to the trading posts.'},
+  {id:'leg_all',cat:7,name:'The Complete Legend',desc:'Add every Legend card to the trading posts.',caps:50,prog:()=>[(meta.legends||[]).filter(id=>LEGENDS[id]).length,Object.keys(LEGENDS).length]},
+  {id:'leg_play',cat:7,name:'Legendary',desc:'Play a Legend card.'},
+  {id:'leg10',cat:7,name:'Living Legend',desc:'Play 10 Legend cards.',caps:20,prog:()=>[meta.legendPlays||0,10]},
+  {id:'leg_two',cat:7,name:'Double Feature',desc:'Play two Legend cards in the same hand.',caps:20},
+  {id:'leg_fatman',cat:7,name:'Mini Nuke',desc:'Win a hand after dropping a Fat Man.'},
+  {id:'leg_yesman',cat:7,name:'Of Course!',desc:'Win a hand after Yes Man swaps your caravans.'},
+  {id:'leg_prime',cat:7,name:'Democracy Is Non-Negotiable',desc:'Strip 4 or more face cards with Liberty Prime.'},
+  // ---- Road feats ----
+  {id:'decks_all',cat:8,name:'Every Deck in the House',desc:'Win a run with every deck.',caps:60,prog:()=>[Object.keys(meta.deckWon||{}).length,DECKS.length]},
+  {id:'deck_gold3',cat:8,name:'Triple Crown',desc:'Beat the Gold Road with three different decks.',caps:60,prog:()=>[Object.values(meta.deckWon||{}).filter(t=>t>=2).length,3]},
+  {id:'flawless',cat:8,name:'Flawless',desc:'Win a run without losing a single table.',caps:40},
+  {id:'skipper',cat:8,name:'Scenic Route? No Thanks',desc:'Win a run after skipping 5 or more tables.',caps:30},
+  {id:'beyond20',cat:8,name:'Past the Edge of the Map',desc:'Clear twenty stops beyond the Strip in one run.',caps:60},
+  {id:'bounty25',cat:8,name:'Most Wanted',desc:'Collect 25 bounties.',prog:()=>[stv('bounties'),25]},
+  {id:'hoard250',cat:8,name:'Dragon’s Hoard',desc:'Hold 250 caps during a run.',caps:25},
+  {id:'walk',cat:8,name:'Know When to Fold ’Em',desc:'Walk away from a table in Pre-War Sneakers.',caps:10},
+  {id:'wipe5',cat:8,name:'Joker’s Wild',desc:'Knock out 5 or more of the dealer’s cards with one Joker.',caps:25},
+  {id:'kings200',cat:8,name:'Kingmaker',desc:'Play 200 Kings.',prog:()=>[stv('kings'),200]},
+  {id:'jacks100',cat:8,name:'Grand Larceny',desc:'Play 100 Jacks on the dealer’s cards.',prog:()=>[stv('jacks'),100]},
+  {id:'wins200',cat:8,name:'House Always Loses',desc:'Win 200 hands.',caps:40,prog:()=>[stv('wins'),200]},
+  {id:'wc_saved',cat:9,name:'War Never Changes',desc:'Save Vault 13 on the Water Chip run.',caps:40},
+  {id:'wc_100',cat:9,name:'Plenty to Drink',desc:'Save Vault 13 with 100 or more days of water left.',caps:50},
+  {id:'wc_noskip',cat:9,name:'The Long Way Round',desc:'Save Vault 13 without skipping a single table.',caps:60},
+  {id:'wc_gold',cat:9,name:'Vault-Tec Gold Star',desc:'Save Vault 13 on the Gold Road.',caps:60},
+  {id:'wc_dry',cat:9,name:'Bone Dry',desc:'Run out of water on the Water Chip run.',caps:5},
+  {id:'wc_junk',cat:9,name:'Junktown Justice',desc:'Win the Junktown boss table.'},
+  {id:'wc_both',cat:9,name:'Both Sides of Junktown',desc:'Face both Killian and Gizmo, on different runs.',caps:25},
+  {id:'wc_ufo',cat:9,name:'They Came From Above',desc:'Search the crashed flying saucer.',caps:30},
+  {id:'wc_footprint',cat:9,name:'Something Big Passed Through',desc:'Search the giant footprint.',caps:30},
+  {id:'wc_policebox',cat:9,name:'Bigger on the Inside',desc:'Find the blue police box before it vanishes.',caps:30},
+  {id:'wc_harold',cat:9,name:'Bob Says Hi',desc:'Unlock Harold.'},
+  {id:'wc_crew',cat:9,name:'The Old Crew',desc:'Have Ian, Tycho and Katja all join you.',caps:30,prog:()=>[['ian','tycho','katja'].filter(id=>meta.gear.owned.includes(id)).length,3]},
+  {id:'hands500',cat:8,name:'Pull Up a Stool',desc:'Play 500 hands.',caps:40,prog:()=>[stv('hands'),500]},
 ];
 let toastQ=[], toastOn=false, achSilent=false;
 function unlock(id){
@@ -2405,7 +2576,8 @@ function unlock(id){
   if(meta.ach[id])return false;
   meta.ach[id]=Date.now();
   const a=ACH.find(x=>x.id===id),rw=backReward(id);
-  if(a&&!achSilent)toast(rw?{...a,desc:`${a.desc} New pack: ${rw.name}.`}:a);
+  if(a&&!rw){meta.capVouch=meta.capVouch||[];meta.capVouch.push({id,caps:achCaps(a)});}
+  if(a&&!achSilent)toast(rw?{...a,desc:`${a.desc} New pack: ${rw.name}.`}:{...a,desc:`${a.desc} Cap voucher: ${achCaps(a)} caps.`});
   return true;
 }
 function toast(a){toastQ.push(a);if(!toastOn)nextToast();}
@@ -2421,6 +2593,15 @@ function nextToast(){
 }
 function checkState(){
   const before=Object.keys(meta.ach||{}).length;
+  if(!meta.vouchGranted){meta.vouchGranted=1;meta.capVouch=meta.capVouch||[];for(const id of Object.keys(meta.ach||{})){const a=ACH.find(x=>x.id===id);if(a&&!backReward(id)&&!meta.capVouch.some(v=>v.id===id))meta.capVouch.push({id,caps:achCaps(a)});}}
+  if(typeof charUnlocked==='function')for(const c of ['snipsnip','threedog','benny'])if(charUnlocked(c))unlock(c);
+  if(typeof charUnlocked==='function'&&charUnlocked('harold'))unlock('wc_harold');
+  for(const c of (meta.stripBy||[]))if(ACH.some(a=>a.id==='strip_'+c))unlock('strip_'+c);
+  if(meta.gear){if(meta.gear.owned.some(id=>GEAR[id]&&GEAR[id].slot!=='comp'))unlock('gear1');if(meta.gear.owned.some(id=>GEAR[id]&&GEAR[id].slot==='comp'))unlock('comp1');}
+  if((meta.legends||[]).length)unlock('leg_buy');
+  if((meta.legendPlays||0)>=1)unlock('leg_play');
+  if(runLive()&&meta.caps>=250)unlock('hoard250');
+  if(runLive()&&(meta.run.gear||[]).length>=8)unlock('gear_full');
   if(meta.tutorialDone)unlock('tut_basics');
   if(meta.roadTutDone)unlock('tut_road');
   const cp=meta.classic.camp;
@@ -2470,6 +2651,10 @@ function achOnFinish(){
       if(meta.caps-(ov.delta||0)<=2)unlock('comeback');
     }
     if(ov.bountyWon){st.bounties++;unlock('bounty1');}
+    const ul=G.usedLegends||[];
+    if(ul.includes('fatman'))unlock('leg_fatman');
+    if(ul.includes('yesman'))unlock('leg_yesman');
+    if(G.mode==='road'&&G.char==='benny'){const R=G.rules;if([0,1,2].some(l=>{const pv=cvValue(G.p.cv[l]),av=cvValue(G.a.cv[l]);return pv===av&&lanes[l]==='p';}))unlock('benny_tie');}
   }
   checkState(); save();
 }
@@ -2480,7 +2665,7 @@ function achOnMove(side,m,beforeA){
   const c=m._card;
   if(c.rank==='K'){meta.st.kings++;const e=G[m.side].cv[m.lane][m.idx];if(e&&e.faces.filter(f=>f.rank==='K').length>=2)unlock('crown');}
   if(c.rank==='J'&&m.side==='a')meta.st.jacks++;
-  if(c.rank==='JK'){const after=G.a.cv.reduce((n,cv)=>n+cv.length,0);if(beforeA-after>=3)unlock('wipe');}
+  if(c.rank==='JK'){const after=G.a.cv.reduce((n,cv)=>n+cv.length,0);if(beforeA-after>=3)unlock('wipe');if(beforeA-after>=5)unlock('wipe5');}
 }
 function renderAch(){
   const got=ACH.filter(a=>meta.ach[a.id]).length;
@@ -2488,11 +2673,12 @@ function renderAch(){
   <div class="mbar">${backBtn(achFrom,'Back')}<span class="pill num">${got} of ${ACH.length}</span></div>
   <section class="panel">
     <h2 style="font-size:28px">Achievements</h2>
+    ${(meta.capVouch||[]).length?`<p class="note">You’re holding ${meta.capVouch.length} cap voucher${meta.capVouch.length>1?'s':''} worth ${meta.capVouch.reduce((n,v)=>n+v.caps,0)} caps. Cash one in at any trading post on The Road.</p>`:''}
     <div class="achbar" role="progressbar" aria-valuenow="${got}" aria-valuemin="0" aria-valuemax="${ACH.length}"><span style="width:${got/ACH.length*100}%"></span></div>
     ${ACH_CATS.map((cat,ci)=>`<h3 class="sub">${cat}</h3><div class="achlist">${ACH.filter(a=>a.cat===ci).map(a=>{
       const when=meta.ach[a.id], p=a.prog&&!when?a.prog():null;
       const rw=backReward(a.id);
-      return `<div class="achrow${when?' got':''}"><span class="medal" aria-hidden="true">★</span><div><b>${esc(a.name)}</b><span>${esc(a.desc)}</span>${rw?`<span class="reward">Reward: ${esc(rw.name)} pack</span>`:''}
+      return `<div class="achrow${when?' got':''}"><span class="medal" aria-hidden="true">★</span><div><b>${esc(a.name)}</b><span>${esc(a.desc)}</span>${rw?`<span class="reward">Reward: ${esc(rw.name)} pack</span>`:`<span class="reward">Reward: ${achCaps(a)}-cap voucher${when&&(meta.capVouch||[]).some(v=>v.id===a.id)?' · not cashed in yet':''}</span>`}
         ${when?`<small>Earned ${new Date(when).toLocaleDateString()}</small>`:p?`<div class="achprog"><i style="width:${Math.min(100,p[0]/p[1]*100)}%"></i></div><small>${Math.min(p[0],p[1])} / ${p[1]}</small>`:''}</div></div>`;}).join('')}</div>`).join('')}
   </section>`;
 }
@@ -2542,7 +2728,7 @@ const ROAD_RULES=`
   <li>Win a run and you can keep going <b>Beyond the Strip</b>: endless stops with more boss rules and sharper dealers. Your best distance is saved per difficulty.</li>
   <li><b>Win a run</b> to unlock the next deck on the ladder (each has its own look and twist) and new tokens. Difficulty is per deck: win with a deck on Copper to open Silver for that deck, then win it on Silver to open Gold. The dots beside each deck show the highest difficulty you’ve beaten with it.</li>
   <li><b>NCR dollars</b> are the money you keep between runs, even when a run ends badly. You earn it for every table you win and for every run. Spend it at the <b>Mojave Express</b> office on gear: headwear, coat, pants, shoes, a gun, a melee weapon and a throwable. Wear one piece per slot and it’s applied at the start of your next run.</li>
-  <li><b>Companions</b> are the eighth Mojave Express slot: Dogmeat, Codsworth, Piper, Cass, Fawkes, ED-E, Boone and Nick Valentine each travel with you and bring their own trick.</li>
+  <li><b>Companions</b> are the eighth Mojave Express slot: Dogmeat, Codsworth, Piper, Cass, Fawkes, ED-E, Boone and Nick Valentine each travel with you and bring their own trick. Your companion sits at the table with you.</li>
   <li><b>Legend cards</b> are bought at the Mojave Express to add them to the trading posts. Once you buy one on the road it lives in your deck. Select it in your hand and tap Play: it doesn’t use your turn, and you draw a replacement. They can’t be played during the opening three turns.</li>`;
 const FAQ=[
   ['Why can’t I play a card there?','A number card has to follow the caravan’s direction (higher if it’s climbing, lower if it’s falling) unless it matches the caravan’s current suit, and it can never repeat the value right before it. Tap a card and the places it can go will glow. If nothing glows, discard it.'],
@@ -3407,12 +3593,33 @@ function drawBenny(x){
   x.save();x.shadowColor='rgba(255,255,255,.9)';x.shadowBlur=12;pEllipse(x,190,250,15,15,'#e9eef2');x.restore();
   x.strokeStyle='#9aa4ac';x.lineWidth=2;x.beginPath();x.arc(190,250,10,0,Math.PI*2);x.stroke();
 }
-const PORTRAIT_FN={vladmira:drawVladmira,nuke:drawNuke,chevy:drawChevy,ronald:drawRonald,matt:drawMatt,greg:drawGreg,jeanita:drawJeanita,snipsnip:drawSnipSnip,threedog:drawThreeDog,benny:drawBenny};
-const PORTRAIT_BG={vladmira:'#4fa3a5',nuke:'#8a7cc8',chevy:'#d9763a',ronald:'#c4473a',matt:'#a39e94',greg:'#86a843',jeanita:'#5aa58a',snipsnip:'#5f8fb3',threedog:'#c99a3a',benny:'#b0454f'};
+function drawVaultDweller(x){
+  pTorso(x,'#2f5fae',8);
+  x.fillStyle='#e8c33a';x.fillRect(112,214,16,90);x.fillRect(40,228,26,6);x.fillRect(174,228,26,6);
+  x.fillStyle='#e8c33a';x.font='bold 30px Georgia';x.textAlign='center';x.fillText('13',120,272);
+  x.fillStyle='#d8a77e';rrect(x,104,172,32,46,10);x.fill();
+  pEllipse(x,120,130,40,48,'#e2b48c');
+  x.fillStyle='#5a3a22';x.beginPath();x.moveTo(80,122);x.quadraticCurveTo(84,74,124,74);x.quadraticCurveTo(164,76,160,120);x.quadraticCurveTo(140,98,120,100);x.quadraticCurveTo(98,100,80,122);x.fill();
+  pEyes(x,128,16,'#3a5f8a',{w:7,h:4});
+  x.strokeStyle='#8a4a3a';x.lineWidth=2.5;x.beginPath();x.moveTo(108,158);x.quadraticCurveTo(120,164,132,158);x.stroke();
+  x.fillStyle='#3e4a3a';rrect(x,30,250,40,30,6);x.fill();x.fillStyle='#7fe08a';x.fillRect(36,256,28,16);
+}
+function drawHarold(x){
+  pTorso(x,'#6b5a44',6);
+  pEllipse(x,120,140,44,50,'#8aa05a');
+  x.fillStyle='#6f8648';for(const [a,b,r] of [[96,120,8],[140,150,10],[110,166,6],[148,118,7]]){x.beginPath();x.arc(a,b,r,0,Math.PI*2);x.fill();}
+  pEyes(x,136,16,'#d9d2a0',{w:6,h:4});
+  x.strokeStyle='#3a2a1a';x.lineWidth=3;x.beginPath();x.moveTo(104,168);x.quadraticCurveTo(120,176,136,168);x.stroke();
+  // Bob the tree
+  x.fillStyle='#6b4a2a';x.fillRect(114,40,12,56);
+  x.fillStyle='#4f8a3a';for(const [a,b,r] of [[120,40,26],[96,52,18],[146,50,18],[110,26,16],[134,28,16]]){x.beginPath();x.arc(a,b,r,0,Math.PI*2);x.fill();}
+}
+const PORTRAIT_FN={vaultdweller:drawVaultDweller,harold:drawHarold,vladmira:drawVladmira,nuke:drawNuke,chevy:drawChevy,ronald:drawRonald,matt:drawMatt,greg:drawGreg,jeanita:drawJeanita,snipsnip:drawSnipSnip,threedog:drawThreeDog,benny:drawBenny};
+const PORTRAIT_BG={vladmira:'#4fa3a5',nuke:'#8a7cc8',chevy:'#d9763a',ronald:'#c4473a',matt:'#a39e94',greg:'#86a843',jeanita:'#5aa58a',snipsnip:'#5f8fb3',threedog:'#c99a3a',benny:'#b0454f',vaultdweller:'#3d6db5',harold:'#7a8a4a'};
 // Custom art: drop PNG, JPG or WebP images named after each character into a "portraits" folder next to index.html.
 const PORTRAIT_FILE={};
 // Boss portraits use the same folder: portraits/<art id>.jpg (see the art ids on ROAD and BEYOND).
-const BOSS_ART=['scrapper-jojo','mama-tallow','gus','sergeant-brick','velvet-moreno','silver-lou','vey','big-tom','voice','dust-prophet','professor-static','ezekiel','ghost-croupier','colonel-ash'];
+const BOSS_ART=['garl','tandi','killian','gizmo','decker','set','lieutenant','master','overseer','scrapper-jojo','mama-tallow','gus','sergeant-brick','velvet-moreno','silver-lou','vey','big-tom','voice','dust-prophet','professor-static','ezekiel','ghost-croupier','colonel-ash'];
 // Art for companions and Legend cards: companions/<id>.jpg and legends/<id>.jpg next to index.html (PNG and WebP work too).
 const ART={comp:{},legend:{}};
 const ART_EXTS=['jpg','jpeg','png','webp','JPG','JPEG','PNG','WEBP'];
@@ -3487,7 +3694,28 @@ window.addEventListener('resize',()=>{if(screen!=='match')drawSky();});
 // =====================================================================
 // THE ROAD: run-based roguelite
 // =====================================================================
-const RUN_STOPS=[0,2,4,5,8,9]; // ROAD indices: Goodsprings, Primm, Nelson, Boulder City, Fremont Street, The Strip
+const NV_STOPS=[0,2,4,5,8,9]; // ROAD indices: Goodsprings, Primm, Nelson, Boulder City, Fremont Street, The Strip
+const WC_IDX=[0,2,4,5,6,8,9];  // The Water Chip: seven stops, difficulty borrowed from these ROAD tables
+let RUN_STOPS=NV_STOPS;
+const isWC=()=>!!(meta&&meta.run&&meta.run.special==='waterchip');
+function syncRoute(){RUN_STOPS=isWC()?WC_IDX:NV_STOPS;}
+// ---- The Water Chip (Fallout 1 special run) ----
+const WC_DAYS=150,WC_COST=[6,8,10],WC_SKIP=3;
+const WC_ROUTE=[
+  {place:'Vault 15',name:'Garl',art:'garl',blurb:'Leader of the Khans. Took over the ruins of Vault 15 and deals like he’s already won.',rule:'Khan Raiders: his caravans sell up to 27.',fn:R=>{R.range.a=[R.range.a[0],R.range.a[1]+1];},drop:'redryder'},
+  {place:'Shady Sands',name:'Tandi',art:'tandi',blurb:'Aradesh’s daughter. Sharp, stubborn, and tired of being rescued.',rule:'Stubborn: she holds 6 cards.',fn:R=>{R.hand.a=Math.max(R.hand.a,6);},comp:'ian'},
+  {place:'Junktown',junk:true,comp:'tycho'},
+  {place:'The Hub',name:'Decker',art:'decker',blurb:'Runs the Hub’s underworld from the back of the Maltese Falcon.',rule:'Loaded Deck: he opens every hand with 9 cards.',fn:R=>{R.deal.a=Math.max(R.deal.a,9);},drop:'plasma'},
+  {place:'Necropolis',name:'Set',art:'set',blurb:'Ghoul ruler of the City of the Dead. Patient. Very, very patient.',rule:'Dead Hand: your 2s and 3s can’t be played.',fn:R=>{R.dead.p=['2','3'];},comp:'katja'},
+  {place:'Mariposa',name:'The Lieutenant',art:'lieutenant',blurb:'Runs the Master’s dipping vats. Has no use for vault dwellers.',rule:'Super Mutant Hide: your Jacks can’t touch his caravans.',fn:R=>{R.jackproof.a=true;},drop:'powerarmor'},
+  {place:'The Cathedral',name:'The Master',art:'master',blurb:'Once a man. Now a mass of flesh and machinery speaking in many voices.',rule:'Many Voices: one of his rules changes every few turns.',fn:R=>{},drop:'waterchip',final:true},
+];
+const WC_JUNK={
+  killian:{name:'Killian Darkwater',art:'killian',blurb:'Runs the general store and the law in Junktown. Plays it straight.',rule:'Clean Game: nobody can play Jokers.',fn:R=>{R.banned.push('JK');}},
+  gizmo:{name:'Gizmo',art:'gizmo',blurb:'Owns the casino, and most of Junktown with it. Sweats a lot.',rule:'House Kings: his Kings multiply ×3.',fn:R=>{R.kingMult.a=3;}},
+};
+const wcBoss=s=>{const st=WC_ROUTE[s];if(!st)return null;if(st.junk){const j=WC_JUNK[(run()&&run().junk)||'gizmo'];return {...j,place:st.place};}return st;};
+const MASTER_POOL=['noking','noqueen','nojack','mirror','greedy','tight','long','light'];
 const TABLE_KIND=['Saloon table','High Stakes table','Boss table'];
 // Beyond the Strip: endless stops after a won run. Loops with rising difficulty.
 const BEYOND=[
@@ -3501,7 +3729,7 @@ const BEYOND=[
   {place:'Hoover Dam',name:'Colonel Ash',art:'colonel-ash',blurb:'Both armies want this table. He’s been holding it for both.'},
 ];
 const inBeyond=s=>s>=RUN_STOPS.length;
-const placeOf=s=>inBeyond(s)?BEYOND[(s-RUN_STOPS.length)%BEYOND.length].place:ROAD[RUN_STOPS[s]].place;
+const placeOf=s=>isWC()?(WC_ROUTE[Math.max(0,Math.min(s,WC_ROUTE.length-1))].place):inBeyond(s)?BEYOND[(s-RUN_STOPS.length)%BEYOND.length].place:ROAD[RUN_STOPS[s]].place;
 const riOf=s=>RUN_STOPS[Math.min(s,RUN_STOPS.length-1)];
 const mileOf=s=>s-RUN_STOPS.length+1;
 // ---------- Road story ----------
@@ -3514,6 +3742,8 @@ const PROLOGUE={
   greg:'Greg sets Alex the doll on his shoulder so she can see. “Big trip, Alex. We play nice. We win nice.” Alex says nothing, supportively.',
   jeanita:'Jeanita straightens her concierge vest, checks her reflection in a broken window, and winces. “Checking out early, darling. Vegas has a vacancy with my name on it.”',
 };
+PROLOGUE.vaultdweller='The Vault Dweller blinks at the open sky, adjusts the Pip-Boy, and takes a first careful step onto actual dirt. “Okay. Cards. I can do cards.”';
+PROLOGUE.harold='Harold pats the tree on his head. “Come on, Bob. Long road. Lots of card tables. You like card tables.” Bob rustles, possibly in agreement.';
 PROLOGUE.snipsnip='Snip Snip polishes all three eyes, sharpens all three arms, and hovers toward the horizon. “Six stops to the Strip! Plenty of patients along the way. Snip snip!”';
 PROLOGUE.threedog='Three Dog taps the mic. “Ow-ooooo! Wasteland, this is Three Dog, broadcasting from the road to Vegas. Stay tuned, ‘cause your favorite DJ is about to win some caps.”';
 PROLOGUE.benny='Benny straightens his checkered lapels and flips the platinum chip. “Six stops, baby. Easy money. What’s the worst that could happen?” Somewhere behind him, someone in a courier’s coat is following his tracks.';
@@ -3526,6 +3756,8 @@ const EPILOGUE={
   greg:'Greg wins the Strip and the crowd doesn’t run away, for once. Alex gets a seat of honor at the bar. Greg orders her a milk.',
   jeanita:'Jeanita takes the pot and the penthouse. “Room service,” she purrs into the phone, “send up everything.” For the first time in two hundred years, someone else carries the bags.',
 };
+EPILOGUE.vaultdweller='The Vault Dweller lays down the winning card and grins. Two hundred years underground, and the vault never taught them this. The wasteland did.';
+EPILOGUE.harold='Harold wins the last hand and tips his hat. Bob drops a single leaf on the table, which the pit boss decides to count as a tip.';
 EPILOGUE.snipsnip='Snip Snip lays down the winning card with surgical precision. “Operation successful!” The pit boss asks if he does house calls. All three eyes light up.';
 EPILOGUE.threedog='“You heard it here first, wasteland: Three Dog just beat the Strip!” Every radio on the Strip crackles to life with the news. Ow-ooooo!';
 EPILOGUE.benny='Benny rakes in the pot and lights a cigarette. “Ring-a-ding-ding.” He’s gone before anyone checks whose chips he walked in with.';
@@ -3539,6 +3771,8 @@ const RIVAL_TAUNT={
   greg:'Greg sets Alex down to watch. “Alex says good luck. Alex is lying.”',
   jeanita:'“Your table is ready, darling. I’m afraid it’s the losing one.”',
 };
+RIVAL_TAUNT.vaultdweller='“The Overseer said to be polite. He didn’t say I had to let you win.”';
+RIVAL_TAUNT.harold='“Bob says you look nervous. Bob’s usually right.”';
 RIVAL_TAUNT.snipsnip='“Oh, a new patient! Lie down on the table. The card table. Snip snip!”';
 RIVAL_TAUNT.threedog='“Folks, I’m live at the table with our challenger. Let’s all wish ‘em luck. They’re gonna need it.”';
 RIVAL_TAUNT.benny='“Truth is, the game was rigged from the start, baby.”';
@@ -3589,35 +3823,38 @@ const GEAR_SLOTS=[
   {id:'gun',name:'Gun'},{id:'melee',name:'Melee'},{id:'throw',name:'Throwable'},{id:'comp',name:'Companion'},
 ];
 const GEAR={
-  hat:{slot:'head',name:'Desperado Hat',price:15,desc:'Start every run with 5 extra caps.'},
-  lamp:{slot:'head',name:'Prospector’s Headlamp',price:30,desc:'Interest can pay 2 more caps per table.'},
-  beret:{slot:'head',name:'Ranger Beret',price:50,desc:'One extra perk slot.'},
-  duster:{slot:'coat',name:'Dusty Duster',price:15,desc:'Shop rerolls cost 1 cap less.'},
-  labcoat:{slot:'coat',name:'Lab Coat',price:30,desc:'One extra chem slot, and you start with a random chem.'},
-  armor:{slot:'coat',name:'Leather Armor',price:55,desc:'Start every run with 1 extra Grit.'},
-  jeans:{slot:'pants',name:'Patched Jeans',price:15,desc:'10% off everything at the trading post.'},
+  hat:{slot:'head',name:'Desperado Hat',price:15,desc:'Beating a boss gives you back 1 Grit (up to 2).'},
+  lamp:{slot:'head',name:'Prospector’s Headlamp',price:30,desc:'Every bundle you open has at least one upgraded card in it.'},
+  beret:{slot:'head',name:'Ranger Beret',price:50,desc:'The dealer opens every hand with 7 cards instead of 8.'},
+  duster:{slot:'coat',name:'Dusty Duster',price:15,desc:'Dust in their eyes: the dealer’s first play each hand is a random one.'},
+  labcoat:{slot:'coat',name:'Lab Coat',price:30,desc:'Every chem you use also draws you a card.'},
+  armor:{slot:'coat',name:'Leather Armor',price:45,desc:'The dealer can’t play Queens on your caravans.'},
+  jeans:{slot:'pants',name:'Patched Jeans',price:15,desc:'Glass cards never break.'},
   cargo:{slot:'pants',name:'Cargo Pants',price:30,desc:'+3 caps every time you reach a new stop.'},
   chaps:{slot:'pants',name:'Road Chaps',price:40,desc:'Selling all three caravans pays double the bonus.'},
-  boots:{slot:'shoes',name:'Cowboy Boots',price:15,desc:'Saloon tables pay 3 extra caps.'},
-  sneakers:{slot:'shoes',name:'Pre-War Sneakers',price:35,desc:'Open every hand with 1 extra card.'},
-  combat:{slot:'shoes',name:'Combat Boots',price:45,desc:'Boss bounties pay 50% more.'},
-  varmint:{slot:'gun',name:'Varmint Rifle',price:20,desc:'Your caravans can sell 1 point higher.'},
-  sawedoff:{slot:'gun',name:'Sawed-Off Shotgun',price:35,desc:'Draw a card whenever you play a Jack.'},
-  revolver:{slot:'gun',name:'Lucky Revolver',price:50,desc:'Two random number cards start the run Lucky.'},
+  boots:{slot:'shoes',name:'Cowboy Boots',price:15,desc:'Skipping a table pays 5 caps on top of its reward.'},
+  sneakers:{slot:'shoes',name:'Pre-War Sneakers',price:35,desc:'Once per stop, walk away from a table you’re losing. It counts as a loss but costs no Grit.'},
+  combat:{slot:'shoes',name:'Combat Boots',price:45,desc:'Boss tables have one fewer boss rule.'},
+  varmint:{slot:'gun',name:'Varmint Rifle',price:20,desc:'Pest control: the dealer can’t play Jokers at all.'},
+  sawedoff:{slot:'gun',name:'Sawed-Off Shotgun',price:35,desc:'Playing a Jack doesn’t use your turn.'},
+  revolver:{slot:'gun',name:'Lucky Revolver',price:50,desc:'Lucky cards draw 2 cards instead of 1.'},
   knife:{slot:'melee',name:'Combat Knife',price:15,desc:'Two random number cards start the run Steel.'},
-  machete:{slot:'melee',name:'Machete',price:30,desc:'A free card upgrade at your first trading post.'},
-  bat:{slot:'melee',name:'Louisville Slugger',price:40,desc:'Disbanding a caravan doesn’t use up your turn.'},
-  frag:{slot:'throw',name:'Frag Grenade',price:15,desc:'A free Supply bundle at your first trading post.'},
-  nuka:{slot:'throw',name:'Nuka-Grenade',price:35,desc:'One random number card starts the run with a special finish.'},
-  dynamite:{slot:'throw',name:'Dynamite',price:50,desc:'Discards draw 2 cards instead of 1.'},
+  machete:{slot:'melee',name:'Machete',price:30,desc:'Cuts the deadwood: up to 4 Aces and 2s are cut from your starting deck.'},
+  bat:{slot:'melee',name:'Louisville Slugger',price:40,desc:'Once per hand, knock the top card off one of your own caravans. Doesn’t use your turn.'},
+  frag:{slot:'throw',name:'Frag Grenade',price:15,desc:'Start every run with an extra Joker in your deck.'},
+  nuka:{slot:'throw',name:'Nuka-Grenade',price:35,desc:'Two random number cards start the run Glass.'},
+  dynamite:{slot:'throw',name:'Dynamite',price:50,desc:'Your Jokers on the dealer’s caravans blow up the card they land on, too.'},
   dogmeat:{slot:'comp',name:'Dogmeat',price:30,desc:'Good boy. Sniffs out 1 extra card in every bundle you open.'},
-  codsworth:{slot:'comp',name:'Codsworth',price:35,desc:'Brings you a random chem after every table you win. (For Snip Snip he polishes 3 caps instead.)'},
-  piper:{slot:'comp',name:'Piper',price:40,desc:'Smells a story: bounties pay double.'},
-  cass:{slot:'comp',name:'Cass',price:45,desc:'Knows the caravan trade: your caravans sell from 20 instead of 21.'},
-  fawkes:{slot:'comp',name:'Fawkes',price:50,desc:'Stands guard: the dealer’s Jacks can’t touch your caravans.'},
-  ede:{slot:'comp',name:'ED-E',price:50,desc:'Scans ahead: you always see the next card you’ll draw.'},
-  boone:{slot:'comp',name:'Boone',price:60,desc:'Once per hand, he shoots the top card off a dealer caravan. Uses your turn.'},
-  nick:{slot:'comp',name:'Nick Valentine',price:75,desc:'Detective work: you always see the dealer’s hand.'},
+  codsworth:{slot:'comp',name:'Codsworth',price:35,desc:'Tidies up: once per hand, a discard doesn’t use your turn.'},
+  piper:{slot:'comp',name:'Piper',price:40,desc:'Rattles the dealer with questions: they hold 4 cards instead of 5.'},
+  cass:{slot:'comp',name:'Cass',price:45,desc:'Crimson Caravan connections: the trading post stocks 1 extra card.'},
+  fawkes:{slot:'comp',name:'Fawkes',price:50,desc:'Stands guard: the dealer can’t play Kings on your caravans.'},
+  ede:{slot:'comp',name:'ED-E',price:50,desc:'Once per hand, zap a random card out of the dealer’s hand. Doesn’t use your turn.'},
+  boone:{slot:'comp',name:'Boone',price:60,desc:'Once per hand, shoot the newest King or Queen off a dealer caravan. Uses your turn.'},
+  nick:{slot:'comp',name:'Nick Valentine',price:55,desc:'Detective work: you always know the next card the dealer will draw.'},
+  ian:{slot:'comp',name:'Ian',price:35,wc:true,desc:'Trigger-happy: at the start of every hand he shoots the top card off a random dealer caravan. Now and then he hits one of yours.'},
+  tycho:{slot:'comp',name:'Tycho',price:45,wc:true,desc:'Desert Ranger: once per run, sneak you past a boss. No reward, but no fight either.'},
+  katja:{slot:'comp',name:'Katja',price:50,wc:true,desc:'Light fingers: the first card you take at each trading post is free.'},
 };
 // In a run, only the loadout you started with counts. Outside a run, nothing does.
 const gear=id=>!!(runLive()&&meta.run.gear&&meta.run.gear.includes(id));
@@ -3638,18 +3875,18 @@ function renderOffice(){
     ${GEAR_SLOTS.map(sl=>`<div class="nslot-h"><span class="nslot mini${g.on[sl.id]?' full':''}"></span><h3 class="sub">${sl.name}</h3></div><div class="gearrow">${Object.entries(GEAR).filter(([,x])=>x.slot===sl.id).map(([id,x])=>{
       const own=g.owned.includes(id),on=g.on[sl.id]===id,afford=(meta.scrip||0)>=x.price;
       return `<div class="gearopt${on?' on':''}">${x.slot==='comp'&&ART.comp[id]?`<img class="compart" src="${ART.comp[id]}" alt="">`:''}<b>${esc(x.name)}</b><span>${esc(x.desc)}</span>
-        ${own?`<button class="btn${on?' hot':''}" data-gearon="${id}" aria-pressed="${on}">${on?'Wearing':'Wear'}</button>`:`<button class="btn" data-gearbuy="${id}" ${afford?'':'disabled'}><span class="tix" aria-hidden="true"></span> ${x.price}</button>`}</div>`;}).join('')}</div>`).join('')}
+        ${own?`<button class="btn${on?' hot':''}" data-gearon="${id}" aria-pressed="${on}">${on?(x.slot==='comp'?'With you':'Wearing'):(x.slot==='comp'?'Take along':'Wear')}</button>`:x.wc?`<span class="note">🔒︎ Joins you on the Water Chip run.</span>`:`<button class="btn" data-gearbuy="${id}" ${afford?'':'disabled'}><span class="tix" aria-hidden="true"></span> ${x.price}</button>`}</div>`;}).join('')}</div>`).join('')}
     <h3 class="sub" style="margin-top:22px">Legend cards</h3>
-    <p class="note">Buy a Legend card to add it to the trading posts on The Road. You still have to find it and buy it during a run. Playing one doesn’t use your turn.</p>
+    <p class="note">Buy a Legend card to add it to the trading posts on The Road. They’re rare: about 1 trading post in 4 has one, and legendaries turn up a third as often as rares. Once you buy one on the road it’s in your deck for the run. Playing one doesn’t use your turn.</p>
     <div class="gearrow">${Object.entries(LEGENDS).map(([id,L])=>{const own=(meta.legends||[]).includes(id),pr=LEGEND_PRICE[L.rar].ncr;
       return `<div class="gearopt lgopt${own?' on':''}">${ART.legend[id]?cardHTML({legend:id}):''}<b class="lg-${L.rar}">${esc(L.name)}</b><i class="rar lgt-${L.rar}">${L.rar}</i><span>${esc(L.desc)}</span>
-        ${own?'<button class="btn" disabled>In the trading posts</button>':`<button class="btn" data-legendbuy="${id}" ${(meta.scrip||0)>=pr?'':'disabled'}><span class="tix" aria-hidden="true"></span> ${pr}</button>`}</div>`;}).join('')}</div>
+        ${own?'<button class="btn" disabled>In the trading posts</button>':L.found?`<span class="note">🔒︎ ${esc(L.found)}</span>`:`<button class="btn" data-legendbuy="${id}" ${(meta.scrip||0)>=pr?'':'disabled'}><span class="tix" aria-hidden="true"></span> ${pr}</button>`}</div>`;}).join('')}</div>
   </section>`;
 }
 function handleOfficeClick(d){
   const g=meta.gear;
-  if('legendbuy' in d){const id=d.legendbuy,L=LEGENDS[id];meta.legends=meta.legends||[];if(!L||meta.legends.includes(id))return true;const pr=LEGEND_PRICE[L.rar].ncr;if((meta.scrip||0)<pr)return true;meta.scrip-=pr;meta.legends.push(id);if(typeof sfx==='function')sfx('clink');save();render();return true;}
-  if('gearbuy' in d){const x=GEAR[d.gearbuy];if(!x||g.owned.includes(d.gearbuy)||(meta.scrip||0)<x.price)return true;meta.scrip-=x.price;g.owned.push(d.gearbuy);g.on[x.slot]=d.gearbuy;if(typeof sfx==='function')sfx('clink');save();render();return true;}
+  if('legendbuy' in d){const id=d.legendbuy,L=LEGENDS[id];meta.legends=meta.legends||[];if(!L||L.found||meta.legends.includes(id))return true;const pr=LEGEND_PRICE[L.rar].ncr;if((meta.scrip||0)<pr)return true;meta.scrip-=pr;meta.st.ncrSpent=(meta.st.ncrSpent||0)+pr;meta.legends.push(id);if(typeof sfx==='function')sfx('clink');save();render();return true;}
+  if('gearbuy' in d){const x=GEAR[d.gearbuy];if(!x||x.wc||g.owned.includes(d.gearbuy)||(meta.scrip||0)<x.price)return true;meta.scrip-=x.price;meta.st.ncrSpent=(meta.st.ncrSpent||0)+x.price;g.owned.push(d.gearbuy);g.on[x.slot]=d.gearbuy;if(typeof sfx==='function')sfx('clink');checkState();save();render();return true;}
   if('gearon' in d){const x=GEAR[d.gearon];if(!x||!g.owned.includes(d.gearon))return true;g.on[x.slot]=g.on[x.slot]===d.gearon?null:d.gearon;save();render();return true;}
   return false;
 }
@@ -3684,12 +3921,12 @@ const GENERIC_DEALERS=[
 ];
 const VOUCHER_PRICE=id=>disc(id==='pockets'||id==='rack'?22:16);
 const VOUCHERS={
-  pouch:{name:'Bigger Pouch',desc:'Carry 2 more chems.'},
-  pockets:{name:'Deep Pockets',desc:'Hold one more card in every hand.'},
-  haggle:{name:'Haggler',desc:'Everything in the shop is 25% cheaper.'},
+  pouch:{name:'Chem Set',desc:'Every chem you use has a 1 in 3 chance not to be used up.'},
+  pockets:{name:'Deep Pockets',desc:'Keep 1 extra card from every bundle.'},
+  haggle:{name:'Haggler',desc:'Tossing cards in the fire is free, and pays 2 caps per card.'},
   dice:{name:'Lucky Dice',desc:'Rerolls start at 1 cap.'},
-  rack:{name:'Gun Rack',desc:'One more perk slot.'},
-  tin:{name:'Savings Tin',desc:'Interest can pay 3 more caps.'},
+  rack:{name:'Gun Rack',desc:'The trading post offers 3 perks instead of 2.'},
+  tin:{name:'Savings Tin',desc:'Interest pays out on tables you lose, too.'},
 };
 const TAGS={
   caps:{name:'Cap Stash',desc:'Free caps right now (4, plus 1 for each stop you’ve reached).'},
@@ -3749,9 +3986,9 @@ Object.assign(PERKS,{
   honest:{name:'Honest Work',desc:'+6 caps when you win without playing a face card.'},
 });
 PERKS.insure={name:'Guardian Angel',desc:'If you lose with no Grit left, the run doesn’t end: you get another shot at that table. Breaks when used.'};
-PERKS.scav={name:'Scavenger',desc:'+3 caps after every table, win or lose.'};
+PERKS.scav={name:'Scavenger',desc:'After every table, win or lose, you pocket a random number card from the dealer’s caravans. It joins your deck.'};
 
-const run=()=>meta&&meta.run;
+const run=()=>{syncRoute();return meta&&meta.run;};
 const runV=id=>!!(run()&&run().vouchers.includes(id));
 const deckIdx=id=>DECKS.findIndex(d=>d.id===id);
 const deckUnlocked=id=>deckIdx(id)<(meta.decksUnlocked||1);
@@ -3761,6 +3998,7 @@ const deckTierCount=d=>Math.max(1,((meta.deckTiers||{})[d])||1);
 const tierPips=d=>{const w=(meta.deckWon||{})[d]??-1;return ` <span class="tpips" title="${w<0?'Not won yet':'Won on the '+TIERS[w].name}">${TIERS.map((t,i)=>`<i class="tp ${t.id}${i<=w?' won':''}"></i>`).join('')}</span>`;};
 const tierUnlocked=(id,deck)=>tierIdx(id)<deckTierCount(deck||((meta.newRun&&meta.newRun.deck)||'plain'));
 function runRoster(cid){
+  if(isWC())return RUN_STOPS.map(()=>null);
   const r=RUN_STOPS.map(()=>null);
   if(ORIGINALS.includes(cid)||NEWCOMERS.includes(cid)){const o=shuffle(ORIGINALS.filter(x=>x!==cid));r[1]=o[0];r[3]=o[1];r[5]='greg';}
   else if(cid==='greg'){const o=shuffle(ORIGINALS.slice());r[1]=o[0];r[2]=o[1];r[3]=o[2];r[5]='jeanita';}
@@ -3769,6 +4007,7 @@ function runRoster(cid){
 }
 const rosterOf=()=>{const r=run();return r.roster||runRoster(r.char);};
 function bossDealer(s){
+  if(isWC()){const b=wcBoss(s);return {name:b.name,blurb:b.blurb,rival:null,art:b.art,wcRule:b.rule};}
   if(inBeyond(s)){const b=BEYOND[(s-RUN_STOPS.length)%BEYOND.length];return {name:b.name,blurb:b.blurb,rival:null,art:b.art};}
   const rv=rosterOf()[s];
   if(rv)return {name:CHARS[rv].name,blurb:RIVALS[rv].blurb,rival:rv};
@@ -3822,16 +4061,17 @@ function ensureStop(s){
 }
 function tableRuleIds(s,t){
   ensureStop(s);
-  const r=run();const ids=t===2?[...r.bosses[s]]:(r.extra[s][t]?[r.extra[s][t]]:[]);
+  const r=run();const ids=t===2?r.bosses[s].slice(0,gear('combat')?Math.max(0,r.bosses[s].length-1):undefined):(r.extra[s][t]?[r.extra[s][t]]:[]);
   return s===r.stop&&t===r.table?ids.concat(r.nextRules||[]):ids;
 }
 function runRules(s,t){
   const r=run(),R=baseRules();
   for(const id of tableRuleIds(s,t))BOSS_RULES[id]&&BOSS_RULES[id].apply(R);
   if(t===2){const rv=rosterOf()[s];if(rv)RIVALS[rv].fn(R);}
-  if(has('wide'))R.range.p=[R.range.p[0]-1,R.range.p[1]+1];
+  if(t===2&&isWC()){const b=wcBoss(s);if(b)b.fn(R);}
+  if(has('wide'))R.range.p=[R.range.p[0]-2,R.range.p[1]];
   if(has('royal'))R.kingMult.p+=1;
-  if(has('steady'))R.hand.p+=1;
+  if(has('steady'))R.queenDraw.p=true;
   if(has('shark'))R.deal.p+=1;
   if(has('lead'))R.jackproof.p=true;
   if(has('twotone'))R.color.p=true;
@@ -3840,24 +4080,26 @@ function runRules(s,t){
   if(has('scrapper'))R.discardDraw.p=2;
   if(has('kingpin'))R.range.p=[R.range.p[0],R.range.p[1]+Math.min(3,Math.floor((r.kings||0)/3))];
   if(has('momentum'))R.hand.p+=Math.min(2,Math.floor((r.won||0)/5));
-  if(runV('pockets'))R.hand.p+=1;
   if(isChar('vladmira'))R.range.p=[R.range.p[0],R.range.p[1]+2];
   if(isChar('jeanita'))R.jokerproof.p=true;
   if(isChar('greg')){R.hand.p+=1;R.jackproof.a=true;}
   if(isChar('ronald'))R.deal.p-=1;
   if(r.deck==='irradiated')R.deal.p-=1;
   if(r.deck==='bullet')R.deal.a+=1;
-  if(gear('sneakers'))R.deal.p+=1;
-  if(gear('cass'))R.range.p=[R.range.p[0]-1,R.range.p[1]];
-  if(gear('fawkes'))R.jackproof.p=true;
-  if(gear('varmint'))R.range.p=[R.range.p[0],R.range.p[1]+1];
-  if(gear('sawedoff'))R.jackDraw.p=true;
-  if(gear('bat'))R.freeDisband.p=true;
-  if(gear('dynamite'))R.discardDraw.p=2;
+  if(gear('beret'))R.deal.a-=1;
+  if(gear('piper'))R.hand.a-=1;
+  if(gear('fawkes'))R.kingproof.p=true;
+  if(gear('armor'))R.queenproof.p=true;
+  if(gear('varmint'))R.noJoker.a=true;
+  if(gear('revolver'))R.luckyDraw.p=2;
+  if(gear('dynamite'))R.bigJoker.p=true;
+  if(isChar('snipsnip'))R.spareParts.p=true;
+  if(isChar('benny'))R.tieWin.p=true;
+  if(isChar('harold'))R.hand.p=Math.max(3,R.hand.p-1);
   return R;
 }
 function runNoise(s,t){
-  const base=inBeyond(s)?Math.max(1.2,5-(s-RUN_STOPS.length)*0.5):[44,33,23,15,9,6][s], adj=inBeyond(s)?[2,1,0][t]:[14,6,0][t], tm=[1,0.72,0.5][tierIdx(run().tier)];
+  const base=inBeyond(s)?Math.max(1.2,5-(s-RUN_STOPS.length)*0.5):[44,33,23,15,9,6,4][s], adj=inBeyond(s)?[2,1,0][t]:[14,6,0][t], tm=[1,0.72,0.5][tierIdx(run().tier)];
   return Math.max(0.5,(base+adj)*tm);
 }
 function runDealerExtra(s,t){
@@ -3868,44 +4110,44 @@ function runDealerExtra(s,t){
 }
 function interestCap(){
   const r=run();if(r.deck==='gold')return 0;
-  return (r.tier==='gold'?3:5)+(runV('tin')?3:0)+(has('prospector')?3:0)+(gear('lamp')?2:0);
+  return (r.tier==='gold'?3:5)+(has('prospector')?3:0);
 }
 const tableReward=(s,t)=>[5,7,11][t]+Math.round(s*1.5);
 // Selling all three caravans pays half the table's base reward on top (at least 3).
 const sweepBonus=(s,t)=>Math.max(3,Math.ceil(tableReward(s,t)/2));
-const bossBountyPay=s=>Math.round((4+s)*(has('hunter')?2:1)*(gear('piper')?2:1)*(isChar('vladmira')?0.5:1)*(gear('combat')?1.5:1));
+const bossBountyPay=s=>Math.round((4+s)*(has('hunter')?2:1)*(isChar('vladmira')?0.5:1));
 
 function plainDeck(){return addFaces(baseNumbers(),{J:4,Q:4,K:4,JK:2});}
 function startRun(){
   const r0=meta.newRun||{};
   const deck=deckUnlocked(r0.deck||'plain')?(r0.deck||'plain'):'plain', tier=tierUnlocked(r0.tier||'copper',deck)?(r0.tier||'copper'):'copper';
   const token=r0.token&&meta.tokens.includes(r0.token)?r0.token:null;
-  meta.run={v:1,char:meta.char,deck,tier,token,stop:0,table:0,phase:'table',won:0,kings:0,skips:0,hands:0,vouchers:[],tags:[],nextRules:[],
+  const special=r0.special==='waterchip'?'waterchip':null;
+  meta.run={v:1,special,days:special?WC_DAYS:undefined,found:[],char:meta.char,deck,tier,token,stop:0,table:0,phase:'table',won:0,kings:0,skips:0,hands:0,vouchers:[],tags:[],nextRules:[],
     grit:1+(token==='second'?1:0),halfShop:false,freeRerolls:0,freeBundles:[],freeUpgrade:0,started:Date.now(),voucherStop:-1,scrip:0,
     gear:GEAR_SLOTS.map(sl=>meta.gear.on[sl.id]).filter(id=>id&&GEAR[id]&&meta.gear.owned.includes(id))};
-  if(gear('armor'))meta.run.grit++;
-  if(meta.char==='snipsnip')meta.run.grit++;
   if(meta.char==='benny')meta.run.grit=Math.max(0,meta.run.grit-1);
-  if(gear('frag'))meta.run.freeBundles.push('supply');
-  if(gear('machete'))meta.run.freeUpgrade=(meta.run.freeUpgrade||0)+1;
+  syncRoute();
   meta.run.roster=runRoster(meta.char);
   genRun();
-  meta.caps=[10,7,5][tierIdx(tier)]+(token==='stash'?8:0)+(gear('hat')?5:0);
+  meta.caps=[10,7,5][tierIdx(tier)]+(token==='stash'?8:0)-(meta.char==='vaultdweller'?5:0);
   let d=plainDeck();
   if(deck==='scorched'){shuffle(d);d=d.slice(8);}
   if(token==='marked'){shuffle(d);let n=0;for(const c of d)if(isNum(c)&&n<2){c.mod='lucky';n++;}}
-  for(const [g,mod] of [['revolver','lucky'],['knife','steel']])if(gear(g)){const pool=shuffle(d.filter(c=>isNum(c)&&!c.mod));pool.slice(0,2).forEach(c=>c.mod=mod);}
-  if(gear('nuka')){const pool=d.filter(c=>isNum(c)&&!c.ed);if(pool.length)pick(pool).ed=rollEdition(null);}
+  for(const [g,mod] of [['knife','steel'],['nuka','glass']])if(gear(g)){const pool=shuffle(d.filter(c=>isNum(c)&&!c.mod));pool.slice(0,2).forEach(c=>c.mod=mod);}
+  if(gear('machete')){let cut=0;for(let i=d.length-1;i>=0&&cut<4;i--)if(isNum(d[i])&&(d[i].rank==='A'||d[i].rank==='2')){d.splice(i,1);cut++;}}
+  if(gear('frag'))d.push({rank:'JK',suit:null});
   meta.deck=d;
   meta.perks=[];meta.equipped=[];
   meta.chems={spy:0,coffee:0,fresh:0,shoe:0,buff:0,medx:0};
   if(token==='kit'){meta.chems.spy=1;meta.chems.coffee=1;}
-  if(gear('labcoat')){const id=pick(Object.keys(meta.chems));meta.chems[id]++;}
   if(isChar('snipsnip'))for(const k of Object.keys(meta.chems))meta.chems[k]=0;
   if(isChar('benny'))meta.deck.push({rank:'LG',suit:null,legend:'platinum'});
   if(token==='charm'){const id=pick(Object.keys(PERK_RARITY).filter(p=>PERK_RARITY[p]==='common'));meta.perks.push(id);meta.equipped=meta.perks;}
   meta.equipped=meta.perks;
   meta.run.story=[{title:CHARS[meta.char].name,text:PROLOGUE[meta.char]||'The road to Vegas starts here.'}];
+  if(special)meta.run.story.unshift({title:'Vault 13',text:'The water chip in Vault 13 has failed. The Overseer gives you a canteen, a Pip-Boy, and 150 days before the vault runs dry. Somewhere out in the wasteland there’s a replacement. Find it, and play your way there.'});
+  if(meta.char==='vaultdweller'){const pool=Object.keys(PERK_RARITY).filter(p=>PERK_RARITY[p]!=='legendary'&&!meta.perks.includes(p));meta.run.tagPick=shuffle(pool).slice(0,3);}
   save();
 }
 function rollPerkOffer(n){
@@ -3945,7 +4187,10 @@ const bundleName=b=>b.id==='suit'?`${SUIT_WORD[b.suit]} bundle`:BUNDLES[b.id].na
 const bundleDesc=b=>b.id==='suit'?`See 5 ${SUIT_WORD[b.suit].toLowerCase()} number cards, keep 2. Some come upgraded.`:BUNDLES[b.id].desc;
 function twoBundles(){const a=rollBundle();let b=rollBundle();for(let k=0;k<8&&b.id===a.id&&b.suit===a.suit;k++)b=rollBundle();return [a,b];}
 function rollBundle(){const tot=Object.values(BUNDLES).reduce((a,b)=>a+b.w,0);let x=Math.random()*tot;for(const [id,b] of Object.entries(BUNDLES)){x-=b.w;if(x<0)return id==='suit'?{id,suit:pick(SUITS)}:{id};}return {id:'saddlebag'};}
-function genBundleCards(b){
+function genBundleCards(b){const out=genBundleCards0(b);
+  if(gear('lamp')&&!out.some(c=>c.mod)){const nums=out.filter(c=>isNum(c));if(nums.length)pick(nums).mod=pick(Object.keys(MODS));}
+  return out;}
+function genBundleCards0(b){
   const out=[],key=c=>c.rank+(c.suit||'')+(c.mod||'')+(c.ed||'');
   const numRank=()=>pick(['A','2','3','4','5','6','7','8','9','10']);
   const mod=()=>pick(Object.keys(MODS));
@@ -3962,11 +4207,11 @@ function genBundleCards(b){
     if(!out.some(o=>key(o)===key(c)))out.push(c);}
   return out;
 }
-function openBundle(b,free){run().picker={kind:'bundle',title:bundleName(b)+(free?' (free)':''),note:`Pick up to ${BUNDLES[b.id].keep} to add to your deck.`,options:genBundleCards(b),keep:BUNDLES[b.id].keep,sel:[]};}
+function openBundle(b,free){const keep=BUNDLES[b.id].keep+(runV('pockets')?1:0);run().picker={kind:'bundle',title:bundleName(b)+(free?' (free)':''),note:`Pick up to ${keep} to add to your deck.`,options:genBundleCards(b),keep,sel:[]};}
 function openBurn(max,title,note){run().picker={kind:'burn',title,note,keep:max,sel:[]};}
 const burnRoom=()=>Math.max(0,meta.deck.length-MIN_DECK);
 const CRATES={perk:{name:'Perk crate',desc:'Pick 1 of 3 perks.',price:14},chem:{name:'Chem crate',desc:'Pick 1 of 3 chems.',price:3}};
-function rerollCost(){const r=run();return Math.max(1,(runV('dice')?1:3)*(r.deck==='rust'?2:1)+(r.rerolls||0)-(gear('duster')?1:0));}
+function rerollCost(){const r=run();return (runV('dice')?1:3)*(r.deck==='rust'?2:1)+(r.rerolls||0);}
 // Free bundles stack: every source adds one to the queue, and the trading post opens them one after another.
 function nextFreeBundle(){
   const r=run();
@@ -3975,17 +4220,19 @@ function nextFreeBundle(){
 }
 function openShop(){
   const r=run();
-  r.offers={perks:rollPerkOffer(2),cards:[rollCard(true),rollCard(true)],chems:shuffle(Object.keys(CHEMS)).slice(0,2),
+  r.offers={perks:rollPerkOffer(runV('rack')?3:2),cards:gear('cass')?[rollCard(true),rollCard(true),rollCard(true)]:[rollCard(true),rollCard(true)],chems:shuffle(Object.keys(CHEMS)).slice(0,2),
     upgrade:pick(Object.keys(MODS)),voucher:r.voucherStop===r.stop?null:pick(Object.keys(VOUCHERS).filter(v=>!r.vouchers.includes(v))),sold:{}};
   r.offers.bundles=twoBundles();r.burnUsed=false;
   {const inDeck=new Set(meta.deck.filter(c=>c.legend).map(c=>c.legend)),pool=(meta.legends||[]).filter(id=>LEGENDS[id]&&!inDeck.has(id));
-   r.offers.legend=pool.length&&Math.random()<0.6?pick(pool):null;}
-  r.rerolls=0;r.crate=null;r.workbench=null;r.picker=null;r.sponsor=isChar('ronald')?1:0;
+   const wpool=pool.flatMap(id=>LEGENDS[id].rar==='legendary'?[id]:[id,id,id]);
+   r.offers.legend=pool.length&&Math.random()<0.25?pick(wpool):null;}
+  r.rerolls=0;r.crate=null;r.workbench=null;r.picker=null;r.sponsor=isChar('ronald')?1:0;r.vouchUsed=false;r.katjaUsed=false;
+  if(isChar('vaultdweller'))(r.freeBundles=r.freeBundles||[]).push('saddlebag');
   nextFreeBundle();
 }
 function rerollShop(){
   const r=run();
-  r.offers.perks=rollPerkOffer(2);r.offers.cards=[rollCard(true),rollCard(true)];r.offers.chems=shuffle(Object.keys(CHEMS)).slice(0,2);r.offers.upgrade=pick(Object.keys(MODS));r.offers.bundles=twoBundles();r.offers.sold={};
+  r.offers.perks=rollPerkOffer(runV('rack')?3:2);r.offers.cards=gear('cass')?[rollCard(true),rollCard(true),rollCard(true)]:[rollCard(true),rollCard(true)];r.offers.chems=shuffle(Object.keys(CHEMS)).slice(0,2);r.offers.upgrade=pick(Object.keys(MODS));r.offers.bundles=twoBundles();r.offers.sold={};
 }
 function openCrate(kind){
   const opts=kind==='card'?[rollCard(true),rollCard(true),rollCard(true)]:kind==='perk'?rollPerkOffer(3):shuffle(Object.keys(CHEMS)).slice(0,3);
@@ -4009,16 +4256,21 @@ function startRunTable(){
   const dealer=t===2?bossDealer(s):r.dealers[s][t];
   G=newMatch(meta.deck,addFaces(baseNumbers(),runDealerExtra(s,t)),ri,R);
   G.mode='road';G.run=true;G.runStop=s;G.runTable=t;G.dealer={...dealer,place:placeOf(s)};G.ruleIds=tableRuleIds(s,t);G.noise=runNoise(s,t);
-  G.perks=[...meta.perks];G.char=r.char;G.turretUsed=false;G.hugUsed=false;G.hugPending=false;if(isChar('jeanita')||gear('nick'))G.peek=true;
-  G.repairUsed=false;G.requestUsed=false;G.edePeek=gear('ede');G.boone=gear('boone');
+  G.perks=[...meta.perks];G.char=r.char;G.turretUsed=false;G.hugUsed=false;G.hugPending=false;if(isChar('jeanita'))G.peek=true;
+  G.repairUsed=false;G.requestUsed=false;G.boone=gear('boone');G.booneUsed=false;G.ede=gear('ede');G.zapUsed=false;G.nick=gear('nick');
+  G.bat=gear('bat');G.batUsed=false;G.duster=gear('duster');G.dustUsed=false;G.codsworth=gear('codsworth');G.tidyUsed=false;G.sawedoff=gear('sawedoff');
+  G.canWalk=gear('sneakers')&&!((r.walkUsed||{})[r.stop]);G.walked=false;G.comp=meta.gear&&meta.gear.on&&meta.gear.on.comp&&r.gear&&r.gear.includes(meta.gear.on.comp)?meta.gear.on.comp:null;
   if(t===2){G.bounty=r.bounties[s];G.bountyPay=bossBountyPay(s);}
   G.stake=0;r.nextRules=[];
+  G.ianDone=false;G.regrowUsed=false;G.lastLost=null;
+  if(isWC()&&t===2&&WC_ROUTE[s]&&WC_ROUTE[s].final){G.master=true;G.masterN=0;G.masterBase=JSON.stringify(G.rules);masterShift();}
   enterMatch();
 }
 function skipTable(){
   const r=run();if(!r||r.phase!=='table'||r.table>1)return;
   r.offers=null;r.halfShop=false;
-  const tag=r.skipTags[r.stop][r.table];applyTag(tag);
+  const tag=r.skipTags[r.stop][r.table];applyTag(tag);if(gear('boots'))meta.caps+=5;
+  if(r.special==='waterchip'){r.days=(r.days||0)-WC_SKIP;r.wcSkipped=(r.wcSkipped||0)+1;if(r.days<=0){r.days=0;r.dry=true;r.phase='over';r.result='lost';unlock('wc_dry');save();return;}}
   r.skips++;r.table++;if(r.skips>=3)unlock('skip3');
   save();
 }
@@ -4077,15 +4329,21 @@ function runFinish(winner,ov){
   const r=run(),s=G.runStop,t=G.runTable,lanes=lanesResult(G);
   ov.run=true;r.hands++;const before=meta.caps;
   const extras=[];
-  if(has('scav')){meta.caps+=3;extras.push('3 from Scavenger');}
   if(G.goldCaps){meta.caps+=G.goldCaps;extras.push(`${G.goldCaps} from Golden cards`);}
   // glass breaks
   const played=new Set(G.glass||[]);
-  if(played.size){meta.deck=meta.deck.filter((c,i)=>!played.has(i));extras.push(`${played.size} glass card${played.size>1?'s':''} broke`);}
+  if(played.size&&!gear('jeans')){meta.deck=meta.deck.filter((c,i)=>!played.has(i));extras.push(`${played.size} glass card${played.size>1?'s':''} broke`);}
   if(winner==='p'){
     const neon=[0,1,2].reduce((n,l)=>n+(lanes[l]==='p'?edIn(G.p.cv[l],'neon'):0),0);
-    const w=Math.round(tableReward(s,t)*(has('roller')?1.5:1)*winMult()*(t===2&&isChar('threedog')?1.5:1)*(1+0.25*neon));meta.caps+=w;ov.win=w;if(neon)extras.push(`Neon: winnings +${25*neon}%`);
-    if(t===0&&gear('boots')){meta.caps+=3;extras.push('3 from Cowboy Boots');}
+    const w=Math.round(tableReward(s,t)*(has('roller')?1.5:1)*winMult()*(1+(isChar('harold')?0.5:0.25)*neon));meta.caps+=w;ov.win=w;if(neon)extras.push(`Neon: winnings +${25*neon}%`);
+    if(t===2&&isWC()){const b=WC_ROUTE[s];
+      if(b&&b.drop&&!b.final){extras.push(wcGive(b.drop,`${wcBoss(s).name} dropped something.`));}
+      if(b&&b.comp&&!meta.gear.owned.includes(b.comp)){meta.gear.owned.push(b.comp);extras.push(`${GEAR[b.comp].name} joins you. Hire them at the Mojave Express from now on.`);}
+      if(s===4&&!r.losses){meta.charFlags=meta.charFlags||{};if(!meta.charFlags.harold){meta.charFlags.harold=1;ov.newChars=(ov.newChars||[]).concat('harold');}}
+      if(s===2)unlock('wc_junk');
+    }
+    if(t===2&&gear('hat')&&(r.grit||0)<2){r.grit=(r.grit||0)+1;extras.push('Desperado Hat: +1 Grit');}
+    if(t===2&&isChar('threedog')){r.scrip=(r.scrip||0)+2;meta.scrip=(meta.scrip||0)+2;extras.push('2 NCR dollars for fighting the good fight');}
     if(lanes.every(x=>x==='p')){const sw=sweepBonus(s,t)*(gear('chaps')?2:1);meta.caps+=sw;extras.push(`Triple sale: all three caravans sold, +${sw}`);}
     {const sc=[1,2,3][t]+tierIdx(r.tier);r.scrip=(r.scrip||0)+sc;meta.scrip=(meta.scrip||0)+sc;ov.scrip=sc;}
     if(G.bounty&&bountyMet(G.bounty,lanes)){ov.bountyWon=G.bountyPay;meta.caps+=G.bountyPay;}
@@ -4097,20 +4355,28 @@ function runFinish(winner,ov){
     if(G.char==='ronald'){meta.caps+=3;extras.push('3 from Bootlegger');}
     const intr=Math.min(interestCap(),Math.floor(before/5));if(intr>0){meta.caps+=intr;extras.push(`${intr} interest`);}
     if(G.char==='nuke'&&chemTotal()<chemMax()){const id=pick(Object.keys(CHEMS));meta.chems[id]=(meta.chems[id]||0)+1;ov.brewed=id;}
-    if(gear('codsworth')){if(isChar('snipsnip')){meta.caps+=3;extras.push('3 caps Codsworth polished');}else if(chemTotal()<chemMax()){const id=pick(Object.keys(CHEMS));meta.chems[id]=(meta.chems[id]||0)+1;extras.push(`Codsworth brought you ${CHEMS[id].name}`);}}
     r.won++;
     if(t===2&&s===0)unlock('road_first');
-    if(t===2&&s<RUN_STOPS.length){const pp=TABLE_PROPS.find(x=>x.road===s);if(pp)unlockProp(pp.id);}
+    if(t===2&&s<RUN_STOPS.length&&!isWC()){const pp=TABLE_PROPS.find(x=>x.road===s);if(pp)unlockProp(pp.id);}
     if(t===2){
-      if(s===RUN_STOPS.length-1&&!r.endless){
+      if(s===RUN_STOPS.length-1&&!r.endless&&isWC()){
+        meta.charFlags=meta.charFlags||{};if(!r.usedChem)meta.charFlags.noChem=1;
+        if(!meta.charFlags.vault){meta.charFlags.vault=1;ov.newChars=(ov.newChars||[]).concat('vaultdweller');}
+        runWon(ov);
+      }else if(s===RUN_STOPS.length-1&&!r.endless){
         meta.stripBy=meta.stripBy||[];const had=CHAR_ORDER.filter(charUnlocked);if(!meta.stripBy.includes(G.char))meta.stripBy.push(G.char);
         meta.charFlags=meta.charFlags||{};if(!r.usedChem)meta.charFlags.noChem=1;if(r.tier!=='copper')meta.charFlags.silver=1;
         for(const id of CHAR_ORDER)if(!had.includes(id)&&charUnlocked(id)){ov.newChar=id;(ov.newChars=ov.newChars||[]).push(id);}
         runWon(ov);
-      }else{r.stop++;r.table=0;r.phase='event';if(gear('cargo')){meta.caps+=3;extras.push('3 from Cargo Pants');}r.event=pick(Object.keys(EVENTS));if(r.stop===RUN_STOPS.length-1)unlock('road_strip');if(r.endless){meta.endlessBest=meta.endlessBest||{};meta.endlessBest[r.tier]=Math.max(meta.endlessBest[r.tier]||0,mileOf(r.stop)-1);if(mileOf(r.stop)-1>=5)unlock('beyond5');if(mileOf(r.stop)-1>=10)unlock('beyond10');}}
+      }else{r.stop++;r.table=0;r.phase='event';if(gear('cargo')){meta.caps+=3;extras.push('3 from Cargo Pants');}r.event=pickEvent();if(r.stop===RUN_STOPS.length-1&&!isWC())unlock('road_strip');if(r.endless){meta.endlessBest=meta.endlessBest||{};meta.endlessBest[r.tier]=Math.max(meta.endlessBest[r.tier]||0,mileOf(r.stop)-1);if(mileOf(r.stop)-1>=5)unlock('beyond5');if(mileOf(r.stop)-1>=10)unlock('beyond10');if(mileOf(r.stop)-1>=20)unlock('beyond20');}}
     }else{r.table++;r.phase='shop';openShop();}
   }else{
-    if((r.grit||0)>0){
+    r.losses=(r.losses||0)+1;
+    if(runV('tin')){const intr=Math.min(interestCap(),Math.floor(before/5));if(intr>0){meta.caps+=intr;extras.push(`${intr} interest (Savings Tin)`);}}
+    if(G.walked){
+      r.walkUsed=r.walkUsed||{};r.walkUsed[s]=1;ov.saved=true;extras.push('You walked away. No Grit lost.');
+      if(t<2){r.table++;r.phase='shop';openShop();ov.movedOn=true;}else r.phase='table';
+    }else if((r.grit||0)>0){
       r.grit--;ov.saved=true;ov.grit=true;
       if(t<2){r.table++;r.phase='shop';openShop();ov.movedOn=true;}else r.phase='table';
     }else if(has('insure')){
@@ -4118,6 +4384,10 @@ function runFinish(winner,ov){
       ov.saved=true;r.phase='table';
     }else{ov.runOver=true;runLost();}
   }
+  if(isWC()&&r.phase!=='over'&&!ov.runOver){r.days=(r.days||0)-WC_COST[t];extras.push(`${WC_COST[t]} days on the road · ${Math.max(0,r.days)} left`);
+    if(r.days<=0){r.days=0;r.dry=true;ov.runOver=true;r.phase='over';r.result='lost';{const b=r.stop+1;r.scrip=(r.scrip||0)+b;meta.scrip=(meta.scrip||0)+b;r.scripMiles=b;}unlock('wc_dry');
+      meta.runHist=meta.runHist||[];meta.runHist.unshift({char:r.char,deck:r.deck,tier:r.tier,stop:r.stop,table:r.table,won:r.won,result:'lost',special:'waterchip',at:Date.now()});meta.runHist=meta.runHist.slice(0,12);}}
+  if(has('scav')&&!ov.runOver){const pool=G.a.cv.flat().map(e=>e.card).filter(c=>isNum(c)&&c.suit);if(pool.length){const c=pick(pool);runAddCard({rank:c.rank,suit:c.suit});extras.push(`Scavenger: you pocketed the dealer’s ${cardName(c)}`);}}
   ov.extras=extras;ov.delta=meta.caps-before;
 }
 function runLost(){
@@ -4144,13 +4414,43 @@ function runWon(ov){
   if(ti+1<TIERS.length&&deckTierCount(r.deck)<ti+2){meta.deckTiers[r.deck]=ti+2;unl.push(`${TIERS[ti+1].name} for the ${DECKS[di].name}${/deck/i.test(DECKS[di].name)?'':' deck'}`);}
   if(meta.tiersUnlocked<ti+2)meta.tiersUnlocked=ti+2;
   {const b=[10,15,20][ti];r.scrip=(r.scrip||0)+b;meta.scrip=(meta.scrip||0)+b;unl.push(`${b} NCR dollars for making it to Vegas`);}
-  r.story=r.story||[];r.story.push({title:'The High Table',text:EPILOGUE[r.char]||'You made it to Vegas.'});
+  r.story=r.story||[];
+  if(r.special==='waterchip'){
+    r.story.push({title:'The Water Chip',text:'You carry the new water chip home through the desert. Vault 13 will live. The Overseer shakes your hand, thanks you for everything, and tells you that you can never come back: the others would want to follow you out. The vault door rolls shut behind you.'});
+    meta.legends=meta.legends||[];if(!meta.legends.includes('waterchip')){meta.legends.push('waterchip');unl.push('The Water Chip now turns up in trading posts');}
+    unl.push('Vault Dweller');
+    unlock('wc_saved');if((r.days||0)>=100)unlock('wc_100');if(!r.wcSkipped)unlock('wc_noskip');if(r.tier==='gold')unlock('wc_gold');
+  }else r.story.push({title:'The High Table',text:EPILOGUE[r.char]||'You made it to Vegas.'});
+  if(!r.losses&&r.special!=='waterchip')unlock('flawless');if((r.skips||0)>=5)unlock('skipper');
   unlock('run1');if(r.tier==='silver')unlock('silver_road');if(r.tier==='gold')unlock('gold_road');if(r.deck==='gold')unlock('ladder');
   r.unlocked=unl;ov.unlocked=unl;
 }
 
 // ---- wasteland events ----
+function wcGive(id,why){
+  meta.legends=meta.legends||[];const added=!meta.legends.includes(id);if(added)meta.legends.push(id);
+  if(!meta.deck.some(c=>c.legend===id))meta.deck.push({rank:'LG',suit:null,legend:id});
+  return `${why} ${LEGENDS[id].name} is in your deck${added?', and from now on it can turn up at trading posts on any run':''}.`;
+}
+function pickEvent(){
+  const r=run(),normal=Object.keys(EVENTS).filter(k=>!EVENTS[k].wc);
+  if(r&&r.special==='waterchip'){
+    if(r.stop===2&&!r.junk)return 'junktown';
+    const sp=['ufo','footprint','policebox'].filter(k=>!(r.found||[]).includes(k));
+    if(sp.length&&Math.random()<0.35)return pick(sp);
+  }
+  return pick(normal);
+}
 const EVENTS={
+  junktown:{wc:true,title:'Junktown',text:'Junktown’s split in two. Killian Darkwater runs the store and the law; Gizmo runs the casino and wants Killian dead. Whoever you cross is who you’ll face at the boss table.',
+    choices:[{label:'Side with Killian: play Gizmo',act:()=>{run().junk='gizmo';(meta.junkFaced=meta.junkFaced||{}).gizmo=1;checkJunk();return 'Killian nods. Gizmo is waiting for you at the casino tables.';}},
+             {label:'Side with Gizmo: play Killian',act:()=>{run().junk='killian';(meta.junkFaced=meta.junkFaced||{}).killian=1;checkJunk();return 'Gizmo grins. Killian is waiting behind the counter with a fresh deck.';}}]},
+  ufo:{wc:true,title:'A Crashed Flying Saucer',text:'A smoking saucer lies half-buried in the sand. Two very dead little grey pilots. A velvet painting of a familiar singer hangs inside.',
+    choices:[{label:'Search the wreck',act:()=>{const r=run();r.found.push('ufo');unlock('wc_ufo');return wcGive('alienblaster','You pry a strange pistol from a dead pilot’s hand.');}},{label:'Leave it alone',act:()=>{run().found.push('ufo');return 'Some things are better left buried.';}}]},
+  footprint:{wc:true,title:'A Giant Footprint',text:'A single, enormous footprint, deep in the ground. No other tracks anywhere. There’s a flattened traveler in the middle of it.',
+    choices:[{label:'Search the remains',act:()=>{const r=run();r.found.push('footprint');unlock('wc_footprint');return wcGive('stealth','Clutched in a very flat hand:');}},{label:'Back away slowly',act:()=>{run().found.push('footprint');return 'You keep an eye on the sky for the rest of the day.';}}]},
+  policebox:{wc:true,title:'An Unusual Call Box',text:'A blue police call box stands alone in the desert. As you walk closer, it groans, wheezes, and fades away.',
+    choices:[{label:'Stand where it was',act:()=>{const r=run();r.found.push('policebox');unlock('wc_policebox');r.days=(r.days||0)+20;return 'You feel a little younger. Somehow you’ve gained 20 days.';}}]},
   trader:{title:'A Traveling Trader',text:'A trader with a two-headed mule offers to swap one of your plain number cards for an upgraded one.',
     choices:[{label:'Trade (5 caps)',cost:5,act:()=>{const plain=meta.deck.filter(c=>isNum(c)&&!c.mod);if(!plain.length){meta.caps+=5;return 'You have no plain number cards left to trade. The trader hands your caps back.';}const c=pick(plain);c.mod=pick(Object.keys(MODS));showReveal('change','Traded',`${MODS[c.mod].name}: ${MODS[c.mod].desc}`,[c]);return `Your ${cardName(c)} came back ${MODS[c.mod].name}.`;}},{label:'Keep walking',act:()=>'The trader shrugs and moves on.'}]},
   toll:{title:'Raider Toll',text:'Raiders block the road and want 10 caps to let you pass.',
@@ -4239,7 +4539,7 @@ const ruleChip=id=>`<span class="rb house-chip" title="${esc(BOSS_RULES[id].desc
 function runHeaderHTML(){
   const r=run(),slots=perkSlots();
   return `<div class="charstrip"><img src="${portrait(r.char)}" alt=""><div><small>${esc(TIERS[tierIdx(r.tier)].name)} · ${esc(DECKS[deckIdx(r.deck)].name)}</small><b>${esc(CHARS[r.char].name)}</b>
-      <span>${inBeyond(r.stop)?`Beyond the Strip · mile ${mileOf(r.stop)}`:`Stop ${r.stop+1} of ${RUN_STOPS.length}`} · ${r.won} table${r.won===1?'':'s'} won · Grit ${'●'.repeat(r.grit||0)||'none'}</span></div></div>
+      <span>${isWC()?`The Water Chip · ${r.days} days left · `:''}${inBeyond(r.stop)?`Beyond the Strip · mile ${mileOf(r.stop)}`:`Stop ${r.stop+1} of ${RUN_STOPS.length}`} · ${r.won} table${r.won===1?'':'s'} won · Grit ${'●'.repeat(r.grit||0)||'none'}</span></div></div>
     <div class="hubbar">${capsHTML(meta.caps)}<button class="pill num kitpill" data-kitopen="deck">Deck ${meta.deck.length}${modCount()?` · ${modCount()} upgraded`:''}</button><button class="pill num kitpill" data-kitopen="perks">Perks ${meta.perks.length}/${slots}</button><button class="pill num kitpill" data-kitopen="chems">Chems ${chemTotal()}/${chemMax()}</button></div>
     ${meta.perks.length?`<div class="rulesbar" style="justify-content:center">${meta.perks.map(p=>`<span class="rb perk-chip rar-${PERK_RARITY[p]}" title="${esc(PERKS[p].desc)}">${PERKS[p].name}</span>`).join('')}${r.vouchers.map(v=>`<span class="rb char-chip" title="${esc(VOUCHERS[v].desc)}">${VOUCHERS[v].name}</span>`).join('')}</div>`:''}`;
 }
@@ -4256,12 +4556,13 @@ function renderRunMap(){
       const d=t===2?boss:r.dealers[s][t], ids=tableRuleIds(s,t).filter((x,i,a)=>a.indexOf(x)===i);
       const tag=t<2?TAGS[r.skipTags[s][t]]:null;
       return `<div class="rtable ${st}${t===2?' boss':''}">
-        <div class="rt-head">${t===2?bossPic(d,'rivalimg'):''}<div><small>${TABLE_KIND[t]}</small><b>${esc(d.name)}</b><span>${esc(d.blurb)}</span></div></div>
+        <div class="rt-head">${t===2?bossPic(d,'rivalimg'):''}<div><small>${TABLE_KIND[t]}${isWC()?` · ${WC_COST[t]} days`:''}</small><b>${esc(d.name)}</b><span>${esc(d.blurb)}</span></div></div>
+        ${t===2&&d.wcRule?`<div class="rulesbar"><span class="rb house-chip">Boss: ${esc(d.wcRule)}</span></div>`:''}
         ${ids.length?`<div class="rulesbar">${ids.map(ruleChip).join('')}${t===2&&d.rival?`<span class="rb house-chip">Rival: ${esc(RIVALS[d.rival].rule)}</span>`:''}</div>`:(t===2&&d.rival?`<div class="rulesbar"><span class="rb house-chip">Rival: ${esc(RIVALS[d.rival].rule)}</span></div>`:'')}
         ${ids.length?`<div class="ruledescs">${ids.map(id=>`<span><b>${BOSS_RULES[id].name}:</b> ${esc(BOSS_RULES[id].desc)}</span>`).join('')}</div>`:''}
         ${st==='now'&&tag?`<div class="boon"><b>Or skip it:</b> give up this table’s winnings to earn a boon. <span><b>${esc(tag.name)}:</b> ${esc(tag.desc)}</span></div>`:st==='next'&&tag?`<div class="boon dim">Skip boon: <b>${esc(tag.name)}</b>. ${esc(tag.desc)}</div>`:''}
-        <div class="rt-foot"><span class="num">Win +${Math.round(tableReward(s,t)*(has('roller')?1.5:1)*winMult()*(t===2&&isChar('threedog')?1.5:1))} · Sell all 3: +${sweepBonus(s,t)} more${t===2?` · Bounty: ${BOUNTIES[r.bounties[s]].name} +${bossBountyPay(s)}`:''}</span>
-          ${st==='now'?`<span class="rt-btns">${tag?`<button class="btn" data-runskip>Skip for ${esc(tag.name)}</button>`:''}<button class="btn hot" data-runplay>Deal in</button></span>`:st==='done'?'<span class="tag">DONE</span>':''}</div>
+        <div class="rt-foot"><span class="num">Win +${Math.round(tableReward(s,t)*(has('roller')?1.5:1)*winMult())} · Sell all 3: +${sweepBonus(s,t)} more${t===2?` · Bounty: ${BOUNTIES[r.bounties[s]].name} +${bossBountyPay(s)}`:''}</span>
+          ${st==='now'?`<span class="rt-btns">${tag?`<button class="btn" data-runskip>Skip for ${esc(tag.name)}</button>`:''}${t===2&&gear('tycho')&&!r.tychoUsed&&s<RUN_STOPS.length-1?`<button class="btn" data-tychoskip>Tycho: sneak past</button>`:''}<button class="btn hot" data-runplay>Deal in</button></span>`:st==='done'?'<span class="tag">DONE</span>':''}</div>
       </div>`;}).join('');
     return `<div class="stopcur"><h3>${inBeyond(s)?`Mile ${mileOf(s)}`:s+1}. ${esc(place)}</h3>${tables}</div>`;
   }).join('');
@@ -4270,7 +4571,9 @@ function renderRunMap(){
   <section class="hero small"><div class="neon sm">The Road</div></section>
   ${runHeaderHTML()}
   <div class="hubbtns kitbtns"><button class="btn" data-kitopen="deck">Your deck, perks & chems</button>${r.offers?`<button class="btn" data-runshopback>← Back to the trading post</button>`:''}</div>
-  <section class="panel trailmap"><div class="maplabel">Goodsprings → The Strip</div>${rows}</section>
+  ${r.tagPick?`<section class="panel"><h3 class="sub" style="margin-top:0">Tag Skills: pick a free perk</h3><div class="plist">${r.tagPick.map(id=>`<button class="prow" data-tagpick="${id}"><div><b>${esc(PERKS[id].name)}</b><span>${esc(PERKS[id].desc)}</span></div></button>`).join('')}</div></section>`:''}
+  ${isWC()?`<div class="wcclock"><b class="num">${r.days}</b> days of water left<span>Saloon ${WC_COST[0]} · High Stakes ${WC_COST[1]} · Boss ${WC_COST[2]} · Skip ${WC_SKIP}</span></div>`:''}
+  <section class="panel trailmap"><div class="maplabel">${isWC()?'Vault 13 → The Cathedral':'Goodsprings → The Strip'}</div>${rows}</section>
   ${runPre?runPreHandHTML():''}
   ${kitOpen?kitHTML():''}
   ${r.reveal?revealHTML():''}
@@ -4284,7 +4587,7 @@ function runPreHandHTML(){
     <h2>${esc(placeOf(s))}</h2><p class="who">${TABLE_KIND[t]} · ${esc(d.name)} · ${esc(d.blurb)}</p>
     <dl>
       <dt>Character</dt><dd>${esc(CHARS[r.char].name)}</dd>
-      <dt>Reward</dt><dd>+${Math.round(tableReward(s,t)*(has('roller')?1.5:1)*winMult()*(t===2&&isChar('threedog')?1.5:1))} caps, plus interest (1 per 5 caps you hold, up to ${interestCap()})</dd>
+      <dt>Reward</dt><dd>+${Math.round(tableReward(s,t)*(has('roller')?1.5:1)*winMult())} caps, plus interest (1 per 5 caps you hold, up to ${interestCap()})</dd>
       <dt>Sell range</dt><dd>${rangeTxt(R.range.p)===rangeTxt(R.range.a)?rangeTxt(R.range.p):`You ${rangeTxt(R.range.p)} · dealer ${rangeTxt(R.range.a)}`}</dd>
       <dt>Rules</dt><dd>${ids.length?ids.map(id=>`<b>${BOSS_RULES[id].name}:</b> ${esc(BOSS_RULES[id].desc)}`).join('<br>'):'None. Straight Caravan.'}</dd>
       ${d.rival?`<dt>Rival</dt><dd>${esc(RIVALS[d.rival].rule)}${s===RUN_STOPS.length-1&&d.rival==='greg'&&!charUnlocked('greg')?' Beat him to unlock Greg.':''}${s===RUN_STOPS.length-1&&d.rival==='jeanita'&&!charUnlocked('jeanita')?' Beat her to unlock Jeanita.':''}</dd>`:''}
@@ -4316,9 +4619,11 @@ function renderRunSetup(){
     <p class="note">${esc(TIERS[tierIdx(nr.tier)].desc)}${(()=>{const n=deckTierCount(nr.deck);return n<TIERS.length?` Win with this deck on the ${TIERS[n-1].name} to unlock the ${TIERS[n].name} for it.`:'';})()}</p>
     <h3 class="sub">Token</h3>
     ${meta.tokens.length?`<div class="hubbtns" style="margin-top:0"><button class="btn${!nr.token?' hot':''}" data-runtoken="">None</button>${meta.tokens.map(tk=>`<button class="btn${nr.token===tk?' hot':''}" data-runtoken="${tk}" title="${esc(TOKENS[tk].desc)}">${esc(TOKENS[tk].name)}</button>`).join('')}</div><p class="note">${nr.token?esc(TOKENS[nr.token].desc):'Bring one token into the run.'}</p>`:'<p class="note">Win runs to unlock tokens: small boosts you can bring into a run.</p>'}
+    <h3 class="sub">Special runs</h3>
+    <div class="decklist"><button class="deckopt${nr.special==='waterchip'?' on':''}" data-runspecial="waterchip" aria-pressed="${nr.special==='waterchip'}"><span class="dtxt"><b>The Water Chip <i class="tag">FALLOUT 1</i></b><span>Vault 13’s water chip is broken. Seven stops from Vault 15 to the Cathedral, with 150 days of water. Every table costs days, so you’ll have to choose what to skip.</span></span></button></div>
     <h3 class="sub">Loadout</h3>
     <div class="loadline"><p class="note" style="margin:0">${loadoutLine()}</p><button class="btn" data-go="office">Mojave Express ${scripHTML(meta.scrip||0)}</button></div>
-    <button class="btn hot" data-runstart style="width:100%;margin-top:10px;font-size:16px;padding:12px">Start the run</button>
+    <button class="btn hot" data-runstart style="width:100%;margin-top:10px;font-size:16px;padding:12px">${nr.special==='waterchip'?'Leave Vault 13':'Start the run'}</button>
   </section>
   <section class="panel" style="margin-top:14px">
     <h2 style="font-size:22px">Learn</h2>
@@ -4339,13 +4644,14 @@ function renderRunOver(){
   <div class="mbar">${backBtn('home','Modes')}</div>
   <section class="panel result runover" style="margin:24px auto">
     <img class="rivalhero" src="${portrait(r.char)}" alt="">
-    <h2 class="${won?'':'lost'}">${r.fellBeyond?`Mile ${mileOf(r.stop)} beyond the Strip`:won?'You made it to Vegas':'Run over'}</h2>
-    <p>${r.fellBeyond?`${esc(CHARS[r.char].name)} beat the Strip, then made it ${mileOf(r.stop)-1} stop${mileOf(r.stop)-1===1?'':'s'} past it before falling at ${esc(placeOf(r.stop))}. Best on the ${esc(TIERS[tierIdx(r.tier)].name)}: ${(meta.endlessBest||{})[r.tier]||0}.`:won?`${esc(CHARS[r.char].name)} beat the Strip on the ${esc(TIERS[tierIdx(r.tier)].name)} with the ${esc(DECKS[deckIdx(r.deck)].name)}.`:`${esc(CHARS[r.char].name)} fell at ${esc(placeOf(r.stop))}, ${TABLE_KIND[r.table].toLowerCase()}.`}</p>
+    <h2 class="${won?'':'lost'}">${r.special==='waterchip'?(won?'Vault 13 is saved':r.dry?'The water ran dry':'Run over'):r.fellBeyond?`Mile ${mileOf(r.stop)} beyond the Strip`:won?'You made it to Vegas':'Run over'}</h2>
+    ${r.special==='waterchip'?`<p>${won?`You brought the water chip home with ${r.days} days to spare. The Overseer thanked you, then exiled you.`:r.dry?`The vault’s water ran out while you were at ${esc(placeOf(r.stop))}.`:`You fell at ${esc(placeOf(r.stop))} with ${r.days} days of water left.`}</p>`:''}
+    <p style="${r.special?'display:none':''}">${r.fellBeyond?`${esc(CHARS[r.char].name)} beat the Strip, then made it ${mileOf(r.stop)-1} stop${mileOf(r.stop)-1===1?'':'s'} past it before falling at ${esc(placeOf(r.stop))}. Best on the ${esc(TIERS[tierIdx(r.tier)].name)}: ${(meta.endlessBest||{})[r.tier]||0}.`:won?`${esc(CHARS[r.char].name)} beat the Strip on the ${esc(TIERS[tierIdx(r.tier)].name)} with the ${esc(DECKS[deckIdx(r.deck)].name)}.`:`${esc(CHARS[r.char].name)} fell at ${esc(placeOf(r.stop))}, ${TABLE_KIND[r.table].toLowerCase()}.`}</p>
     <p class="num">${r.won} tables won · ${r.skips} skipped · ${meta.caps} caps left</p>
     ${r.scrip?`<p class="num" style="color:var(--neon)">+${r.scrip} NCR dollars this run${r.scripMiles?` (${r.scripMiles} of it for the miles)`:''} · ${meta.scrip} to spend at the Mojave Express</p>`:''}
     ${won&&r.unlocked&&r.unlocked.length?`<h3 class="sub">Unlocked</h3><ul class="traits">${r.unlocked.map(u=>`<li class="pro"><b>+ ${esc(u)}</b></li>`).join('')}</ul>`:''}
     ${won&&!r.endless?`<div class="explain" style="text-align:left"><p><b>Beyond the Strip.</b> Keep this run going into endless stops past Vegas: more boss rules every stop, sharper dealers, bigger rewards. See how far you get. Your unlocks are already saved.</p></div>
-      <button class="btn hot" data-runbeyond>Keep going</button> <button class="btn" data-runnew>New run</button>`:`<button class="btn hot" data-runnew>New run</button>`} <button class="btn" data-runoffice style="margin-left:6px">Mojave Express</button>
+      ${r.special?'':'<button class="btn hot" data-runbeyond>Keep going</button>'} <button class="btn" data-runnew>New run</button>`:`<button class="btn hot" data-runnew>New run</button>`} <button class="btn" data-runoffice style="margin-left:6px">Mojave Express</button>
   </section>
   ${runStoryHTML()}`;
 }
@@ -4431,6 +4737,7 @@ function renderRunShop(){
       <div class="plist">${Object.entries(CRATES).map(([k,c])=>`<div class="prow"><div><b>${c.name}</b><span>${c.desc}</span></div>${buyBtn('crate-'+k,disc(c.price),k==='perk'&&full)}</div>`).join('')}</div>
       <h3 class="sub">Cards</h3>
       <div class="offers">${of.cards.map((c,i)=>`<div class="offer${sold('card'+i)?' sold':''}">${cardHTML(c)}<div class="what">${c.rank==='JK'?'Joker':isNum(c)?cardName(c):FACE_NAME[c.rank]+' '+SUIT_CH[c.suit]}${c.mod?`<br><b>${MODS[c.mod].name}:</b> ${esc(MODS[c.mod].desc)}`:''}${c.ed?`<br><b>${EDITIONS[c.ed].name}:</b> ${esc(EDITIONS[c.ed].desc)}`:''}</div>${buyBtn('card'+i,runCardPrice(c))}</div>`).join('')}</div>
+      ${(meta.capVouch||[]).length?(()=>{const v=[...meta.capVouch].sort((a,b)=>b.caps-a.caps)[0],tot=meta.capVouch.reduce((n,x)=>n+x.caps,0),a=ACH.find(x=>x.id===v.id);return `<h3 class="sub">Cap vouchers</h3><div class="prow vouchrow"><div><b>${meta.capVouch.length} voucher${meta.capVouch.length>1?'s':''} · ${tot} caps in all</b><span>Earned from achievements. Cash in one per trading post, on any run. Next up: ${esc(a?a.name:'Achievement')} (${v.caps} caps).</span></div><button class="btn hot" data-cashin ${r.vouchUsed?'disabled':''}>${r.vouchUsed?'Cashed in here':`+${v.caps} caps`}</button></div>`;})():''}
       ${of.legend&&LEGENDS[of.legend]?`<h3 class="sub">Legend card</h3><div class="prow lgrow">${cardHTML({legend:of.legend})}<div><b>${esc(LEGENDS[of.legend].name)} <i class="rar lgt-${LEGENDS[of.legend].rar}">${LEGENDS[of.legend].rar}</i></b><span>${esc(LEGENDS[of.legend].desc)} Goes in your deck for the rest of the run.</span></div>${buyBtn('legend',disc(LEGEND_PRICE[LEGENDS[of.legend].rar].caps))}</div>`:''}
       <h3 class="sub">Workbench</h3>
       <div class="prow"><div><b>${MODS[of.upgrade].name} upgrade</b><span>${esc(MODS[of.upgrade].desc)} Pick a number card from your deck to apply it.</span></div>${r.freeUpgrade?`<button class="btn hot" data-rbuy="upgrade">Free${r.freeUpgrade>1?` ×${r.freeUpgrade}`:''}</button>`:buyBtn('upgrade',disc(6))}</div>
@@ -4459,7 +4766,7 @@ function pickerHTML(){
 }
 function pickerDone(){
   const r=run(),pk=r.picker;if(!pk)return;
-  if(pk.kind==='burn'){const set=new Set(pk.sel.slice(0,burnRoom()));meta.deck=meta.deck.filter((c,i)=>!set.has(i));if(r.phase==='event')r.eventResult=`You burned ${set.size} card${set.size===1?'':'s'}.`;}
+  if(pk.kind==='burn'){const set=new Set(pk.sel.slice(0,burnRoom()));meta.deck=meta.deck.filter((c,i)=>!set.has(i));if(runV('haggle')&&set.size)meta.caps+=2*set.size;if(r.phase==='event')r.eventResult=`You burned ${set.size} card${set.size===1?'':'s'}.`;}
   else for(const i of pk.sel.slice(0,pk.keep))runAddCard(pk.options[i]);
   r.picker=null;if(r.phase==='shop')nextFreeBundle();if(modCount()>=5)unlock('tinker');save();
 }
@@ -4481,9 +4788,9 @@ function runShopBuy(key){
   const pay=n=>{if(meta.caps<n)return false;meta.caps-=n;return true;};
   if(key.startsWith('perk')){const id=of.perks[+key.slice(4)];if(meta.perks.length>=perkSlots())return;if(!pay(perkRunPrice(id)))return;meta.perks.push(id);meta.equipped=meta.perks;of.sold[key]=1;if(meta.perks.length>=5)unlock('loaded');}
   else if(key.startsWith('bundle')){const b=of.bundles[+key.slice(6)];if(!pay(disc(BUNDLES[b.id].price)))return;of.sold[key]=1;openBundle(b,false);}
-  else if(key==='burn'){if(r.burnUsed||!burnRoom())return;if(!pay(disc(3)))return;r.burnUsed=true;of.sold[key]=1;openBurn(2,'Burn pile','Pick up to 2 cards to burn. They’re gone for the rest of the run.');}
+  else if(key==='burn'){if(r.burnUsed||!burnRoom())return;if(!runV('haggle')&&!pay(disc(3)))return;r.burnUsed=true;of.sold[key]=1;openBurn(2,'Burn pile','Pick up to 2 cards to burn. They’re gone for the rest of the run.');}
   else if(key.startsWith('crate-')){const k=key.slice(6);if(!pay(disc(CRATES[k].price)))return;openCrate(k);}
-  else if(key.startsWith('card')){const c=of.cards[+key.slice(4)];if(!pay(runCardPrice(c)))return;runAddCard(c);of.sold[key]=1;}
+  else if(key.startsWith('card')){const c=of.cards[+key.slice(4)];if(gear('katja')&&!r.katjaUsed)r.katjaUsed=true;else if(!pay(runCardPrice(c)))return;runAddCard(c);of.sold[key]=1;}
   else if(key.startsWith('chem')){const id=of.chems[+key.slice(4)];if(chemTotal()>=chemMax())return;if(!pay(chemRunPrice(id)))return;meta.chems[id]=(meta.chems[id]||0)+1;}
   else if(key==='upgrade'){const fr=r.freeUpgrade>0;if(fr){r.freeUpgrade--;}else if(!pay(disc(6)))return;r.workbench={mod:of.upgrade};if(!fr||!r.freeUpgrade)of.sold[key]=1;}
   else if(key==='legend'){const id=of.legend;if(!id||meta.deck.some(c=>c.legend===id))return;if(!pay(disc(LEGEND_PRICE[LEGENDS[id].rar].caps)))return;meta.deck.push({rank:'LG',suit:null,legend:id});of.sold[key]=1;}
@@ -4521,19 +4828,23 @@ function runResultHTML(ov){
 }
 function handleRunClick(d){
   const r=run();
+  if('runspecial' in d){meta.newRun.special=meta.newRun.special===d.runspecial?null:d.runspecial;render();return true;}
   if('rundeck' in d){meta.newRun.deck=d.rundeck;if(!tierUnlocked(meta.newRun.tier,d.rundeck))meta.newRun.tier='copper';render();return true;}
+  if('cashin' in d){if(r&&r.phase==='shop'&&!r.vouchUsed&&(meta.capVouch||[]).length){meta.capVouch.sort((a,b)=>b.caps-a.caps);const v=meta.capVouch.shift();meta.caps+=v.caps;r.vouchUsed=true;sfx('clink');checkState();save();}render();return true;}
+  if('tagpick' in d){if(r&&r.tagPick&&r.tagPick.includes(d.tagpick)){meta.perks.push(d.tagpick);meta.equipped=meta.perks;r.tagPick=null;save();}render();return true;}
   if('runoffice' in d){meta.run=null;screen='office';save();render();window.scrollTo(0,0);return true;}
   if('runtier' in d){meta.newRun.tier=d.runtier;render();return true;}
   if('runtoken' in d){meta.newRun.token=d.runtoken||null;render();return true;}
   if('runstart' in d){if(!meta.char){screen='pickchar';render();return true;}startRun();runPre=false;runArmed=false;render();window.scrollTo(0,0);return true;}
   if('runstoryok' in d){r.story.shift();save();render();return true;}
-  if('runbeyond' in d){if(r&&r.result==='won'&&!r.endless){r.endless=true;r.phase='event';r.result=null;r.stop=RUN_STOPS.length;r.table=0;ensureStop(r.stop);r.event=pick(Object.keys(EVENTS));r.eventResult=null;r.story=[{title:'Beyond the Strip',text:BEYOND_INTRO}];save();}render();window.scrollTo(0,0);return true;}
+  if('runbeyond' in d){if(r&&r.result==='won'&&!r.endless){r.endless=true;r.phase='event';r.result=null;r.stop=RUN_STOPS.length;r.table=0;ensureStop(r.stop);r.event=pickEvent();r.eventResult=null;r.story=[{title:'Beyond the Strip',text:BEYOND_INTRO}];save();}render();window.scrollTo(0,0);return true;}
   if('runnew' in d){meta.run=null;save();render();window.scrollTo(0,0);return true;}
   if('runabandon' in d){if(runArmed){runArmed=false;runLost();r.result='lost';save();}else runArmed=true;render();return true;}
   if('runplay' in d){runPre=true;render();return true;}
   if('runcancel' in d){runPre=false;render();return true;}
   if('runconfirm' in d){runPre=false;if(r.table===2){render();wantedPoster(()=>startRunTable());}else startRunTable();return true;}
   if('runskip' in d){skipTable();render();return true;}
+  if('tychoskip' in d){if(r&&r.phase==='table'&&r.table===2&&gear('tycho')&&!r.tychoUsed&&r.stop<RUN_STOPS.length-1){r.tychoUsed=true;r.skips++;if(isWC()){r.days-=WC_SKIP;}r.stop++;r.table=0;r.phase='event';r.event=pickEvent();save();}render();return true;}
   if('runcontinue' in d){G=null;screen='road';render();window.scrollTo(0,0);return true;}
   if('eventpick' in d){eventChoose(+d.eventpick);render();return true;}
   if('eventdone' in d){eventDone();render();return true;}
