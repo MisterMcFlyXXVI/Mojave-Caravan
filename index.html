@@ -98,8 +98,9 @@ b.lg-common{color:#ffa449}b.lg-rare{color:#5ec8ff}b.lg-legendary{color:#ff5ec4}
 .gearopt .rar{font-style:normal;align-self:flex-start;font-size:10px;padding:1px 6px;border-radius:3px;text-transform:uppercase;letter-spacing:.08em}
 .lgtip p{margin:0 0 6px}.lgtip .btn{padding:5px 14px}
 .prow.lgrow{align-items:center;gap:12px}.prow.lgrow>.card{flex:none}
-.card.legend.has-art{background-size:cover!important;background-position:center!important;justify-content:flex-end;padding:0;overflow:hidden}
-.card.legend.has-art .lgn{width:100%;background:#000000b8;padding:3px 2px;font-size:calc(var(--cw,60px)*.13)}
+.card.legend.has-art{position:relative;padding:0!important;overflow:hidden}
+.card.legend.has-art .lgart{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;border-radius:inherit}
+.card.legend.has-art .lgn{position:absolute;left:0;right:0;bottom:0;z-index:1;background:#000000c0;padding:3px 2px;font-size:calc(var(--cw,60px)*.13);text-align:center}
 .gearopt .compart{width:100%;aspect-ratio:4/5;object-fit:cover;border-radius:4px;border:1px solid #ffffff22}
 .nslot .compart.sm{width:44px;height:44px;aspect-ratio:auto;border-radius:50%;margin:0 auto;object-fit:cover;border:1px solid var(--neon)}
 .lgopt>.card{align-self:center;margin-bottom:4px}
@@ -1479,7 +1480,7 @@ const edFx=c=>edCls(c)?`<span class="edfx" aria-hidden="true"></span><span class
 function cardHTML(c){
   if(c.legend){const L=(typeof LEGENDS!=='undefined'&&LEGENDS[c.legend])||{name:'Legend',rar:'common'};
     const art=typeof ART!=='undefined'&&ART.legend[c.legend];
-    if(art)return `<div class="card legend has-art lg-${L.rar}" style="background-image:url('${art}')"><span class="lgn">${esc(L.name)}</span></div>`;
+    if(art)return `<div class="card legend has-art lg-${L.rar}"><img class="lgart" src="${art}" alt=""><span class="lgn">${esc(L.name)}</span></div>`;
     return `<div class="card legend lg-${L.rar}"><span class="lgk">Legend</span><span class="lgn">${esc(L.name)}</span><span class="lgr">${L.rar}</span></div>`;}
   if(c.rank==='JK')return `<div class="card joker${edCls(c)}"><span class="court jk"></span><span class="jkc t">JOKER</span><span class="jkc b">JOKER</span>${edFx(c)}</div>`;
   const red=isRed(c.suit), s=SUIT_CH[c.suit], num=isNum(c);
