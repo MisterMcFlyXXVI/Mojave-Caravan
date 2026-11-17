@@ -130,6 +130,10 @@ html[data-pip="1"] body::after{content:"";position:fixed;inset:0;pointer-events:
 .runpick .rp.wc{background:linear-gradient(160deg,#10284a,#0b1a30);border-color:#e8c33a55}.runpick .rp.wc small{color:#e8c33a}.runpick .rp.wc b{color:#bfe0ff}
 .runpick .rp.wc.on{border-color:#e8c33a;box-shadow:0 0 14px #e8c33a88}
 .rpcheck{position:absolute;top:8px;right:10px;font-style:normal;font-weight:700;color:var(--neon)}.rp.wc .rpcheck{color:#e8c33a}
+.installcard{max-width:460px;text-align:left!important}
+.installcard p{text-align:left}.installcard .steps li{text-align:left}
+.installcard .steps{margin:10px 0 14px;padding-left:22px;display:grid;gap:8px;line-height:1.45}
+.installcard .steps b{color:var(--neon)}
 .slotstrip{display:grid;grid-template-columns:repeat(auto-fit,minmax(92px,1fr));gap:10px;max-width:760px;margin:6px auto 16px;padding:0 6px}
 .nslot{border:2px solid #ffa44966;border-radius:8px;padding:10px 6px;min-height:64px;text-align:center;display:flex;flex-direction:column;justify-content:center;gap:4px;background:#00000040;box-shadow:0 0 6px #ffa44922,inset 0 0 6px #ffa44911}
 .nslot small{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
@@ -1691,7 +1695,7 @@ function renderHome(){
       <span class="ms num">${isWC()?`Run in progress · ${placeOf(meta.run.stop)} · ${meta.run.days} days left`:meta.charFlags&&meta.charFlags.vault?'Vault 13 saved':'Not saved yet'}</span>
     </button>
   </div>
-  ${resumeHTML()}`;
+  ${resumeHTML()}${installHTML()}`;
 }
 
 // ---------- classic: single game + campaign ----------
@@ -2366,6 +2370,9 @@ app.addEventListener('click',e=>{
   if('goalsopen' in d){rulesOpen='goals';render();return;}
   if('rulesclose' in d){rulesOpen=false;render();return;}
   if(!('fold' in d)&&screen==='match')armedFold=false;
+  if('installtab' in d){installOpen=d.installtab;render();return;}
+  if('installopen' in d){installOpen='pick';render();return;}
+  if('installclose' in d){installOpen=false;meta.installSeen=1;save();render();return;}
   if(handleOfficeClick(d))return;
   if(handleRunClick(d))return;
   if('auth' in d){doAuth(d.auth);return;}
@@ -2712,6 +2719,37 @@ const ICONS={
 };
 const TOP_SCREENS=['custom','ach','help','settings'];
 let navFrom='home';
+// ---- "Add to Home Screen" guide ----
+let installOpen=false;
+const deviceKind=()=>{const ua=navigator.userAgent||'';if(/iPhone|iPad|iPod/i.test(ua)||(/Macintosh/.test(ua)&&navigator.maxTouchPoints>1))return 'ios';if(/Android/i.test(ua))return 'android';return 'other';};
+function installHTML(){
+  const auto=!meta.installSeen&&!isStandalone()&&deviceKind()!=='other';
+  if(!installOpen&&!auto)return '';
+  const dev=installOpen?(installOpen==='pick'?deviceKind():installOpen):deviceKind();
+  const ios=`<ol class="steps">
+      <li>Open this page in <b>Safari</b>. (Other browsers on iPhone can’t add web apps.)</li>
+      <li>Tap the <b>Share</b> button: the square with an arrow pointing up. It’s at the bottom of the screen, or at the top on iPad.</li>
+      <li>Scroll down and tap <b>Add to Home Screen</b>. If you don’t see it, tap <b>Edit Actions</b> at the bottom of the list and turn it on.</li>
+      <li>Check the name says <b>Caravan</b>, then tap <b>Add</b>.</li>
+      <li>Open Caravan from its new tile on your Home Screen from now on.</li></ol>`;
+  const android=`<ol class="steps">
+      <li>Open this page in <b>Chrome</b>.</li>
+      <li>Tap the <b>⋮</b> menu in the top-right corner.</li>
+      <li>Tap <b>Add to Home screen</b> (on some phones it’s <b>Install app</b>).</li>
+      <li>Tap <b>Add</b> (or <b>Install</b>), and confirm if your phone asks where to put it.</li>
+      <li>Open Caravan from its new tile on your Home Screen from now on.</li></ol>`;
+  const tab=(id,label)=>`<button class="btn${dev===id?' hot':''}" data-installtab="${id}" aria-pressed="${dev===id}">${label}</button>`;
+  return `<div class="overlay"><div class="panel result installcard" role="dialog" aria-label="Add Caravan to your Home Screen">
+    <h2 style="font-size:24px">Put Caravan on your Home Screen</h2>
+    <p>Caravan gets its own tile, so it’s one tap away, just like an app.</p>
+    <p class="note"><b>Tip:</b> if the Home Screen version opens without your progress, sign in under Settings in both places and your save comes across.</p>
+    <div class="hubbtns" style="margin:8px 0 4px">${tab('ios','iPhone / iPad')}${tab('android','Android')}</div>
+    ${dev==='android'?android:ios}
+    ${isStandalone()?'<p class="note">You’re already playing from your Home Screen. You’re all set.</p>':''}
+    <div class="hubbtns"><button class="btn hot" data-installclose>Got it</button></div>
+    <p class="note">You can find these steps again any time in Settings.</p>
+  </div></div>`;
+}
 function topbarHTML(){
   const newAch=ACH.filter(a=>meta.ach[a.id]).length>(meta.achSeen||0);
   const b=(go,label,icon,extra='')=>`<button class="tb${screen===go?' on':''}" data-go="${go}" aria-label="${label}" title="${label}">${ICONS[icon]}${extra}</button>`;
@@ -2782,12 +2820,14 @@ function renderHelp(){
 }
 function renderSettings(){
   const o=meta.opt;
+  setTimeout(()=>{if(installOpen&&screen==='settings'&&!document.querySelector('.installcard'))app.insertAdjacentHTML('beforeend',installHTML());},0);
   const seg=(key,val,label)=>`<button class="btn${o[key]===val?' hot':''}" data-opt="${key}:${val}" aria-pressed="${o[key]===val}">${label}</button>`;
   app.innerHTML=`
   <div class="mbar">${backBtn(navFrom,'Back')}</div>
   ${accountHTML().replace('style="margin-top:16px"','')}
   <section class="panel" style="margin-top:14px">
     <h2 style="font-size:24px">Gameplay</h2>
+    <button class="prow" data-installopen style="margin-bottom:10px"><div><b>Add Caravan to your Home Screen</b><span>Step-by-step for iPhone and Android, so the game opens like an app.</span></div></button>
     <h3 class="sub">Dealer speed</h3>
     <div class="hubbtns" style="margin-top:0">${seg('speed','slow','Relaxed')}${seg('speed','normal','Normal')}${seg('speed','fast','Fast')}</div>
     <h3 class="sub">Effects</h3>
