@@ -119,6 +119,16 @@ html[data-pip="1"] body::after{content:"";position:fixed;inset:0;pointer-events:
 @keyframes pipflick{0%,96%,100%{opacity:1}97%{opacity:.82}98%{opacity:.95}}
 .wcclock{max-width:520px;margin:4px auto 12px;text-align:center;padding:10px;border:1px solid #5ec8ff66;border-radius:8px;background:#0a1a2a88;box-shadow:0 0 10px #5ec8ff33}
 .wcclock b{font-size:30px;color:#8fd8ff;text-shadow:0 0 8px #5ec8ff88;margin-right:6px}.wcclock span{display:block;font-size:12px;color:var(--muted)}
+.modes .mode.wcmode{background:linear-gradient(160deg,#143462,#0b1a30)!important;border:2px solid #e8c33a!important;box-shadow:0 0 18px #e8c33a55}
+.modes .mode.wcmode .mk{color:#e8c33a!important}.modes .mode.wcmode .mt{color:#cfe7ff!important}.modes .mode.wcmode .md{color:#d6e2f0}
+.runpick{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:6px 0 4px}
+.runpick .rp{position:relative;display:flex;flex-direction:column;gap:3px;text-align:left;padding:12px;border-radius:10px;border:2px solid #ffffff22;background:#00000040}
+.runpick .rp small{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.runpick .rp b{font:700 19px/1.1 var(--display);color:var(--bone)}.runpick .rp span{font-size:12px;color:var(--muted)}
+.runpick .rp.on{border-color:var(--neon);box-shadow:0 0 12px #ffa44966}
+.runpick .rp.wc{background:linear-gradient(160deg,#10284a,#0b1a30);border-color:#e8c33a55}.runpick .rp.wc small{color:#e8c33a}.runpick .rp.wc b{color:#bfe0ff}
+.runpick .rp.wc.on{border-color:#e8c33a;box-shadow:0 0 14px #e8c33a88}
+.rpcheck{position:absolute;top:8px;right:10px;font-style:normal;font-weight:700;color:var(--neon)}.rp.wc .rpcheck{color:#e8c33a}
 .slotstrip{display:grid;grid-template-columns:repeat(auto-fit,minmax(92px,1fr));gap:10px;max-width:760px;margin:6px auto 16px;padding:0 6px}
 .nslot{border:2px solid #ffa44966;border-radius:8px;padding:10px 6px;min-height:64px;text-align:center;display:flex;flex-direction:column;justify-content:center;gap:4px;background:#00000040;box-shadow:0 0 6px #ffa44922,inset 0 0 6px #ffa44911}
 .nslot small{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
@@ -1671,7 +1681,13 @@ function renderHome(){
       <span class="mk">Roguelite</span>
       <span class="mt">The Road</span>
       <span class="md">A roguelite run from Goodsprings to the Strip. Start with a plain deck, build it up between tables, and survive the bosses. A little Grit gets you past a bad table or two, but run out and the run is over.</span>
-      <span class="ms num">${runLive()?`Run in progress · ${meta.run.stop>=RUN_STOPS.length?`mile ${meta.run.stop-RUN_STOPS.length+1} beyond the Strip`:`stop ${meta.run.stop+1} of ${RUN_STOPS.length}`} · ${meta.caps} caps`:`Runs won: ${meta.runsWon||0}`}</span>
+      <span class="ms num">${runLive()&&!isWC()?`Run in progress · ${meta.run.stop>=RUN_STOPS.length?`mile ${meta.run.stop-RUN_STOPS.length+1} beyond the Strip`:`stop ${meta.run.stop+1} of ${RUN_STOPS.length}`} · ${meta.caps} caps`:`Runs won: ${meta.runsWon||0}`}</span>
+    </button>
+    <button class="mode wcmode" data-wcgo>
+      <span class="mk">Special run · Fallout 1</span>
+      <span class="mt">The Water Chip</span>
+      <span class="md">Vault 13’s water chip is broken. Play your way from Vault 15 to the Cathedral before 150 days of water run out. Fallout 1 bosses, companions and secrets.</span>
+      <span class="ms num">${isWC()?`Run in progress · ${placeOf(meta.run.stop)} · ${meta.run.days} days left`:meta.charFlags&&meta.charFlags.vault?'Vault 13 saved':'Not saved yet'}</span>
     </button>
   </div>
   ${resumeHTML()}`;
@@ -4606,10 +4622,14 @@ function renderRunSetup(){
   const T2=TUTORS['-2'];
   app.innerHTML=`
   <div class="mbar">${backBtn('home','Modes')}</div>
-  <section class="hero small"><div class="neon sm">The Road</div><p class="tagline">Six stops to the Strip. You start with 1 Grit; run out and one more loss ends the run.</p></section>
+  <section class="hero small"><div class="neon sm">${nr.special==='waterchip'?'The Water Chip':'The Road'}</div><p class="tagline">${nr.special==='waterchip'?'Seven stops to save Vault 13, and 150 days of water to do it. You start with 1 Grit; run out and one more loss ends the run.':'Six stops to the Strip. You start with 1 Grit; run out and one more loss ends the run.'}</p></section>
   ${meta.char?`<div class="charstrip"><img src="${portrait(meta.char)}" alt=""><div><small>Character</small><b>${esc(CHARS[meta.char].name)}</b><span>${CHARS[meta.char].traits.map(t=>t[1]).join(' · ')}</span></div><button class="btn" data-go="pickchar">Change</button></div>`:''}
   <section class="panel">
     <h2 style="font-size:24px">New run</h2>
+    <div class="runpick" role="radiogroup" aria-label="Which run">
+      <button class="rp${nr.special?'':' on'}" role="radio" aria-checked="${!nr.special}" data-runspecial="">${!nr.special?'<i class="rpcheck">✓</i>':''}<small>Regular run</small><b>The Road</b><span>Goodsprings to the Strip. Six stops.</span></button>
+      <button class="rp wc${nr.special==='waterchip'?' on':''}" role="radio" aria-checked="${nr.special==='waterchip'}" data-runspecial="waterchip">${nr.special==='waterchip'?'<i class="rpcheck">✓</i>':''}<small>Special run · Fallout 1</small><b>The Water Chip</b><span>Vault 15 to the Cathedral. Seven stops, 150 days of water.</span></button>
+    </div>
     <h3 class="sub">Deck</h3>
     <div class="decklist">${DECKS.map((d,i)=>{const ok=deckUnlocked(d.id),on=nr.deck===d.id;return `<button class="deckopt${on?' on':''}${ok?'':' locked'}" data-rundeck="${d.id}" ${ok?'':'disabled'} aria-pressed="${on}">
       <span class="deckprev" data-deck="${d.id}"><div class="card back"></div>${cardHTML({rank:'K',suit:'H'})}${ok?'':'<i class="lockbadge sm" aria-hidden="true">🔒︎</i>'}</span>
@@ -4619,8 +4639,6 @@ function renderRunSetup(){
     <p class="note">${esc(TIERS[tierIdx(nr.tier)].desc)}${(()=>{const n=deckTierCount(nr.deck);return n<TIERS.length?` Win with this deck on the ${TIERS[n-1].name} to unlock the ${TIERS[n].name} for it.`:'';})()}</p>
     <h3 class="sub">Token</h3>
     ${meta.tokens.length?`<div class="hubbtns" style="margin-top:0"><button class="btn${!nr.token?' hot':''}" data-runtoken="">None</button>${meta.tokens.map(tk=>`<button class="btn${nr.token===tk?' hot':''}" data-runtoken="${tk}" title="${esc(TOKENS[tk].desc)}">${esc(TOKENS[tk].name)}</button>`).join('')}</div><p class="note">${nr.token?esc(TOKENS[nr.token].desc):'Bring one token into the run.'}</p>`:'<p class="note">Win runs to unlock tokens: small boosts you can bring into a run.</p>'}
-    <h3 class="sub">Special runs</h3>
-    <div class="decklist"><button class="deckopt${nr.special==='waterchip'?' on':''}" data-runspecial="waterchip" aria-pressed="${nr.special==='waterchip'}"><span class="dtxt"><b>The Water Chip <i class="tag">FALLOUT 1</i></b><span>Vault 13’s water chip is broken. Seven stops from Vault 15 to the Cathedral, with 150 days of water. Every table costs days, so you’ll have to choose what to skip.</span></span></button></div>
     <h3 class="sub">Loadout</h3>
     <div class="loadline"><p class="note" style="margin:0">${loadoutLine()}</p><button class="btn" data-go="office">Mojave Express ${scripHTML(meta.scrip||0)}</button></div>
     <button class="btn hot" data-runstart style="width:100%;margin-top:10px;font-size:16px;padding:12px">${nr.special==='waterchip'?'Leave Vault 13':'Start the run'}</button>
@@ -4828,7 +4846,8 @@ function runResultHTML(ov){
 }
 function handleRunClick(d){
   const r=run();
-  if('runspecial' in d){meta.newRun.special=meta.newRun.special===d.runspecial?null:d.runspecial;render();return true;}
+  if('wcgo' in d){meta.newRun=meta.newRun||{deck:'plain',tier:'copper',token:null};if(!runLive())meta.newRun.special='waterchip';screen='road';save();render();window.scrollTo(0,0);return true;}
+  if('runspecial' in d){meta.newRun.special=d.runspecial||null;render();return true;}
   if('rundeck' in d){meta.newRun.deck=d.rundeck;if(!tierUnlocked(meta.newRun.tier,d.rundeck))meta.newRun.tier='copper';render();return true;}
   if('cashin' in d){if(r&&r.phase==='shop'&&!r.vouchUsed&&(meta.capVouch||[]).length){meta.capVouch.sort((a,b)=>b.caps-a.caps);const v=meta.capVouch.shift();meta.caps+=v.caps;r.vouchUsed=true;sfx('clink');checkState();save();}render();return true;}
   if('tagpick' in d){if(r&&r.tagPick&&r.tagPick.includes(d.tagpick)){meta.perks.push(d.tagpick);meta.equipped=meta.perks;r.tagPick=null;save();}render();return true;}
