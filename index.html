@@ -4791,7 +4791,7 @@ function renderRunShop(){
       <h3 class="sub">Card bundles</h3>
       <div class="plist">${of.bundles.map((b,i)=>`<div class="prow"><div><b>${esc(bundleName(b))}</b><span>${esc(bundleDesc(b))}</span></div>${buyBtn('bundle'+i,disc(BUNDLES[b.id].price))}</div>`).join('')}</div>
       <h3 class="sub">Burn pile</h3>
-      <div class="prow"><div><b>Toss cards in the fire</b><span>Throw up to 2 cards from your deck into the fire. A thinner deck draws your best cards more often. Once per visit; your deck can’t go below ${MIN_DECK}.</span></div>${buyBtn('burn',disc(3),r.burnUsed||!burnRoom())}</div>
+      <div class="prow"><div><b>Toss cards in the fire</b><span>Throw up to 2 cards from your deck into the fire. A thinner deck draws your best cards more often. Once per visit; your deck can’t go below ${MIN_DECK}.${runV('haggle')?' <b>Haggler: free, and pays 2 caps per card burned.</b>':''}</span></div>${runV('haggle')?`<button class="btn${r.burnUsed||!burnRoom()?'':' hot'}" data-rbuy="burn" ${r.burnUsed||!burnRoom()||sold('burn')?'disabled':''}>${sold('burn')?'Sold':'Free'}</button>`:buyBtn('burn',disc(3),r.burnUsed||!burnRoom())}</div>
       <h3 class="sub">Crates</h3>
       <div class="plist">${Object.entries(CRATES).map(([k,c])=>`<div class="prow"><div><b>${c.name}</b><span>${c.desc}</span></div>${buyBtn('crate-'+k,disc(c.price),k==='perk'&&full)}</div>`).join('')}</div>
       <h3 class="sub">Cards</h3>
@@ -4825,7 +4825,7 @@ function pickerHTML(){
 }
 function pickerDone(){
   const r=run(),pk=r.picker;if(!pk)return;
-  if(pk.kind==='burn'){const set=new Set(pk.sel.slice(0,burnRoom()));meta.deck=meta.deck.filter((c,i)=>!set.has(i));if(runV('haggle')&&set.size)meta.caps+=2*set.size;if(r.phase==='event')r.eventResult=`You burned ${set.size} card${set.size===1?'':'s'}.`;}
+  if(pk.kind==='burn'){const set=new Set(pk.sel.slice(0,burnRoom()));meta.deck=meta.deck.filter((c,i)=>!set.has(i));let paid=0;if(runV('haggle')&&set.size){paid=2*set.size;meta.caps+=paid;if(typeof sfx==='function')sfx('clink');if(typeof toast==='function')toast({name:'Haggler',desc:`You burned ${set.size} card${set.size===1?'':'s'} and pocketed ${paid} caps.`});}if(r.phase==='event')r.eventResult=`You burned ${set.size} card${set.size===1?'':'s'}${paid?` and pocketed ${paid} caps`:''}.`;}
   else for(const i of pk.sel.slice(0,pk.keep))runAddCard(pk.options[i]);
   r.picker=null;if(r.phase==='shop')nextFreeBundle();if(modCount()>=5)unlock('tinker');save();
 }
