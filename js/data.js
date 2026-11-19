@@ -175,7 +175,7 @@ CHARS.snipsnip={name:'Snip Snip',tag:'Mr. Handy surgical unit',bio:'Three eyes, 
 CHARS.threedog={name:'Three Dog',tag:'Galaxy News Radio DJ',bio:'Ow-ooooo! The voice of the Capital Wasteland, fighting the good fight one card at a time, live on air.',locked:true,unlock:'Beat the Strip with three different characters.',
   traits:[['+','Request Line','Once per hand, swap a card in your hand for the top card of your deck. Doesn’t use your turn.'],['+','The Good Fight','Every boss you beat pays 2 extra NCR dollars.'],['−','Public Enemy','Every boss table has one extra boss rule. Talon Company listens to the radio too.']]};
 CHARS.benny={name:'Benny',tag:'Chairmen boss · checkered suit',bio:'Ring-a-ding-ding, baby. Smooth talker, sharp dresser, and he’s holding a chip that isn’t his.',locked:true,unlock:'Beat the Strip on the Silver Road or harder.',
-  traits:[['+','Ring-a-Ding-Ding','Ties go to Benny: if your caravan matches the dealer’s, you sell it.'],['+','The Platinum Chip','Starts every run with the Platinum Chip Legend card in his deck.']]};
+  traits:[['+','Ring-a-Ding-Ding','Ties go to Benny: if your caravan matches the dealer’s, you sell it.'],['+','The Platinum Chip','Starts every run with the Platinum Chip Legend card in his deck.'],['−','Double-Crosser','Nobody trusts him: every dealer holds 1 extra card.']]};
 CHARS.vaultdweller={name:'Vault Dweller',tag:'Vault 13 · blue and gold',bio:'Born and raised underground. Sent out with a canteen and a deadline to save everyone they know.',locked:true,unlock:'Save Vault 13 on the Water Chip run.',
   traits:[['+','Tag Skills','At the start of every run, choose 1 of 3 perks for free.'],['+','Vault Rations','A free Saddlebag bundle at every trading post.'],['−','Fresh Out of the Vault','Starts every run with 5 fewer caps.']]};
 CHARS.harold={name:'Harold',tag:'Ghoul · has a tree named Bob',bio:'An old ghoul with a tree growing out of his head. He named it Bob. They get along.',locked:true,unlock:'On the Water Chip run, beat Set at Necropolis without losing a table.',
@@ -192,7 +192,7 @@ const CHAR_BIO={
     story:'Ronald Raygun stirs his mash in a rusted oil drum behind a collapsed tobacco warehouse on the James River, and broadcasts a pirate radio show out of the same shack. The Raygun Hour is mostly wasteland news, call-ins and ads for his own moonshine, which comes in a jug with a skull on it for legal reasons. He came west in the same battered hat and coat, chasing a bigger audience and a thirstier market. He found both at the card tables.'},
   matt:{stats:[5,5,5,5,5,5,5],quote:'Yeah. Okay. Sure.',
     story:'Matt grew up somewhere. He had a job, then a different job. Now he sits on a crate behind a scrap fence, holding a stick, while a family of molerats goes about its day around him. They’ve stopped noticing him. Most people have. When he walks into a room, the color quietly leaves it. Nobody knows why Matt is on the Road. Matt doesn’t really know either.'},
-  greg:{stats:[10,2,10,8,4,4,6],quote:'Alex says you look like a good friend.',
+  greg:{stats:[10,2,8,8,4,4,6],quote:'Alex says you look like a good friend.',
     story:'Nobody’s sure where Greg came from, including Greg. He’s eight feet of green muscle with the manners of a church usher and a mustache he combs twice a day. Alex, a hand-stitched doll with yarn hair, offers advice on every hand. Greg always listens.'},
   jeanita:{stats:[2,10,8,6,8,5,7],quote:'Front desk, how may I direct your call? …Please hold.',
     story:'Jeanita was manning the front desk of a swanky hotel, a phone on each ear, when the bombs fell. The receivers fused to her head, the pantsuit held together (mostly), and she never left her post. Two centuries of overhearing every guest have made her the best-informed player in the wasteland. She staples her hair back on every morning before her shift.'},
@@ -201,11 +201,11 @@ CHAR_BIO.snipsnip={stats:[5,7,8,2,8,8,4],quote:'Snip snip! Hold still, this won�
   story:'Snip Snip came off the line as a top-of-the-range surgical Mr. Handy, three arms of scalpels, saws and a bonesaw that hums when he’s happy. Two centuries without a patient have made him very, very eager. He took up Caravan because a caravan, like a patient, always has something you can take off.'};
 CHAR_BIO.threedog={stats:[4,6,5,10,7,4,8],quote:'Ow-ooooo! This is Three Dog, and you’re listening to Galaxy News Radio!',
   story:'Three Dog has been telling the truth to the Capital Wasteland one broadcast at a time, playing the same handful of records between news of who’s winning and who’s getting shot. He came west chasing a story about a card game on the Strip, and figured he might as well sit down and play it.'};
-CHAR_BIO.benny={stats:[3,6,3,10,7,9,8],quote:'Ring-a-ding-ding, baby. The house always wins, and tonight I’m the house.',
+CHAR_BIO.benny={stats:[3,6,4,10,7,9,8],quote:'Ring-a-ding-ding, baby. The house always wins, and tonight I’m the house.',
   story:'Benny runs the Chairmen out of the Tops, wears a checkered suit you can see from orbit, and carries a platinum chip that a certain courier would very much like back. He plays Caravan the way he does business: all charm up front and a knife behind the back.'};
 CHAR_BIO.vaultdweller={stats:[5,6,5,5,7,6,6],quote:'The Overseer said 150 days. I’m going to need about 149 of them.',
   story:'The Vault Dweller had never seen the sky until the vault door rolled open. Now they have a canteen, a Pip-Boy 2000, a blue jumpsuit with a big yellow 13 on the back, and a whole vault counting on them. They learned Caravan from a trader in Shady Sands and turned out to be annoyingly good at it.'};
-CHAR_BIO.harold={stats:[4,6,10,7,8,4,5],quote:'Don’t mind Bob. He’s friendly.',
+CHAR_BIO.harold={stats:[4,6,8,7,8,4,5],quote:'Don’t mind Bob. He’s friendly.',
   story:'Harold has been wandering the wasteland since before most people were born, getting a little greener and a little leafier every year. The tree on his head is named Bob. Harold talks to Bob. Bob, so far, has not talked back, which Harold takes as a sign of good manners.'};
 const ORIGINALS=['vladmira','nuke','chevy','ronald','matt'];
 // Rival roster: who you meet on the Road depends on who you play.

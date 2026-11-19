@@ -147,11 +147,12 @@ const ok = (name, cond, extra) => { cond ? pass++ : fail++; console.log(`${cond 
     fresh('matt'); o.chemsMatt = chemMax(); o.ceilMatt = rules(run()).range.p[1];
     fresh('nuke'); o.chemsNuke = chemMax(); fresh('snipsnip'); o.chemsSnip = chemMax();
     fresh('matt', ['fawkes']); o.chemsFawkes = chemMax();
+    { const bn = fresh('benny'); o.bennyDealerHand = rules(bn).hand.a; }    // Double-Crosser: dealers hold 1 extra card
     // Perception: bundle size, dealer's hand
     fresh('jeanita'); o.seeJeanita = bundleSee({ id: 'saddlebag' }); fresh('vladmira'); o.seeVlad = bundleSee({ id: 'saddlebag' }); fresh('matt'); o.seeMatt = bundleSee({ id: 'saddlebag' });
     fresh('jeanita'); let r = run(); r.phase = 'table'; startRunTable(); o.peekJeanita = !!G.peek; fresh('matt'); r = run(); r.phase = 'table'; startRunTable(); o.peekMatt = !!G.peek;
     // Endurance: starting Grit, Water Chip days
-    o.grit = ['harold', 'benny', 'chevy', 'matt'].map((c) => fresh(c).grit).join(','); fresh('harold'); o.wcHarold = wcCost(0); fresh('matt'); o.wcMatt = wcCost(0);
+    o.grit = ['harold', 'benny', 'chevy', 'matt'].map((c) => fresh(c).grit).join(',') + '|' + fresh('chevy', ['armor']).grit + '|' + SPX.grit(3) + ',' + SPX.grit(9) + ',' + SPX.grit(10); fresh('harold'); o.wcHarold = wcCost(0); fresh('matt'); o.wcMatt = wcCost(0);
     // Charisma: prices
     o.disc = ['vladmira', 'ronald', 'snipsnip', 'matt'].map((c) => { fresh(c); return disc(100); }).join(',');
     // Intelligence: rerolls, bundle keep, bounties
@@ -181,11 +182,12 @@ const ok = (name, cond, extra) => { cond ? pass++ : fail++; console.log(`${cond 
   ok('gear adds to and takes from stats, clamped to 1-10', SP.gearAdds && SP.gearTakes && SP.floor);
   ok('Strength sets the chem pouch (Nuke and Snip Snip keep their own) and the sell ceiling at 9+', SP.chemsVlad === 5 && SP.ceilVlad === 27 && SP.chemsMatt === 3 && SP.ceilMatt === 26 && SP.chemsNuke === 5 && SP.chemsSnip === 0 && SP.chemsFawkes === 4, `${SP.chemsVlad}/${SP.ceilVlad}/${SP.chemsMatt}/${SP.chemsNuke}/${SP.chemsSnip}/${SP.chemsFawkes}`);
   ok('Perception changes bundle size, and 10 shows the dealer’s hand', SP.seeJeanita === 5 && SP.seeVlad === 2 && SP.seeMatt === 3 && SP.peekJeanita && !SP.peekMatt, `${SP.seeJeanita}/${SP.seeVlad}/${SP.seeMatt}`);
-  ok('Endurance sets starting Grit and Water Chip day costs', SP.grit === '2,0,1,1' && SP.wcHarold === 5 && SP.wcMatt === 6, `${SP.grit}`);
+  ok('Endurance 10 adds a starting Grit (reachable with gear), 3 or less costs one, and Water Chip days shrink at 7+', SP.grit === '1,1,1,1|2|-1,0,1' && SP.wcHarold === 5 && SP.wcMatt === 6, `${SP.grit}`);
   ok('Charisma moves trading post prices', SP.disc === '85,80,110,100', SP.disc);
   ok('Intelligence cheapens rerolls, keeps more bundle cards and halves bounties when very low', SP.rerollNuke === 2 && SP.rerollMatt === 3 && SP.keepNuke === 2 && SP.keepMatt === 1 && SP.bountyHalf, `${SP.rerollNuke}/${SP.keepNuke}`);
   ok('Agility changes the opening hand and frees a discard once per hand', SP.deal === '7,9,8' && SP.quickOn && SP.quickFree && SP.quickOnce, SP.deal);
   ok('Luck tilts rarity weights (still summing to 100) and Lucky cards draw 2 at 9+', SP.luckSkews && SP.luckyDraw === 2 && SP.luckyDrawMatt === 1);
+  ok('Benny’s Double-Crosser: every dealer holds an extra card', SP.bennyDealerHand === 6, SP.bennyDealerHand);
   ok('gear can lift a stat over an event threshold', !SP.gateBase && SP.gateGear);
   ok('SPECIAL shows on the setup screen, bio cards, the Mojave Express and the in-run kit', SP.setupPanel && SP.bio && SP.office && SP.kit);
 
@@ -201,6 +203,21 @@ const ok = (name, cond, extra) => { cond ? pass++ : fail++; console.log(`${cond 
   }
   ok('the opening can be played with real clicks', await page.evaluate(() => G.setupLeft.p === 0));
 
+  // ---- the simulation bot ----
+  const botPage = await browser.newPage();
+  await botPage.goto('file://' + path.resolve(__dirname, '..', 'index.html')); await botPage.waitForTimeout(1200);
+  await botPage.addScriptTag({ path: path.join(__dirname, 'bot.js') });
+  const bots = await botPage.evaluate(() => {
+    const res = { ran: 0, bad: [], abil: {} };
+    for (const ch of CHAR_ORDER) for (const skill of ['regular', 'expert']) for (let k = 0; k < 2; k++) {
+      const r = BOT.runOne({ seed: `smoke-${ch}-${skill}-${k}`, char: ch, skill, learned: { perk: {}, rule: {} } });
+      res.ran++; if (!['won', 'lost'].includes(r.result) || r.errors.length) res.bad.push(`${ch}/${skill}: ${r.result} ${r.errors[0] || ''}`.slice(0, 160));
+      for (const [a, n] of Object.entries(r.abil)) { const key = ch + ':' + a; res.abil[key] = (res.abil[key] || 0) + n; }
+    }
+    return res;
+  });
+  ok('the bot finishes runs as every character at regular and expert skill, with no errors', bots.ran === 48 && bots.bad.length === 0, bots.bad[0] || `${bots.ran} runs`);
+  ok('the bot really uses abilities (Greg’s hug, Chevy’s turret, chems)', (bots.abil['greg:hug'] || 0) > 0 && (bots.abil['chevy:turret'] || 0) > 0 && Object.keys(bots.abil).some((k) => k.endsWith(':chem')), JSON.stringify(Object.fromEntries(Object.entries(bots.abil).filter(([k]) => /greg:hug|chevy:turret/.test(k)))));
   ok('no script errors in the whole session', errors.length === 0, errors[0] || '');
   await browser.close();
   console.log(`\n${pass} passed, ${fail} failed`);
