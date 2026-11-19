@@ -1473,7 +1473,7 @@ function freshMeta(){
     classic:{deck:null,wins:0,losses:0,rec:{},camp:null}};
   return meta;
 }
-function save(){meta.match=G&&!G.over?G:null;meta.updatedAt=Date.now();try{localStorage.setItem(SAVE_KEY,JSON.stringify(meta));}catch(e){}if(typeof schedulePush==='function')schedulePush();}
+function save(){meta.match=G&&!G.over?G:null;meta.updatedAt=Date.now();try{codexSync();}catch(e){}try{localStorage.setItem(SAVE_KEY,JSON.stringify(meta));}catch(e){}if(typeof schedulePush==='function')schedulePush();}
 function load(){try{const s=localStorage.getItem(SAVE_KEY);if(s)return JSON.parse(s);}catch(e){}return null;}
 function migrate(m){
   // special finishes are for number cards only
@@ -1518,6 +1518,7 @@ function migrate(m){
   {const L=(m.legends||[]).map(id=>id==='goldbar'?'starcap':id);if(L.includes('mesmetron')&&!m.legendsFixed)L.push('bobble');m.legends=[...new Set(L)];m.legendsFixed=1;}
   if(m.run&&Array.isArray(m.deck))m.deck.forEach(c=>{if(c&&c.legend==='goldbar')c.legend='starcap';});
   m.charFlags=m.charFlags||{};
+  m.codex=m.codex||{};m.codex.perk=m.codex.perk||{};m.codex.boss=m.codex.boss||{};m.codex.event=m.codex.event||{};
   return m;
 }
 
@@ -2223,7 +2224,7 @@ function render(){
   const fxNow=G&&G.fx&&!G.fx.done?{...G.fx}:null, prevScreen=document.body.dataset.screen;
   document.getElementById('sky').style.display=screen==='match'?'none':'block';
   document.body.dataset.screen=screen;
-  const R={help:renderHelp,settings:renderSettings,custom:renderCustom,home:renderHome,road:renderRoadRun,shop:renderRoadRun,classic:renderClassic,build:renderBuild,match:renderMatch,campaign:renderCampaign,rundown:renderRundown,town:renderTown,journal:renderJournal,vendor:renderVendor,look:renderLook,ach:renderAch,pickchar:renderPickChar,office:renderOffice};
+  const R={help:renderHelp,settings:renderSettings,custom:renderCustom,home:renderHome,road:renderRoadRun,shop:renderRoadRun,classic:renderClassic,build:renderBuild,match:renderMatch,campaign:renderCampaign,rundown:renderRundown,town:renderTown,journal:renderJournal,vendor:renderVendor,look:renderLook,ach:renderAch,pickchar:renderPickChar,office:renderOffice,codex:renderCodex};
   (R[screen]||renderHome)();
   if(screen!=='match')app.insertAdjacentHTML('afterbegin',topbarHTML());
   if(typeof setDeckAttr==='function')setDeckAttr();
@@ -2827,6 +2828,7 @@ const ROAD_RULES=`
   <li><b>Boss rewards:</b> beat a boss (other than the last) and choose one of three uncommon-or-better perks for free, or take caps instead. With full perk slots, sell one in the trading post first.</li>
   <li><b>Road events:</b> some choices need a stat from your character’s bio: Strength, Smarts, Charm, Grit or Luck. Choices you can’t take show what they need, so different characters see different options.</li>
   <li><b>Seeds and the daily run:</b> every run has a seed, shown on the map. The same seed gives the same bosses, shops and events. The Daily run is the same road for everyone today (set character, Plain deck, Copper, no gear), and your first finish each day pays NCR dollars and builds a streak.</li>
+  <li><b>The Codex</b> (from the Road menu or after a run) remembers every perk, boss and event you’ve met, and each run ends with a summary of how it went.</li>
   <li><b>Perks</b> come in four rarities. You start with 3 slots, get a 4th from Boulder City on and a 5th from Fremont Street on. Sell a perk to make room.</li>
   <li><b>Card upgrades</b>: Steel can’t be Jacked, Gilded pays caps when it sells, Lucky draws an extra card, Glass is worth double but breaks, Wild matches any suit.</li>
   <li><b>Chems</b> are one-use boosts during a hand, one per turn, after the opening.</li>
@@ -4294,7 +4296,12 @@ function startRun0(seed){
   if(meta.char==='vaultdweller'){const pool=Object.keys(PERK_RARITY).filter(p=>PERK_RARITY[p]!=='legendary'&&!meta.perks.includes(p));meta.run.tagPick=shuffle(pool).slice(0,3);}
   save();
 }
-function rollPerkOffer(n){
+// Codex: remembers every perk, boss and event you've met. Perk state bits: 1 seen, 2 owned, 4 won a run with it.
+const cdx=()=>{meta.codex=meta.codex||{};const c=meta.codex;c.perk=c.perk||{};c.boss=c.boss||{};c.event=c.event||{};return c;};
+function seePerks(list){const c=cdx();for(const id of list)c.perk[id]=(c.perk[id]||0)|1;}
+function codexSync(){if(!meta||!meta.perks)return;const c=cdx();for(const id of meta.perks)c.perk[id]=(c.perk[id]||0)|3;}
+function rollPerkOffer(n){const o=rollPerkOffer0(n);seePerks(o);return o;}
+function rollPerkOffer0(n){
   const owned=new Set(meta.perks);const out=[];
   for(let k=0;k<n*6&&out.length<n;k++){
     const roll=Math.random()*100;let rar='common',acc=0;for(const [r,w] of Object.entries(RARITY_WEIGHT)){acc+=w;if(roll<acc){rar=r;break;}}
@@ -4304,7 +4311,7 @@ function rollPerkOffer(n){
   return out;
 }
 // Boss reward: three perks, uncommon or better. Pick one free, or take caps instead.
-function rollBossPerks(){const r=run();return withSeed('bossperk:'+(r?r.stop:0)+':'+(r?r.hands||0:0),rollBossPerks0);}
+function rollBossPerks(){const r=run(),o=withSeed('bossperk:'+(r?r.stop:0)+':'+(r?r.hands||0:0),rollBossPerks0);seePerks(o);return o;}
 function rollBossPerks0(){
   const owned=new Set(meta.perks),out=[],W=[['uncommon',50],['rare',40],['legendary',10]];
   for(let k=0;k<40&&out.length<3;k++){
@@ -4488,6 +4495,7 @@ function applyTag(tag){
 function runFinish(winner,ov){
   const r=run(),s=G.runStop,t=G.runTable,lanes=lanesResult(G);
   ov.run=true;r.hands++;const before=meta.caps;
+  if(t===2){const bd=G.dealer||{},c=cdx(),bb=c.boss[bd.name]=c.boss[bd.name]||{f:0,w:0};bb.f++;if(winner==='p')bb.w++;bb.rv=bd.rival||null;bb.art=bd.art||null;}
   const extras=[];
   if(G.goldCaps){meta.caps+=G.goldCaps;extras.push(`${G.goldCaps} from Golden cards`);}
   // glass breaks
@@ -4554,18 +4562,21 @@ function runFinish(winner,ov){
     if(r.days<=0){r.days=0;r.dry=true;ov.runOver=true;r.phase='over';r.result='lost';{const b=r.stop+1;r.scrip=(r.scrip||0)+b;meta.scrip=(meta.scrip||0)+b;r.scripMiles=b;}unlock('wc_dry');
       meta.runHist=meta.runHist||[];meta.runHist.unshift({char:r.char,deck:r.deck,tier:r.tier,stop:r.stop,table:r.table,won:r.won,result:'lost',special:'waterchip',at:Date.now()});meta.runHist=meta.runHist.slice(0,12);}}
   if(has('scav')&&!ov.runOver){const pool=G.a.cv.flat().map(e=>e.card).filter(c=>isNum(c)&&c.suit);if(pool.length){const c=pick(pool);runAddCard({rank:c.rank,suit:c.suit});extras.push(`Scavenger: you pocketed the dealer’s ${cardName(c)}`);}}
+  {const rs=r.rs=r.rs||{},g=G.stats||{},add=(k,v)=>{rs[k]=(rs[k]||0)+(v||0);};
+   add('turns',g.turns);add('kings',g.kings);add('jacks',g.jacks);add('jokers',g.jokers);add('discards',g.discards);
+   if(winner==='p'){add('caps',Math.max(0,meta.caps-before));rs.best=Math.max(rs.best||0,ov.win||0);if(lanes.every(x=>x==='p'))add('sweeps',1);if(ov.bountyWon)add('bounties',1);}}
   ov.extras=extras;ov.delta=meta.caps-before;
 }
 function runLost(abandon){
   const r=run();
   if(r.endless){r.phase='over';r.result='won';r.fellBeyond=true;r.unlocked=[];const h=(meta.runHist||[])[0];if(h)h.beyond=mileOf(r.stop);return;}
-  r.phase='over';r.result='lost';
+  r.phase='over';r.result='lost';r.endedAt=Date.now();
   if(!abandon){const b=r.stop+1;r.scrip=(r.scrip||0)+b;meta.scrip=(meta.scrip||0)+b;r.scripMiles=b;recordDaily(r,false);}
   meta.runHist=meta.runHist||[];meta.runHist.unshift({char:r.char,deck:r.deck,tier:r.tier,stop:r.stop,table:r.table,won:r.won,result:'lost',at:Date.now()});meta.runHist=meta.runHist.slice(0,12);
   meta.bestStop=Math.max(meta.bestStop||0,r.stop);
 }
 function runWon(ov){
-  const r=run();r.phase='over';r.result='won';recordDaily(r,true);
+  const r=run();r.phase='over';r.result='won';recordDaily(r,true);r.endedAt=Date.now();{const c=cdx();for(const id of meta.perks)c.perk[id]=(c.perk[id]||0)|4;}
   meta.runsWon=(meta.runsWon||0)+1;
   meta.runHist=meta.runHist||[];meta.runHist.unshift({char:r.char,deck:r.deck,tier:r.tier,stop:RUN_STOPS.length,won:r.won,result:'won',at:Date.now()});meta.runHist=meta.runHist.slice(0,12);
   meta.bestStop=RUN_STOPS.length;
@@ -4653,6 +4664,7 @@ function eventChoose(i){
   if(ch.req&&statOf(ch.req[0])<ch.req[1])return;
   if(ch.cost&&meta.caps<ch.cost)return;
   if(ch.cost)meta.caps-=ch.cost;
+  {const c=cdx();c.event[r.event]=(c.event[r.event]||0)+1;}
   const res=withSeed('ev:'+r.stop+':'+i,()=>ch.act());if(res!=null)r.eventResult=res;save();
 }
 function eventDone(){const r=run();r.event=null;r.eventResult=null;r.phase='shop';openShop();save();}
@@ -4831,9 +4843,50 @@ function renderRunSetup(){
     </div>
   </section>
   <section class="panel" style="margin-top:14px">
-    <h2 style="font-size:22px">Your record</h2>
+    <div class="sect-h"><h2 style="font-size:22px">Your record</h2><button class="btn" data-go="codex">Codex</button></div>
     <p class="note">Runs won: ${meta.runsWon||0} · Best: ${meta.bestStop>=RUN_STOPS.length?'Reached Vegas':meta.bestStop?`stop ${meta.bestStop+1}`:'none yet'}${meta.endlessBest?` · Beyond the Strip: ${TIERS.map(t=>meta.endlessBest[t.id]?`${t.name.split(' ')[0]} ${meta.endlessBest[t.id]}`:null).filter(Boolean).join(', ')}`:''}</p>
     ${(meta.runHist||[]).length?`<div class="hist">${meta.runHist.slice(0,6).map(h=>`<div class="${h.result}"><b>${h.result==='won'?'Won':'Lost'}</b> ${esc(CHARS[h.char]?CHARS[h.char].name:'?')} · ${esc(DECKS[deckIdx(h.deck)].name)} · ${esc(TIERS[tierIdx(h.tier)].name)}${h.result==='lost'?` · stop ${h.stop+1}`:''}${h.beyond?` · +${h.beyond-1} beyond`:''} · ${h.won} tables</div>`).join('')}</div>`:''}
+  </section>`;
+}
+function runStatsHTML(r){
+  if(!r.hands)return '';
+  const rs=r.rs||{},mins=Math.max(1,Math.round(((r.endedAt||Date.now())-(r.started||Date.now()))/60000));
+  const rows=[['hands',r.hands],['tables won',r.won],['skipped',r.skips||0],['caps earned',rs.caps||0],['best payout',rs.best||0],['triple sales',rs.sweeps||0],['bounties',rs.bounties||0],['Kings played',rs.kings||0],['Jacks played',rs.jacks||0],['Jokers played',rs.jokers||0],['turns',rs.turns||0],['discards',rs.discards||0],['minutes',mins]];
+  return `<h3 class="sub">How it went</h3><div class="hubbtns" style="justify-content:center">${rows.map(([l,v])=>`<span class="pill num"><b>${v}</b>&nbsp;${l}</span>`).join('')}</div>
+    ${meta.perks.length?`<p class="note" style="text-align:center"><b>Perks:</b> ${meta.perks.map(id=>esc(PERKS[id].name)).join(' · ')}</p>`:''}
+    <p class="note" style="text-align:center"><b>Deck:</b> ${esc(deckSummary(meta.deck))}${modCount()?` ${modCount()} upgraded.`:''}</p>`;
+}
+let codexTab='perks';
+const codexBosses=()=>[...new Set([...NV_STOPS.map(i=>ROAD[i].name),...Object.values(CHARS).map(c=>c.name),...BEYOND.map(b=>b.name),...WC_ROUTE.filter(x=>x.name).map(x=>x.name),...Object.values(WC_JUNK).map(x=>x.name)])];
+function renderCodex(){
+  const c=cdx(),tabs=[['perks','Perks'],['legends','Legends'],['bosses','Bosses'],['events','Events'],['upgrades','Upgrades']],rk={common:0,uncommon:1,rare:2,legendary:3};
+  let body='',count='';
+  if(codexTab==='perks'){
+    const ids=Object.keys(PERKS).sort((a,b)=>(rk[PERK_RARITY[a]]||0)-(rk[PERK_RARITY[b]]||0)||PERKS[a].name.localeCompare(PERKS[b].name));
+    count=`${ids.filter(id=>c.perk[id]).length}/${ids.length}`;
+    body=`<div class="plist">${ids.map(id=>{const st=c.perk[id]||0;return st?`<div class="prow"><div><b>${esc(PERKS[id].name)} <i class="rar rar-${PERK_RARITY[id]}">${PERK_RARITY[id]}</i></b><span>${esc(PERKS[id].desc)}</span></div><span class="pill num">${st&4?'Won with':st&2?'Owned':'Seen'}</span></div>`:`<div class="prow"><div><b>???</b><span>Not seen yet. Perks turn up in shops, crates and boss rewards.</span></div></div>`;}).join('')}</div>`;
+  }else if(codexTab==='legends'){
+    const ids=Object.keys(LEGENDS),own=id=>(meta.legends||[]).includes(id);count=`${ids.filter(own).length}/${ids.length}`;
+    body=`<div class="plist">${ids.map(id=>{const L=LEGENDS[id];return own(id)?`<div class="prow lgrow">${cardHTML({legend:id})}<div><b class="lg-${L.rar}">${esc(L.name)} <i class="rar lgt-${L.rar}">${L.rar}</i></b><span>${esc(L.desc)}</span></div></div>`:`<div class="prow"><div><b>???</b><span>${L.found?esc(L.found):'Buy it at the Mojave Express to add it to the trading posts.'}</span></div></div>`;}).join('')}</div>`;
+  }else if(codexTab==='bosses'){
+    const names=codexBosses();count=`${names.filter(n=>c.boss[n]).length}/${names.length}`;
+    body=`<div class="plist">${names.map(n=>{const b=c.boss[n];if(!b)return `<div class="prow"><div><b>???</b><span>You haven’t faced this boss yet.</span></div></div>`;const st=AI_STYLES[n];
+      return `<div class="prow">${bossPic({rival:b.rv,art:b.art},'rivalimg')}<div><b>${esc(n)}</b><span>Faced ${b.f} · beaten ${b.w}${st&&st.tell?` · ${esc(st.tell)}`:''}</span></div></div>`;}).join('')}</div>`;
+  }else if(codexTab==='events'){
+    const ks=Object.keys(EVENTS);count=`${ks.filter(k=>c.event[k]).length}/${ks.length}`;
+    body=`<div class="plist">${ks.map(k=>{const e=EVENTS[k],n=c.event[k];return n?`<div class="prow"><div><b>${esc(e.title)}</b><span>${esc(e.text)} · met ${n} time${n>1?'s':''}</span></div></div>`:`<div class="prow"><div><b>???</b><span>Something you haven’t met on the road yet.</span></div></div>`;}).join('')}</div>`;
+  }else{
+    body=`<h3 class="sub">Card upgrades</h3><div class="plist">${Object.values(MODS).map(m=>`<div class="prow"><div><b>${esc(m.name)}</b><span>${esc(m.desc)}</span></div></div>`).join('')}</div>
+      <h3 class="sub">Special finishes</h3><div class="plist">${Object.values(EDITIONS).map(e=>`<div class="prow"><div><b>${esc(e.name)}</b><span>${esc(e.desc)}</span></div></div>`).join('')}</div>
+      <h3 class="sub">Chems</h3><div class="plist">${Object.values(CHEMS).map(e=>`<div class="prow"><div><b>${esc(e.name)}</b><span>${esc(e.desc)}</span></div></div>`).join('')}</div>`;
+  }
+  app.innerHTML=`
+  <div class="mbar">${backBtn('road','The Road')}${count?`<span class="pill num">${count}</span>`:''}</div>
+  <section class="panel">
+    <h2 style="font-size:28px">Codex</h2>
+    <p class="note">Everything you’ve met on the Road. Unseen entries stay hidden until you find them.</p>
+    <div class="tabs" role="group" aria-label="Codex section">${tabs.map(([k,l])=>`<button class="btn" data-cxtab="${k}" aria-pressed="${codexTab===k}">${l}</button>`).join('')}</div>
+    ${body}
   </section>`;
 }
 function renderRunOver(){
@@ -4849,9 +4902,10 @@ function renderRunOver(){
     ${r.seed?`<p class="note">${r.daily?'Daily run':'Seed'}: ${esc(r.seed)}${r.daily?'':' · share it to replay the same road'}</p>`:''}
     ${r.dailyBonus?`<p class="num" style="color:var(--neon)">Daily bonus: +${r.dailyBonus} NCR dollars · streak ${meta.dailyStreak||1}</p>`:''}
     ${r.scrip?`<p class="num" style="color:var(--neon)">+${r.scrip} NCR dollars this run${r.scripMiles?` (${r.scripMiles} of it for the miles)`:''} · ${meta.scrip} to spend at the Mojave Express</p>`:''}
+    ${runStatsHTML(r)}
     ${won&&r.unlocked&&r.unlocked.length?`<h3 class="sub">Unlocked</h3><ul class="traits">${r.unlocked.map(u=>`<li class="pro"><b>+ ${esc(u)}</b></li>`).join('')}</ul>`:''}
     ${won&&!r.endless?`<div class="explain" style="text-align:left"><p><b>Beyond the Strip.</b> Keep this run going into endless stops past Vegas: more boss rules every stop, sharper dealers, bigger rewards. See how far you get. Your unlocks are already saved.</p></div>
-      ${r.special?'':'<button class="btn hot" data-runbeyond>Keep going</button>'} <button class="btn" data-runnew>New run</button>`:`<button class="btn hot" data-runnew>New run</button>`} <button class="btn" data-runoffice style="margin-left:6px">Mojave Express</button>
+      ${r.special?'':'<button class="btn hot" data-runbeyond>Keep going</button>'} <button class="btn" data-runnew>New run</button>`:`<button class="btn hot" data-runnew>New run</button>`} <button class="btn" data-runoffice style="margin-left:6px">Mojave Express</button> <button class="btn" data-go="codex" style="margin-left:6px">Codex</button>
   </section>
   ${runStoryHTML()}`;
 }
@@ -5035,6 +5089,7 @@ function handleRunClick(d){
   if('runspecial' in d){meta.newRun.special=d.runspecial||null;render();return true;}
   if('rundeck' in d){meta.newRun.deck=d.rundeck;if(!tierUnlocked(meta.newRun.tier,d.rundeck))meta.newRun.tier='copper';render();return true;}
   if('cashin' in d){if(r&&r.phase==='shop'&&!r.vouchUsed&&(meta.capVouch||[]).length){meta.capVouch.sort((a,b)=>b.caps-a.caps);const v=meta.capVouch.shift();meta.caps+=v.caps;r.vouchUsed=true;sfx('clink');checkState();save();}render();return true;}
+  if('cxtab' in d){codexTab=d.cxtab;render();window.scrollTo(0,0);return true;}
   if('bosspick' in d){if(r&&r.bossPick&&r.bossPick.includes(d.bosspick)&&meta.perks.length<perkSlots()){meta.perks.push(d.bosspick);meta.equipped=meta.perks;r.bossPick=null;if(meta.perks.length>=5)unlock('loaded');if(typeof sfx==='function')sfx('clink');save();}render();return true;}
   if('bossskip' in d){if(r&&r.bossPick){meta.caps+=r.bossCaps||bossPerkCaps(0);r.bossPick=null;if(typeof sfx==='function')sfx('clink');save();}render();return true;}
   if('tagpick' in d){if(r&&r.tagPick&&r.tagPick.includes(d.tagpick)){meta.perks.push(d.tagpick);meta.equipped=meta.perks;r.tagPick=null;save();}render();return true;}
