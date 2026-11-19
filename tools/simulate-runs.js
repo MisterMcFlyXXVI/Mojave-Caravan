@@ -6,7 +6,11 @@
 //   node tools/simulate-runs.js --compare before.json after.json
 //
 // Options: --runs N  --workers N  --tier copper|silver|gold  --deck plain|...  --char <id>|all
-//          --gear random (random loadouts)  --noise N (bot sloppiness, default 5)  --prefix TEXT (seed prefix)  --out FILE  --min N (min sample)
+//          --skill novice|regular|expert (default novice; see tools/bot.js)  --noise N (override the skill's default)
+//          --gear random (random loadouts)  --nosp (gear without stat modifiers)  --prefix TEXT (seed prefix)
+//          --out FILE  --min N (min sample)
+//          --learn FILE   after the run, write measured perk and boss-rule values for the expert to use
+//          --learned FILE read such a file (default tools/data/learned.json if it exists)
 const fs = require('fs');
 const path = require('path');
 const { chromium } = require('playwright');
@@ -15,6 +19,15 @@ const args = process.argv.slice(2);
 const opt = (k, d) => { const i = args.indexOf('--' + k); return i >= 0 ? args[i + 1] : d; };
 const pct = (a, b) => (b ? ((100 * a) / b).toFixed(0) + '%' : '-');
 const avg = (xs) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
+
+// How much a perk or boss rule moves the table win rate (percentage points), compared with the normal rate at
+// that stop and table type. Positive helps the player.
+function measure(runs, key) {
+  const cell = {}, acc = {};
+  for (const r of runs) for (const t of r.tables) { const c = (cell[t.s + ':' + t.t] = cell[t.s + ':' + t.t] || { n: 0, w: 0 }); c.n++; if (t.won) c.w++; }
+  for (const r of runs) for (const t of r.tables) { const c = cell[t.s + ':' + t.t]; for (const id of t[key] || []) { const x = (acc[id] = acc[id] || { n: 0, w: 0, e: 0 }); x.n++; x.e += c.w / c.n; if (t.won) x.w++; } }
+  return Object.fromEntries(Object.entries(acc).map(([id, x]) => [id, { n: x.n, won: x.w / x.n, lift: (100 * (x.w - x.e)) / x.n }]));
+}
 
 function bossTable(runs, min) {
   const m = {};
@@ -38,16 +51,22 @@ function report(runs, min) {
   for (const [k, v] of Object.entries(death).sort((a, b) => b[1] - a[1])) lines.push(`  ${k.padEnd(24)} ${String(v).padStart(4)}  ${pct(v, runs.length)}`);
   lines.push('\nBoss tables (hardest first):');
   for (const [name, b] of bossTable(runs, min)) lines.push(`  ${name.padEnd(28)} faced ${String(b.faced).padStart(3)}   won ${pct(b.won, b.faced).padStart(4)}${b.sig ? '   sig: ' + b.sig : ''}`);
-  // Perk effect, controlled for difficulty: at every table, compare the actual result with the win rate
-  // everyone had at that same stop and table type. "lift" is how many points per table that perk adds.
-  const cell = {};
-  for (const r of runs) for (const t of r.tables) { const c = (cell[t.s + ':' + t.t] = cell[t.s + ':' + t.t] || { n: 0, w: 0 }); c.n++; if (t.won) c.w++; }
-  const perks = {};
-  for (const r of runs) for (const t of r.tables) { const c = cell[t.s + ':' + t.t]; for (const p of t.perks || []) { const x = (perks[p] = perks[p] || { n: 0, w: 0, e: 0, runs: new Set() }); x.n++; x.e += c.w / c.n; if (t.won) x.w++; x.runs.add(r.seed); } }
-  lines.push(`\nPerks, per table played with them (min ${min * 4} tables). lift = win rate minus what that stop/table normally gives:`);
-  for (const [id, x] of Object.entries(perks).filter(([, x]) => x.n >= min * 4).sort((a, b) => (b[1].w - b[1].e) / b[1].n - (a[1].w - a[1].e) / a[1].n)) {
-    const lift = (100 * (x.w - x.e)) / x.n;
-    lines.push(`  ${id.padEnd(12)} tables ${String(x.n).padStart(4)}  runs ${String(x.runs.size).padStart(3)}   won ${pct(x.w, x.n).padStart(4)}   lift ${(lift >= 0 ? '+' : '') + lift.toFixed(1)} pts`);
+  const perkM = measure(runs, 'perks'), ruleM = measure(runs, 'rules');
+  const show = (m, label, minT) => {
+    lines.push(`\n${label} (min ${minT} tables). lift = win rate minus what that stop/table normally gives:`);
+    for (const [id, x] of Object.entries(m).filter(([, x]) => x.n >= minT).sort((a, b) => b[1].lift - a[1].lift))
+      lines.push(`  ${id.padEnd(12)} tables ${String(x.n).padStart(4)}   won ${pct(Math.round(x.won * x.n), x.n).padStart(4)}   lift ${(x.lift >= 0 ? '+' : '') + x.lift.toFixed(1)} pts`);
+  };
+  show(perkM, 'Perks, per table played with them', min * 4);
+  show(ruleM, 'Boss and table rules, per table played under them', min * 6);
+  const abil = {}, hands = runs.reduce((n, r) => n + r.tables.length, 0);
+  for (const r of runs) for (const [k, v] of Object.entries(r.abil || {})) abil[k] = (abil[k] || 0) + v;
+  if (Object.keys(abil).length) {
+    lines.push(`\nAbility use over ${hands} hands (uses per 100 hands):`);
+    for (const [k, v] of Object.entries(abil).sort((a, b) => b[1] - a[1])) lines.push(`  ${k.padEnd(14)} ${String(v).padStart(5)}   ${(100 * v / hands).toFixed(1)}`);
+    const w = runs.flatMap((r) => r.tables).filter((t) => t.wager > 0);
+    if (w.length) lines.push(`Wagers: ${w.length} hands, won ${pct(w.filter((t) => t.won).length, w.length)}, net caps per wagered hand ${avg(w.map((t) => t.dCaps)).toFixed(1)}`);
+    lines.push(`Boss swaps: ${runs.reduce((n, r) => n + (r.swaps || 0), 0)}   skipped tables: ${runs.reduce((n, r) => n + (r.skips || 0), 0)}`);
   }
   if (runs.some((r) => r.gear && r.gear.length)) {
     // Gear is handed out at random, so with-vs-without is a fair comparison (unlike perks, which you choose).
@@ -88,7 +107,9 @@ function compare(a, b, min) {
   if (cmp >= 0) return compare(JSON.parse(fs.readFileSync(args[cmp + 1])), JSON.parse(fs.readFileSync(args[cmp + 2])), min);
 
   const runsN = +opt('runs', 60), workers = Math.max(1, +opt('workers', 4)), tier = opt('tier', 'copper'), deck = opt('deck', 'plain');
-  const charOpt = opt('char', 'all'), noise = +opt('noise', 5), prefix = opt('prefix', 'SIM'), gearOpt = opt('gear', 'none'), nosp = args.includes('--nosp');
+  const charOpt = opt('char', 'all'), prefix = opt('prefix', 'SIM'), gearOpt = opt('gear', 'none'), nosp = args.includes('--nosp'), skill = opt('skill', 'novice');
+  const lf = opt('learned', path.join(__dirname, 'data', 'learned.json'));
+  const learned = fs.existsSync(lf) ? JSON.parse(fs.readFileSync(lf)) : { perk: {}, rule: {} };
   const browser = await chromium.launch();
   const url = 'file://' + path.resolve(__dirname, '..', 'index.html');
   const results = [], t0 = Date.now();
@@ -103,7 +124,7 @@ function compare(a, b, min) {
     while (next < jobs.length) {
       const i = jobs[next++];
       const char = charOpt === 'all' ? order[i % order.length] : charOpt;
-      const r = await page.evaluate((o) => BOT.runOne(o), { seed: `${prefix}${i}`, char, tier, deck, noise, gear: gearOpt, nosp });
+      const r = await page.evaluate((o) => BOT.runOne(o), { seed: `${prefix}${i}`, char, tier, deck, noise: opt('noise', null) == null ? null : +opt('noise', 5), gear: gearOpt, nosp, skill, learned });
       results.push(r);
       if (results.length % 10 === 0) process.stderr.write(`  ${results.length}/${runsN} runs (${((Date.now() - t0) / 1000).toFixed(0)}s)\n`);
     }
@@ -113,6 +134,14 @@ function compare(a, b, min) {
   results.sort((a, b) => (a.seed < b.seed ? -1 : 1));
   const o = opt('out', null);
   if (o) fs.writeFileSync(o, JSON.stringify(results));
-  console.log(`${tier} road, ${deck} deck, bot noise ${noise}, ${((Date.now() - t0) / 1000).toFixed(0)}s\n`);
+  const lo = opt('learn', null);
+  if (lo) {
+    const L = { note: 'Measured by tools/simulate-runs.js --learn: lift = table win-rate points a perk or rule adds, controlled for stop and table type.', runs: results.length, skill, perk: {}, rule: {} };
+    for (const [id, x] of Object.entries(measure(results, 'perks'))) if (x.n >= 120) L.perk[id] = +x.lift.toFixed(1);
+    for (const [id, x] of Object.entries(measure(results, 'rules'))) if (x.n >= 150) L.rule[id] = +x.lift.toFixed(1);
+    fs.mkdirSync(path.dirname(lo), { recursive: true }); fs.writeFileSync(lo, JSON.stringify(L, null, 1) + '\n');
+    console.error(`wrote ${lo}`);
+  }
+  console.log(`${skill} bot, ${tier} road, ${deck} deck, ${((Date.now() - t0) / 1000).toFixed(0)}s\n`);
   console.log(report(results, min));
 })();

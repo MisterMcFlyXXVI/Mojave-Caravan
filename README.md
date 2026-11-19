@@ -44,7 +44,10 @@ node simulate-runs.js --runs 480 --workers 4 --out a.json       # bot plays whol
 node simulate-runs.js --compare a.json b.json                   # before/after boss win rates
 ```
 
-The simulation bot uses the real game code with rendering and timers stubbed (about a second per run). It plays
-hands with the dealer AI's move chooser and makes simple shop and event choices, but doesn't use chems, companions,
-Legend targets, wagers or boss swaps. Treat its numbers as a baseline for comparing versions and spotting outliers,
-not as human win rates. About 2 points per table is noise at typical sample sizes.
+The simulation bot uses the real game code with rendering and timers stubbed (about a second per run). It has skill
+levels (`--skill`): **novice** plays hands and shops at random; **regular** also uses character abilities, companions,
+gear actives, chems and Legend cards, takes small wagers and buys perks by rarity; **expert** also swaps dangerous
+boss rules, skips dangerous tables, sells weak perks, and buys perks from measured values in
+`tools/data/learned.json` (regenerate it with `--skill scout --runs 2000 --learn tools/data/learned.json`). Treat its
+numbers as a baseline for comparing versions and spotting outliers, not as human win rates. About 2 points per table
+(and 5 points per character at 100 runs each) is noise. `tools/BALANCE.md` records the method and the current numbers.
