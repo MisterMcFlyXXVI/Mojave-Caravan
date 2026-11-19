@@ -6,7 +6,7 @@
 //   node tools/simulate-runs.js --compare before.json after.json
 //
 // Options: --runs N  --workers N  --tier copper|silver|gold  --deck plain|...  --char <id>|all
-//          --noise N (bot sloppiness, default 5)  --prefix TEXT (seed prefix)  --out FILE  --min N (min sample)
+//          --gear random (random loadouts)  --noise N (bot sloppiness, default 5)  --prefix TEXT (seed prefix)  --out FILE  --min N (min sample)
 const fs = require('fs');
 const path = require('path');
 const { chromium } = require('playwright');
@@ -49,6 +49,18 @@ function report(runs, min) {
     const lift = (100 * (x.w - x.e)) / x.n;
     lines.push(`  ${id.padEnd(12)} tables ${String(x.n).padStart(4)}  runs ${String(x.runs.size).padStart(3)}   won ${pct(x.w, x.n).padStart(4)}   lift ${(lift >= 0 ? '+' : '') + lift.toFixed(1)} pts`);
   }
+  if (runs.some((r) => r.gear && r.gear.length)) {
+    // Gear is handed out at random, so with-vs-without is a fair comparison (unlike perks, which you choose).
+    const vegas = (r) => (r.result === 'won' ? 1 : 0), byGear = {};
+    for (const r of runs) for (const id of r.gear || []) (byGear[id] = byGear[id] || []).push(r);
+    const rows = Object.entries(byGear).filter(([, rs]) => rs.length >= min * 4).map(([id, rs]) => {
+      const without = runs.filter((r) => !(r.gear || []).includes(id));
+      const w = rs.filter(vegas).length / rs.length, wo = without.filter(vegas).length / without.length;
+      return { id, n: rs.length, w, lift: 100 * (w - wo) };
+    }).sort((a, b) => b.lift - a.lift);
+    lines.push(`\nGear (random loadouts, min ${min * 4} runs). lift = Vegas rate with it minus without; noise is about +-5 points:`);
+    for (const x of rows) lines.push(`  ${x.id.padEnd(12)} runs ${String(x.n).padStart(4)}   vegas ${pct(Math.round(x.w * x.n), x.n).padStart(4)}   lift ${(x.lift >= 0 ? '+' : '') + x.lift.toFixed(1)} pts`);
+  }
   const chars = {};
   for (const r of runs) { const x = (chars[r.char] = chars[r.char] || { n: 0, won: 0, stop: [] }); x.n++; if (r.result === 'won') x.won++; x.stop.push(r.stop + (r.result === 'won' ? 1 : 0)); }
   if (Object.keys(chars).length > 1) {
@@ -76,7 +88,7 @@ function compare(a, b, min) {
   if (cmp >= 0) return compare(JSON.parse(fs.readFileSync(args[cmp + 1])), JSON.parse(fs.readFileSync(args[cmp + 2])), min);
 
   const runsN = +opt('runs', 60), workers = Math.max(1, +opt('workers', 4)), tier = opt('tier', 'copper'), deck = opt('deck', 'plain');
-  const charOpt = opt('char', 'all'), noise = +opt('noise', 5), prefix = opt('prefix', 'SIM');
+  const charOpt = opt('char', 'all'), noise = +opt('noise', 5), prefix = opt('prefix', 'SIM'), gearOpt = opt('gear', 'none'), nosp = args.includes('--nosp');
   const browser = await chromium.launch();
   const url = 'file://' + path.resolve(__dirname, '..', 'index.html');
   const results = [], t0 = Date.now();
@@ -91,7 +103,7 @@ function compare(a, b, min) {
     while (next < jobs.length) {
       const i = jobs[next++];
       const char = charOpt === 'all' ? order[i % order.length] : charOpt;
-      const r = await page.evaluate((o) => BOT.runOne(o), { seed: `${prefix}${i}`, char, tier, deck, noise });
+      const r = await page.evaluate((o) => BOT.runOne(o), { seed: `${prefix}${i}`, char, tier, deck, noise, gear: gearOpt, nosp });
       results.push(r);
       if (results.length % 10 === 0) process.stderr.write(`  ${results.length}/${runsN} runs (${((Date.now() - t0) / 1000).toFixed(0)}s)\n`);
     }

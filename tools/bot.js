@@ -42,6 +42,7 @@
   }
 
   BOT.runOne = function (o) {
+    if (o.nosp) for (const g of Object.values(GEAR)) g.sp = {};     // experiment: gear without its stat modifiers
     meta = migrate(freshMeta());
     meta.decksUnlocked = DECKS.length;
     meta.deckTiers = {};
@@ -51,6 +52,11 @@
     meta.tokens = [];
     meta.char = o.char;
     meta.gear = { owned: [], on: {} };
+    if (o.gear === 'random') {                                   // each slot: 70% chance of a random piece
+      const G0 = mulberry32(hashStr(o.seed + '|gear')), owned = Object.keys(GEAR).filter((id) => !GEAR[id].wc);
+      meta.gear.owned = owned;
+      for (const sl of GEAR_SLOTS) { const items = owned.filter((id) => GEAR[id].slot === sl.id); if (G0() < 0.7) meta.gear.on[sl.id] = items[Math.floor(G0() * items.length)]; }
+    }
     meta.newRun = { deck: o.deck || 'plain', tier: o.tier || 'copper', token: null, seed: o.seed };
     G = null; screen = 'road';
     queue.length = 0;
@@ -149,7 +155,7 @@
     const r = run();
     out.result = r.result || 'stuck';
     out.stop = r.stop; out.table = r.table; out.tablesWon = r.won; out.hands = r.hands;
-    out.caps = meta.caps; out.deckSize = meta.deck.length; out.perks = [...meta.perks];
+    out.caps = meta.caps; out.deckSize = meta.deck.length; out.perks = [...meta.perks]; out.gear = [...(r.gear || [])];
     out.errors = BOT.errors.splice(0);
     return out;
   };
