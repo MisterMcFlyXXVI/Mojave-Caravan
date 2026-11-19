@@ -317,9 +317,13 @@ function charBioHTML(id){
     <div class="biohead"><div class="bioimg${ok?'':' shade'}"><img src="${portrait(id)}" alt="${esc(c.name)}">${ok?'':'<span class="lockbadge" aria-hidden="true">🔒︎</span>'}</div>
       <div><h2>${esc(c.name)}</h2><div class="ctag">${esc(c.tag)}</div><blockquote>“${esc(bio.quote)}”</blockquote></div></div>
     <p class="story">${esc(bio.story)}</p>
-    <div class="stats">${STAT_NAMES.map((n,i)=>`<div class="stat"><span>${n}</span><i>${Array.from({length:10},(_,k)=>`<b class="${k<bio.stats[i]?'on':''}"></b>`).join('')}</i><em>${bio.stats[i]}</em></div>`).join('')}</div>
-    <h3 class="sub">Abilities</h3>
-    <ul class="traits">${c.traits.map(([k,n,dsc])=>`<li class="${k==='+'?'pro':k==='='?'meh':'con'}"><b>${k} ${esc(n)}</b> ${esc(dsc)}</li>`).join('')}</ul>
+    <h3 class="sub">SPECIAL</h3>
+    ${specialBarsHTML(id,[])}
+    ${c.traits.length?`<h3 class="sub">Abilities</h3>
+    <ul class="traits">${c.traits.map(([k,n,dsc])=>`<li class="${k==='+'?'pro':k==='='?'meh':'con'}"><b>${k} ${esc(n)}</b> ${esc(dsc)}</li>`).join('')}</ul>`:''}
+    <h3 class="sub">From SPECIAL</h3>
+    ${specialEffectsHTML(id,[])}
+    <p class="note">Gear from the Mojave Express adds to these stats.</p>
     <h3 class="sub">On the Road</h3>
     <p class="route">${ORIGINALS.includes(id)||NEWCOMERS.includes(id)?'Meets rivals from the cast along the way. Final table: Greg.':id==='greg'?'Meets three rivals from the cast each run. Final table: Jeanita.':'Meets three rivals from the cast and Greg each run. Final table: Silver Lou.'}</p>
     ${ok?'':`<p class="locknote">Locked. ${esc(c.unlock)}</p>`}
@@ -337,6 +341,7 @@ function renderPickChar(){
         <button class="cimg${ok?'':' shade'}" data-charinfo="${id}" aria-label="${esc(c.name)} bio"><img src="${portrait(id)}" alt="">${ok?'':'<span class="lockbadge" aria-hidden="true">🔒︎</span>'}</button>
         <div class="cbody"><h3>${esc(c.name)}${ok?'':' <span class="tag lose">LOCKED</span>'}</h3><div class="ctag">${esc(c.tag)}</div>
         <p class="cbio">${esc(c.bio)}</p>
+        <p class="cbio" style="font-size:12px"><b>SPECIAL</b> ${esc(specialLine(id))}</p>
         <ul class="traits">${c.traits.map(([k,n,dsc])=>`<li class="${k==='+'?'pro':k==='='?'meh':'con'}"><b>${k} ${esc(n)}</b> ${esc(dsc)}</li>`).join('')}</ul>
         ${ok?'':`<p class="locknote">${esc(c.unlock)}</p>`}
         <div class="hubbtns" style="margin-top:0">${ok?`<button class="btn${on?'':' hot'}" data-pickchar="${id}" ${on?'disabled':''}>${on?'Playing':'Play as '+esc(c.name.split(' ')[0])}</button>`:`<button class="btn" disabled>Locked</button>`}<button class="btn ghost" data-charinfo="${id}">Bio</button></div></div></div>`;}).join('')}</div>

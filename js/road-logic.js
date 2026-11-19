@@ -8,6 +8,7 @@ const isWC=()=>!!(meta&&meta.run&&meta.run.special==='waterchip');
 function syncRoute(){RUN_STOPS=isWC()?WC_IDX:NV_STOPS;}
 // ---- The Water Chip (Fallout 1 special run) ----
 const WC_DAYS=150,WC_COST=[6,8,10],WC_SKIP=3;
+const wcCost=t=>Math.max(2,WC_COST[t]-SPX.wcDays(sp('E')));
 const WC_ROUTE=[
   {place:'Vault 15',name:'Garl',art:'garl',blurb:'Leader of the Khans. Took over the ruins of Vault 15 and deals like he’s already won.',rule:'Khan Raiders: his caravans sell up to 27.',fn:R=>{R.range.a=[R.range.a[0],R.range.a[1]+1];},drop:'redryder'},
   {place:'Shady Sands',name:'Tandi',art:'tandi',blurb:'Aradesh’s daughter. Sharp, stubborn, and tired of being rescued.',rule:'Stubborn: she holds 6 cards.',fn:R=>{R.hand.a=Math.max(R.hand.a,6);},comp:'ian'},
@@ -130,41 +131,42 @@ const GEAR_SLOTS=[
   {id:'gun',name:'Gun'},{id:'melee',name:'Melee'},{id:'throw',name:'Throwable'},{id:'comp',name:'Companion'},
 ];
 const GEAR={
-  hat:{slot:'head',name:'Desperado Hat',price:15,desc:'Beating a boss gives you back 1 Grit (up to 2).'},
-  lamp:{slot:'head',name:'Prospector’s Headlamp',price:30,desc:'Every bundle you open has at least one upgraded card in it.'},
-  beret:{slot:'head',name:'Ranger Beret',price:50,desc:'The dealer opens every hand with 7 cards instead of 8.'},
-  duster:{slot:'coat',name:'Dusty Duster',price:15,desc:'Dust in their eyes: the dealer’s first play each hand is a random one.'},
-  labcoat:{slot:'coat',name:'Lab Coat',price:30,desc:'Every chem you use also draws you a card.'},
-  armor:{slot:'coat',name:'Leather Armor',price:45,desc:'The dealer can’t play Queens on your caravans.'},
-  jeans:{slot:'pants',name:'Patched Jeans',price:15,desc:'Glass cards never break.'},
-  cargo:{slot:'pants',name:'Cargo Pants',price:30,desc:'+3 caps every time you reach a new stop.'},
-  chaps:{slot:'pants',name:'Road Chaps',price:40,desc:'Selling all three caravans pays double the bonus.'},
-  boots:{slot:'shoes',name:'Cowboy Boots',price:15,desc:'Skipping a table pays 5 caps on top of its reward.'},
-  sneakers:{slot:'shoes',name:'Pre-War Sneakers',price:35,desc:'Once per stop, walk away from a table you’re losing. It counts as a loss but costs no Grit.'},
-  combat:{slot:'shoes',name:'Combat Boots',price:45,desc:'Boss tables have one fewer boss rule.'},
-  varmint:{slot:'gun',name:'Varmint Rifle',price:20,desc:'Pest control: the dealer can’t play Jokers at all.'},
-  sawedoff:{slot:'gun',name:'Sawed-Off Shotgun',price:35,desc:'Playing a Jack doesn’t use your turn.'},
-  revolver:{slot:'gun',name:'Lucky Revolver',price:50,desc:'Lucky cards draw 2 cards instead of 1.'},
-  knife:{slot:'melee',name:'Combat Knife',price:15,desc:'Two random number cards start the run Steel.'},
-  machete:{slot:'melee',name:'Machete',price:30,desc:'Cuts the deadwood: up to 4 Aces and 2s are cut from your starting deck.'},
-  bat:{slot:'melee',name:'Louisville Slugger',price:40,desc:'Once per hand, knock the top card off one of your own caravans. Doesn’t use your turn.'},
-  frag:{slot:'throw',name:'Frag Grenade',price:15,desc:'Start every run with an extra Joker in your deck.'},
-  nuka:{slot:'throw',name:'Nuka-Grenade',price:35,desc:'Two random number cards start the run Glass.'},
-  dynamite:{slot:'throw',name:'Dynamite',price:50,desc:'Your Jokers on the dealer’s caravans blow up the card they land on, too.'},
-  dogmeat:{slot:'comp',name:'Dogmeat',price:30,desc:'Good boy. Sniffs out 1 extra card in every bundle you open.'},
-  codsworth:{slot:'comp',name:'Codsworth',price:35,desc:'Tidies up: once per hand, a discard doesn’t use your turn.'},
-  piper:{slot:'comp',name:'Piper',price:40,desc:'Rattles the dealer with questions: they hold 1 fewer card.'},
-  cass:{slot:'comp',name:'Cass',price:45,desc:'Crimson Caravan connections: the trading post stocks 1 extra card.'},
-  fawkes:{slot:'comp',name:'Fawkes',price:50,desc:'Stands guard: the dealer can’t play Kings on your caravans.'},
-  ede:{slot:'comp',name:'ED-E',price:50,desc:'Once per hand, zap a random card out of the dealer’s hand. Doesn’t use your turn.'},
-  boone:{slot:'comp',name:'Boone',price:60,desc:'Once per hand, shoot the newest King or Queen off a dealer caravan. Uses your turn.'},
-  nick:{slot:'comp',name:'Nick Valentine',price:55,desc:'Detective work: you always know the next card the dealer will draw.'},
-  ian:{slot:'comp',name:'Ian',price:35,wc:true,desc:'Trigger-happy: at the start of every hand he shoots the top card off a random dealer caravan. Now and then he hits one of yours.'},
-  tycho:{slot:'comp',name:'Tycho',price:45,wc:true,desc:'Desert Ranger: once per run, sneak you past a boss. No reward, but no fight either.'},
-  katja:{slot:'comp',name:'Katja',price:50,wc:true,desc:'Light fingers: the first card you take at each trading post is free.'},
+  hat:{slot:'head',name:'Desperado Hat',price:45,sp:{C:1},desc:'The first boss you beat each run gives you back 1 Grit (up to 2).'},
+  lamp:{slot:'head',name:'Prospector’s Headlamp',price:30,sp:{P:2},desc:'Every bundle you open has at least one upgraded card in it.'},
+  beret:{slot:'head',name:'Ranger Beret',price:50,sp:{P:1,A:1,E:1},desc:'The dealer opens every hand with 7 cards instead of 8.'},
+  duster:{slot:'coat',name:'Dusty Duster',price:15,sp:{E:1},desc:'Dust in their eyes: the dealer’s first play each hand is a random one.'},
+  labcoat:{slot:'coat',name:'Lab Coat',price:30,sp:{I:1},desc:'Every chem you use also draws you a card.'},
+  armor:{slot:'coat',name:'Leather Armor',price:45,sp:{E:2,A:-1},desc:'The dealer can’t play Queens on your caravans.'},
+  jeans:{slot:'pants',name:'Patched Jeans',price:15,sp:{A:1},desc:'Glass cards never break.'},
+  cargo:{slot:'pants',name:'Cargo Pants',price:30,sp:{S:1},desc:'+3 caps every time you reach a new stop.'},
+  chaps:{slot:'pants',name:'Road Chaps',price:40,sp:{E:1,L:1},desc:'Selling all three caravans pays double the bonus.'},
+  boots:{slot:'shoes',name:'Cowboy Boots',price:15,sp:{C:1},desc:'Skipping a table pays 5 caps on top of its reward.'},
+  sneakers:{slot:'shoes',name:'Pre-War Sneakers',price:35,sp:{A:2},desc:'Once per stop, walk away from a table you’re losing. It counts as a loss but costs no Grit.'},
+  combat:{slot:'shoes',name:'Combat Boots',price:45,sp:{E:1,S:1},desc:'Boss tables have one fewer boss rule.'},
+  varmint:{slot:'gun',name:'Varmint Rifle',price:20,sp:{P:1},desc:'Pest control: the dealer can’t play Jokers at all.'},
+  sawedoff:{slot:'gun',name:'Sawed-Off Shotgun',price:35,sp:{S:2,P:-1},desc:'Playing a Jack doesn’t use your turn.'},
+  revolver:{slot:'gun',name:'Lucky Revolver',price:50,sp:{L:2},desc:'Lucky cards draw 2 cards instead of 1.'},
+  knife:{slot:'melee',name:'Combat Knife',price:15,sp:{A:1},desc:'Two random number cards start the run Steel.'},
+  machete:{slot:'melee',name:'Machete',price:30,sp:{S:1},desc:'Cuts the deadwood: up to 4 Aces and 2s are cut from your starting deck.'},
+  bat:{slot:'melee',name:'Louisville Slugger',price:40,sp:{S:2},desc:'Once per hand, knock the top card off one of your own caravans. Doesn’t use your turn.'},
+  frag:{slot:'throw',name:'Frag Grenade',price:15,sp:{S:1},desc:'Start every run with an extra Joker in your deck.'},
+  nuka:{slot:'throw',name:'Nuka-Grenade',price:35,sp:{L:1},desc:'Two random number cards start the run Glass.'},
+  dynamite:{slot:'throw',name:'Dynamite',price:50,sp:{S:1,I:1},desc:'Your Jokers on the dealer’s caravans blow up the card they land on, too.'},
+  dogmeat:{slot:'comp',name:'Dogmeat',price:30,sp:{P:1},desc:'Good boy. Sniffs out 1 extra card in every bundle you open.'},
+  codsworth:{slot:'comp',name:'Codsworth',price:35,sp:{I:1},desc:'Tidies up: once per hand, a discard doesn’t use your turn.'},
+  piper:{slot:'comp',name:'Piper',price:40,sp:{C:1,I:1},desc:'Rattles the dealer with questions: they hold 1 fewer card.'},
+  cass:{slot:'comp',name:'Cass',price:45,sp:{C:1,L:1},desc:'Crimson Caravan connections: the trading post stocks 1 extra card.'},
+  fawkes:{slot:'comp',name:'Fawkes',price:50,sp:{S:2},desc:'Stands guard: the dealer can’t play Kings on your caravans.'},
+  ede:{slot:'comp',name:'ED-E',price:50,sp:{P:2},desc:'Once per hand, zap a random card out of the dealer’s hand. Doesn’t use your turn.'},
+  boone:{slot:'comp',name:'Boone',price:60,sp:{P:2,A:1},desc:'Once per hand, shoot the newest King or Queen off a dealer caravan. Uses your turn.'},
+  nick:{slot:'comp',name:'Nick Valentine',price:55,sp:{I:1,P:1},desc:'Detective work: you always know the next card the dealer will draw.'},
+  ian:{slot:'comp',name:'Ian',price:35,sp:{A:1},wc:true,desc:'Trigger-happy: at the start of every hand he shoots the top card off a random dealer caravan. Now and then he hits one of yours.'},
+  tycho:{slot:'comp',name:'Tycho',price:45,sp:{E:1,P:1},wc:true,desc:'Desert Ranger: once per run, sneak you past a boss. No reward, but no fight either.'},
+  katja:{slot:'comp',name:'Katja',price:50,sp:{A:1,L:1},wc:true,desc:'Light fingers: the first card you take at each trading post is free.'},
 };
 // In a run, only the loadout you started with counts. Outside a run, nothing does.
 const gear=id=>!!(runLive()&&meta.run.gear&&meta.run.gear.includes(id));
+// (SPECIAL: gear modifiers live in GEAR[id].sp; see js/special.js)
 const scripHTML=n=>`<span class="pill num scrip"><span class="tix" aria-hidden="true"></span> ${n} NCR ${n===1?'dollar':'dollars'}</span>`;
 function loadoutLine(){
   const list=GEAR_SLOTS.map(sl=>meta.gear.on[sl.id]).filter(id=>id&&GEAR[id]);
@@ -177,11 +179,12 @@ function renderOffice(){
   <section class="hero small"><div class="neon sm" style="font-size:clamp(24px,7vw,40px)">Mojave Express</div><p class="tagline">Spend NCR dollars on gear you keep for good. Wear one piece in each slot; your loadout is applied when a run starts.</p></section>
   ${live?'<p class="note" style="text-align:center">You’re on a run. Loadout changes apply from your next run.</p>':''}
   <div class="slotstrip" aria-label="Your loadout">${GEAR_SLOTS.map(sl=>{const id=g.on[sl.id];return `<div class="nslot${id?' full':''}">${sl.id==='comp'&&id&&ART.comp[id]?`<img class="compart sm" src="${ART.comp[id]}" alt="">`:''}<small>${sl.name}</small><b>${id&&GEAR[id]?esc(GEAR[id].name):'Empty'}</b></div>`;}).join('')}</div>
+  ${meta.char?`<section class="panel"><h2 style="font-size:22px">${esc(CHARS[meta.char].name)}’s SPECIAL</h2>${specialBarsHTML(meta.char,currentGearIds())}${specialEffectsHTML(meta.char,currentGearIds())}<p class="note">Every piece of gear adds to or takes from these. Stats run from 1 to 10.</p></section>`:''}
   <section class="panel office">
     <p class="note">Earn NCR dollars on the Road: 1 for a Saloon table, 2 for High Stakes, 3 for a Boss (+1 each on Silver, +2 on Gold). A run that ends pays 1 per stop reached, and making it to Vegas pays 10, 15 or 20.</p>
     ${GEAR_SLOTS.map(sl=>`<div class="nslot-h"><span class="nslot mini${g.on[sl.id]?' full':''}"></span><h3 class="sub">${sl.name}</h3></div><div class="gearrow">${Object.entries(GEAR).filter(([,x])=>x.slot===sl.id).map(([id,x])=>{
       const own=g.owned.includes(id),on=g.on[sl.id]===id,afford=(meta.scrip||0)>=x.price;
-      return `<div class="gearopt${on?' on':''}">${x.slot==='comp'&&ART.comp[id]?`<img class="compart" src="${ART.comp[id]}" alt="">`:''}<b>${esc(x.name)}</b><span>${esc(x.desc)}</span>
+      return `<div class="gearopt${on?' on':''}">${x.slot==='comp'&&ART.comp[id]?`<img class="compart" src="${ART.comp[id]}" alt="">`:''}<b>${esc(x.name)}</b><span class="gspwrap">${spChips(x)}</span><span>${esc(x.desc)}</span>
         ${own?`<button class="btn${on?' hot':''}" data-gearon="${id}" aria-pressed="${on}">${on?(x.slot==='comp'?'With you':'Wearing'):(x.slot==='comp'?'Take along':'Wear')}</button>`:x.wc?`<span class="note">🔒︎ Joins you on the Water Chip run.</span>`:`<button class="btn" data-gearbuy="${id}" ${afford?'':'disabled'}><span class="tix" aria-hidden="true"></span> ${x.price}</button>`}</div>`;}).join('')}</div>`).join('')}
     <h3 class="sub" style="margin-top:22px">Legend cards</h3>
     <p class="note">Buy a Legend card to add it to the trading posts on The Road. They’re rare: about 1 trading post in 4 has one, and legendaries turn up a third as often as rares. Once you buy one on the road it’s in your deck for the run. Playing one doesn’t use your turn.</p>
@@ -282,7 +285,6 @@ const PERK_RARITY={
   lead:'legendary',insure:'legendary',
 };
 const RARITY_PRICE={common:10,uncommon:16,rare:24,legendary:32};
-const RARITY_WEIGHT={common:55,uncommon:30,rare:12,legendary:3};
 Object.assign(PERKS,{
   jackrabbit:{name:'Jackrabbit',desc:'Draw a card whenever you play a Jack.'},
   scrapper:{name:'Scrapper',desc:'Discards draw 2 cards instead of 1.'},
@@ -425,10 +427,10 @@ function runRules(s,t){
   if(has('scrapper'))R.discardDraw.p=2;
   if(has('kingpin'))R.range.p=[R.range.p[0],R.range.p[1]+Math.min(3,Math.floor((r.kings||0)/3))];
   if(has('momentum'))R.hand.p+=Math.min(2,Math.floor((r.won||0)/5));
-  if(isChar('vladmira'))R.range.p=[R.range.p[0],R.range.p[1]+1];
+  if(SPX.ceiling(sp('S')))R.range.p=[R.range.p[0],R.range.p[1]+SPX.ceiling(sp('S'))];
   if(isChar('jeanita'))R.jokerproof.p=true;
   if(isChar('greg')){R.hand.p+=1;R.jackproof.a=true;}
-  if(isChar('ronald'))R.deal.p-=1;
+  R.deal.p+=SPX.deal(sp('A'));
   if(r.deck==='irradiated')R.deal.p-=1;
   if(r.deck==='bullet')R.deal.a+=1;
   if(gear('beret'))R.deal.a-=1;
@@ -436,7 +438,7 @@ function runRules(s,t){
   if(gear('fawkes'))R.kingproof.p=true;
   if(gear('armor'))R.queenproof.p=true;
   if(gear('varmint'))R.noJoker.a=true;
-  if(gear('revolver'))R.luckyDraw.p=2;
+  R.luckyDraw.p=Math.max(SPX.luckyDraw(sp('L')),gear('revolver')?2:1);
   if(gear('dynamite'))R.bigJoker.p=true;
   if(isChar('snipsnip'))R.spareParts.p=true;
   if(isChar('benny'))R.tieWin.p=true;
@@ -460,7 +462,7 @@ function interestCap(){
 const tableReward=(s,t)=>[5,7,11][t]+Math.round(s*1.5);
 // Selling all three caravans pays half the table's base reward on top (at least 3).
 const sweepBonus=(s,t)=>Math.max(3,Math.ceil(tableReward(s,t)/2));
-const bossBountyPay=s=>Math.round((4+s)*(has('hunter')?2:1)*(isChar('vladmira')?0.5:1));
+const bossBountyPay=s=>Math.round((4+s)*(has('hunter')?2:1)*SPX.bounty(sp('I')));
 
 function plainDeck(){return addFaces(baseNumbers(),{J:4,Q:4,K:4,JK:2});}
 // Seeded runs: the same seed gives the same bosses, shops, events and deals.
@@ -496,7 +498,7 @@ function startRun0(seed){
   meta.run={v:1,seed,daily,prevChar:daily?prevChar:undefined,special,days:special?WC_DAYS:undefined,found:[],char:meta.char,deck,tier,token,stop:0,table:0,phase:'table',won:0,kings:0,skips:0,hands:0,vouchers:[],tags:[],nextRules:[],
     grit:1+(token==='second'?1:0),halfShop:false,freeRerolls:0,freeBundles:[],freeUpgrade:0,started:Date.now(),voucherStop:-1,scrip:0,
     gear:daily?[]:GEAR_SLOTS.map(sl=>meta.gear.on[sl.id]).filter(id=>id&&GEAR[id]&&meta.gear.owned.includes(id))};
-  if(meta.char==='benny')meta.run.grit=Math.max(0,meta.run.grit-1);
+  meta.run.grit=Math.max(0,meta.run.grit+SPX.grit(sp('E')));
   syncRoute();
   meta.run.roster=runRoster(meta.char,daily);
   genRun();
@@ -528,7 +530,7 @@ function rollPerkOffer(n){const o=rollPerkOffer0(n);seePerks(o);return o;}
 function rollPerkOffer0(n){
   const owned=new Set(meta.perks);const out=[];
   for(let k=0;k<n*6&&out.length<n;k++){
-    const roll=Math.random()*100;let rar='common',acc=0;for(const [r,w] of Object.entries(RARITY_WEIGHT)){acc+=w;if(roll<acc){rar=r;break;}}
+    const rar=rollWeighted(Object.entries(rarityWeights()));
     const pool=Object.keys(PERK_RARITY).filter(p=>PERK_RARITY[p]===rar&&!owned.has(p)&&!out.includes(p));
     if(pool.length)out.push(pick(pool));
   }
@@ -537,9 +539,9 @@ function rollPerkOffer0(n){
 // Boss reward: three perks, uncommon or better. Pick one free, or take caps instead.
 function rollBossPerks(){const r=run(),o=withSeed('bossperk:'+(r?r.stop:0)+':'+(r?r.hands||0:0),rollBossPerks0);seePerks(o);return o;}
 function rollBossPerks0(){
-  const owned=new Set(meta.perks),out=[],W=[['uncommon',50],['rare',40],['legendary',10]];
+  const owned=new Set(meta.perks),out=[];
   for(let k=0;k<40&&out.length<3;k++){
-    let x=Math.random()*100,rar='uncommon';for(const [r,w] of W){x-=w;if(x<0){rar=r;break;}}
+    const rar=rollWeighted(bossRarityWeights());
     const pool=Object.keys(PERK_RARITY).filter(p=>PERK_RARITY[p]===rar&&!owned.has(p)&&!out.includes(p));
     if(pool.length)out.push(pick(pool));
   }
@@ -574,6 +576,7 @@ const bundleName=b=>b.id==='suit'?`${SUIT_WORD[b.suit]} bundle`:BUNDLES[b.id].na
 const bundleDesc=b=>b.id==='suit'?`See 5 ${SUIT_WORD[b.suit].toLowerCase()} number cards, keep 2. Some come upgraded.`:BUNDLES[b.id].desc;
 function twoBundles(){const a=rollBundle();let b=rollBundle();for(let k=0;k<8&&b.id===a.id&&b.suit===a.suit;k++)b=rollBundle();return [a,b];}
 function rollBundle(){const tot=Object.values(BUNDLES).reduce((a,b)=>a+b.w,0);let x=Math.random()*tot;for(const [id,b] of Object.entries(BUNDLES)){x-=b.w;if(x<0)return id==='suit'?{id,suit:pick(SUITS)}:{id};}return {id:'saddlebag'};}
+const bundleSee=b=>Math.max(BUNDLES[b.id].keep+1,BUNDLES[b.id].see+(gear('dogmeat')?1:0)+SPX.bundleSee(sp('P')));
 function genBundleCards(b){const out=genBundleCards0(b);
   if(gear('lamp')&&!out.some(c=>c.mod)){const nums=out.filter(c=>isNum(c));if(nums.length)pick(nums).mod=pick(Object.keys(MODS));}
   return out;}
@@ -589,17 +592,17 @@ function genBundleCards0(b){
     if(Math.random()<face){const r=Math.random();return r<.12?{rank:'JK',suit:null}:{rank:pick(['K','J','Q','J','K']),suit:pick(SUITS)};}
     const c={rank:numRank(),suit:pick(SUITS)};if(Math.random()<up)c.mod=mod();return c;
   };
-  for(let k=0;k<60&&out.length<BUNDLES[b.id].see+(gear('dogmeat')?1:0);k++){const c=b.id==='collector'?{rank:pick(['A','4','5','6','7','8','9','10','10','9']),suit:pick(SUITS)}:make();
+  for(let k=0;k<60&&out.length<bundleSee(b);k++){const c=b.id==='collector'?{rank:pick(['A','4','5','6','7','8','9','10','10','9']),suit:pick(SUITS)}:make();
     if(isNum(c)){const e=b.id==='collector'?rollEdition(null):rollEdition(4);if(e)c.ed=e;}
     if(!out.some(o=>key(o)===key(c)))out.push(c);}
   return out;
 }
 function openBundle(b,free){const r=run();return withSeed('bundle:'+r.stop+':'+r.table+':'+(r.bundleN=(r.bundleN||0)+1),()=>openBundle0(b,free));}
-function openBundle0(b,free){const keep=BUNDLES[b.id].keep+(runV('pockets')?1:0);run().picker={kind:'bundle',title:bundleName(b)+(free?' (free)':''),note:`Pick up to ${keep} to add to your deck.`,options:genBundleCards(b),keep,sel:[]};}
+function openBundle0(b,free){const keep=BUNDLES[b.id].keep+(runV('pockets')?1:0)+SPX.keep(sp('I'));run().picker={kind:'bundle',title:bundleName(b)+(free?' (free)':''),note:`Pick up to ${keep} to add to your deck.`,options:genBundleCards(b),keep,sel:[]};}
 function openBurn(max,title,note){run().picker={kind:'burn',title,note,keep:max,sel:[]};}
 const burnRoom=()=>Math.max(0,meta.deck.length-MIN_DECK);
 const CRATES={perk:{name:'Perk crate',desc:'Pick 1 of 3 perks.',price:20},chem:{name:'Chem crate',desc:'Pick 1 of 3 chems.',price:5}};
-function rerollCost(){const r=run();return (runV('dice')?1:3)*(r.deck==='rust'?2:1)+(r.rerolls||0);}
+function rerollCost(){const r=run();return Math.max(1,(runV('dice')?1:3)*(r.deck==='rust'?2:1)-SPX.reroll(sp('I')))+(r.rerolls||0);}
 // Free bundles stack: every source adds one to the queue, and the trading post opens them one after another.
 function nextFreeBundle(){
   const r=run();
@@ -647,7 +650,7 @@ function startRunTable(){
   const dealer=t===2?bossDealer(s):r.dealers[s][t];
   G=withSeed('match:'+s+':'+t+':'+(r.hands||0),()=>newMatch(meta.deck,addFaces(baseNumbers(),runDealerExtra(s,t)),ri,R));
   G.mode='road';G.run=true;G.runStop=s;G.runTable=t;G.dealer={...dealer,place:placeOf(s)};G.ruleIds=tableRuleIds(s,t);G.noise=runNoise(s,t);
-  G.perks=[...meta.perks];G.char=r.char;G.turretUsed=false;G.hugUsed=false;G.hugPending=false;if(isChar('jeanita'))G.peek=true;
+  G.perks=[...meta.perks];G.char=r.char;G.turretUsed=false;G.hugUsed=false;G.hugPending=false;if(SPX.peek(sp('P')))G.peek=true;G.quick=SPX.quick(sp('A'));G.quickUsed=false;
   G.repairUsed=false;G.requestUsed=false;G.booneUsed=false;G.ede=gear('ede');G.zapUsed=false;
   G.bat=gear('bat');G.batUsed=false;G.duster=gear('duster');G.dustUsed=false;G.codsworth=gear('codsworth');G.tidyUsed=false;G.sawedoff=gear('sawedoff');
   G.canWalk=gear('sneakers')&&!((r.walkUsed||{})[r.stop]);G.walked=false;G.comp=meta.gear&&meta.gear.on&&meta.gear.on.comp&&r.gear&&r.gear.includes(meta.gear.on.comp)?meta.gear.on.comp:null;
@@ -738,7 +741,7 @@ function runFinish(winner,ov){
       if(s===4&&!r.losses){meta.charFlags=meta.charFlags||{};if(!meta.charFlags.harold){meta.charFlags.harold=1;ov.newChars=(ov.newChars||[]).concat('harold');}}
       if(s===2)unlock('wc_junk');
     }
-    if(t===2&&gear('hat')&&(r.grit||0)<2){r.grit=(r.grit||0)+1;extras.push('Desperado Hat: +1 Grit');}
+    if(t===2&&gear('hat')&&!r.hatUsed&&(r.grit||0)<2){r.hatUsed=true;r.grit=(r.grit||0)+1;extras.push('Desperado Hat: +1 Grit');}
     if(t===2&&isChar('threedog')){r.scrip=(r.scrip||0)+2;meta.scrip=(meta.scrip||0)+2;extras.push('2 NCR dollars for fighting the good fight');}
     if(lanes.every(x=>x==='p')){const sw=sweepBonus(s,t)*(gear('chaps')?2:1);meta.caps+=sw;extras.push(`Triple sale: all three caravans sold, +${sw}`);}
     {const sc=[1,2,3][t]+tierIdx(r.tier);r.scrip=(r.scrip||0)+sc;meta.scrip=(meta.scrip||0)+sc;ov.scrip=sc;}
@@ -784,7 +787,7 @@ function runFinish(winner,ov){
       ov.saved=true;r.phase='table';
     }else{ov.runOver=true;runLost();}
   }
-  if(isWC()&&r.phase!=='over'&&!ov.runOver){r.days=(r.days||0)-WC_COST[t];extras.push(`${WC_COST[t]} days on the road · ${Math.max(0,r.days)} left`);
+  if(isWC()&&r.phase!=='over'&&!ov.runOver){r.days=(r.days||0)-wcCost(t);extras.push(`${wcCost(t)} days on the road · ${Math.max(0,r.days)} left`);
     if(r.days<=0){r.days=0;r.dry=true;ov.runOver=true;r.phase='over';r.result='lost';{const b=r.stop+1;r.scrip=(r.scrip||0)+b;meta.scrip=(meta.scrip||0)+b;r.scripMiles=b;}unlock('wc_dry');
       meta.runHist=meta.runHist||[];meta.runHist.unshift({char:r.char,deck:r.deck,tier:r.tier,stop:r.stop,table:r.table,won:r.won,result:'lost',special:'waterchip',at:Date.now()});meta.runHist=meta.runHist.slice(0,12);}}
   if(has('scav')&&!ov.runOver){const pool=G.a.cv.flat().map(e=>e.card).filter(c=>isNum(c)&&c.suit);if(pool.length){const c=pick(pool);runAddCard({rank:c.rank,suit:c.suit});extras.push(`Scavenger: you pocketed the dealer’s ${cardName(c)}`);}}
@@ -845,7 +848,6 @@ function pickEvent0(){
   }
   return pick(normal);
 }
-const statOf=n=>{const r=run(),b=r&&CHAR_BIO[r.char];return b?b.stats[STAT_NAMES.indexOf(n)]:5;};
 const EVENTS={
   junktown:{wc:true,title:'Junktown',text:'Junktown’s split in two. Killian Darkwater runs the store and the law; Gizmo runs the casino and wants Killian dead. Whoever you cross is who you’ll face at the boss table.',
     choices:[{label:'Side with Killian: play Gizmo',act:()=>{run().junk='gizmo';(meta.junkFaced=meta.junkFaced||{}).gizmo=1;checkJunk();return 'Killian nods. Gizmo is waiting for you at the casino tables.';}},
@@ -857,13 +859,13 @@ const EVENTS={
   policebox:{wc:true,title:'An Unusual Call Box',text:'A blue police call box stands alone in the desert. As you walk closer, it groans, wheezes, and fades away.',
     choices:[{label:'Stand where it was',act:()=>{const r=run();r.found.push('policebox');unlock('wc_policebox');r.days=(r.days||0)+20;return 'You feel a little younger. Somehow you’ve gained 20 days.';}}]},
   trader:{title:'A Traveling Trader',text:'A trader with a two-headed mule offers to swap one of your plain number cards for an upgraded one.',
-    choices:[{label:'Trade (5 caps)',cost:5,act:()=>{const plain=meta.deck.filter(c=>isNum(c)&&!c.mod);if(!plain.length){meta.caps+=5;return 'You have no plain number cards left to trade. The trader hands your caps back.';}const c=pick(plain);c.mod=pick(Object.keys(MODS));showReveal('change','Traded',`${MODS[c.mod].name}: ${MODS[c.mod].desc}`,[c]);return `Your ${cardName(c)} came back ${MODS[c.mod].name}.`;}},{label:'Spot the best piece in his cart: trade for free',req:['Smarts',7],act:()=>{const plain=meta.deck.filter(c=>isNum(c)&&!c.mod);if(!plain.length)return 'You have no plain number cards left to trade.';const c=pick(plain);c.mod=pick(Object.keys(MODS));showReveal('change','Good eye',`${MODS[c.mod].name}: ${MODS[c.mod].desc}`,[c]);return `You spot the gem in his cart. Your ${cardName(c)} came back ${MODS[c.mod].name}, no charge.`;}},{label:'Keep walking',act:()=>'The trader shrugs and moves on.'}]},
+    choices:[{label:'Trade (5 caps)',cost:5,act:()=>{const plain=meta.deck.filter(c=>isNum(c)&&!c.mod);if(!plain.length){meta.caps+=5;return 'You have no plain number cards left to trade. The trader hands your caps back.';}const c=pick(plain);c.mod=pick(Object.keys(MODS));showReveal('change','Traded',`${MODS[c.mod].name}: ${MODS[c.mod].desc}`,[c]);return `Your ${cardName(c)} came back ${MODS[c.mod].name}.`;}},{label:'Spot the best piece in his cart: trade for free',req:['Intelligence',7],act:()=>{const plain=meta.deck.filter(c=>isNum(c)&&!c.mod);if(!plain.length)return 'You have no plain number cards left to trade.';const c=pick(plain);c.mod=pick(Object.keys(MODS));showReveal('change','Good eye',`${MODS[c.mod].name}: ${MODS[c.mod].desc}`,[c]);return `You spot the gem in his cart. Your ${cardName(c)} came back ${MODS[c.mod].name}, no charge.`;}},{label:'Keep walking',act:()=>'The trader shrugs and moves on.'}]},
   toll:{title:'Raider Toll',text:'Raiders block the road and want 10 caps to let you pass.',
-    choices:[{label:'Pay up (10 caps)',cost:10,act:()=>'They wave you through.'},{label:'Stare them down',req:['Strength',6],act:()=>'They take one look at you and find somewhere else to be. No toll.'},{label:'Talk the price down (4 caps)',req:['Charm',7],cost:4,act:()=>'You haggle them down to a fraction. They wave you through, grumbling.'},{label:'Refuse',act:()=>{run().nextRules=['heavy'];return 'They let you pass, but they tip off the next dealer. Your next table: the dealer opens with 2 extra cards.';}}]},
+    choices:[{label:'Pay up (10 caps)',cost:10,act:()=>'They wave you through.'},{label:'Stare them down',req:['Strength',6],act:()=>'They take one look at you and find somewhere else to be. No toll.'},{label:'Talk the price down (4 caps)',req:['Charisma',7],cost:4,act:()=>'You haggle them down to a fraction. They wave you through, grumbling.'},{label:'Slip past in the dark',req:['Agility',7],act:()=>'You slip through the checkpoint unseen. No toll.'},{label:'Refuse',act:()=>{run().nextRules=['heavy'];return 'They let you pass, but they tip off the next dealer. Your next table: the dealer opens with 2 extra cards.';}}]},
   doctor:{title:'The Strange Doctor',text:'A doctor in a stained coat offers to “reinforce” a card. Results guaranteed, mostly.',
-    choices:[{label:'Steel a card (6 caps)',cost:6,act:()=>{const pool=meta.deck.filter(c=>isNum(c)&&!c.mod);if(!pool.length){meta.caps+=6;return 'He can’t find a plain card to work on and gives your caps back, looking disappointed.';}const c=pick(pool);c.mod='steel';showReveal('change','Reinforced',`Steel: ${MODS.steel.desc}`,[c]);return `Your ${cardName(c)} is now Steel.`;}},{label:'Check his work first: Steel a card (3 caps)',req:['Smarts',7],cost:3,act:()=>{const pool=meta.deck.filter(c=>isNum(c)&&!c.mod);if(!pool.length){meta.caps+=3;return 'No plain card left to work on. He gives your caps back.';}const c=pick(pool);c.mod='steel';showReveal('change','Reinforced',`Steel: ${MODS.steel.desc}`,[c]);return `You spot his shortcuts and haggle. Your ${cardName(c)} is now Steel, for less.`;}},{label:'No thanks',act:()=>'You back away slowly.'}]},
+    choices:[{label:'Steel a card (6 caps)',cost:6,act:()=>{const pool=meta.deck.filter(c=>isNum(c)&&!c.mod);if(!pool.length){meta.caps+=6;return 'He can’t find a plain card to work on and gives your caps back, looking disappointed.';}const c=pick(pool);c.mod='steel';showReveal('change','Reinforced',`Steel: ${MODS.steel.desc}`,[c]);return `Your ${cardName(c)} is now Steel.`;}},{label:'Check his work first: Steel a card (3 caps)',req:['Intelligence',7],cost:3,act:()=>{const pool=meta.deck.filter(c=>isNum(c)&&!c.mod);if(!pool.length){meta.caps+=3;return 'No plain card left to work on. He gives your caps back.';}const c=pick(pool);c.mod='steel';showReveal('change','Reinforced',`Steel: ${MODS.steel.desc}`,[c]);return `You spot his shortcuts and haggle. Your ${cardName(c)} is now Steel, for less.`;}},{label:'No thanks',act:()=>'You back away slowly.'}]},
   wreck:{title:'An Abandoned Caravan',text:'A wrecked caravan sits by the road. Something might be worth taking.',
-    choices:[{label:'Search the cargo',act:()=>{const a=runAddCard(rollCard(true)),b=runAddCard(rollCard(false));showReveal('add','From the wreck','You pull these out of the cargo. They join your deck.',[a,b]);return `You found ${cardName(a)}${a.mod?` (${MODS[a.mod].name})`:''}${a.ed?` (${EDITIONS[a.ed].name})`:''} and ${cardName(b)}, now in your deck.`;}},{label:'Pry open the locked crate',req:['Strength',7],act:()=>{const a=runAddCard(rollCard(true)),b=runAddCard(rollCard(true));meta.caps+=6;showReveal('add','From the locked crate','You pry the lid off and take everything. These join your deck, plus 6 caps.',[a,b]);return `You pry it open: ${cardName(a)} and ${cardName(b)} join your deck, and you pocket 6 caps.`;}},{label:'Take the loose caps',act:()=>{meta.caps+=6;return 'You pocket 6 caps.';}}]},
+    choices:[{label:'Search the cargo',act:()=>{const a=runAddCard(rollCard(true)),b=runAddCard(rollCard(false));showReveal('add','From the wreck','You pull these out of the cargo. They join your deck.',[a,b]);return `You found ${cardName(a)}${a.mod?` (${MODS[a.mod].name})`:''}${a.ed?` (${EDITIONS[a.ed].name})`:''} and ${cardName(b)}, now in your deck.`;}},{label:'Spot the hidden compartment',req:['Perception',7],act:()=>{const a=runAddCard(rollCard(true));meta.caps+=6;showReveal('add','Hidden in the wreck','Tucked behind a panel where the scavengers never looked.',[a]);return `You spot a hidden compartment: ${cardName(a)} joins your deck, plus 6 caps.`;}},{label:'Pry open the locked crate',req:['Strength',7],act:()=>{const a=runAddCard(rollCard(true)),b=runAddCard(rollCard(true));meta.caps+=6;showReveal('add','From the locked crate','You pry the lid off and take everything. These join your deck, plus 6 caps.',[a,b]);return `You pry it open: ${cardName(a)} and ${cardName(b)} join your deck, and you pocket 6 caps.`;}},{label:'Take the loose caps',act:()=>{meta.caps+=6;return 'You pocket 6 caps.';}}]},
   gambler:{title:'The Coin Flipper',text:'A grinning stranger offers a coin flip: double or nothing on 10 caps.',
     choices:[{label:'Flip (10 caps)',cost:10,act:()=>{if(Math.random()<.5){meta.caps+=20;return 'Heads! You win 20 caps.';}return 'Tails. The stranger laughs and walks off with your caps.';}},{label:'Flip with a lucky coin (10 caps, 70% to win)',req:['Luck',7],cost:10,act:()=>{if(Math.random()<.7){meta.caps+=20;return 'Heads! Your lucky coin comes through. You win 20 caps.';}return 'Tails. Even a lucky coin has off days.';}},{label:'Walk away',act:()=>'Probably wise.'}]},
   shrine:{title:'A Roadside Shrine',text:'An old shrine to a forgotten casino. Leaving an offering here thins your deck of the cards you least need.',
@@ -871,19 +873,24 @@ const EVENTS={
   barrel:{title:'A Burn Barrel',text:'A barrel fire crackles by the roadside, and nobody’s watching it. A good place to get rid of cards you don’t want.',
     choices:[{label:'Burn up to 3 cards (free)',act:()=>{openBurn(3,'Burn barrel','Pick up to 3 cards to burn. They’re gone for the rest of the run.');return null;}},{label:'Warm your hands and move on',act:()=>'You warm up and hit the road.'}]},
   campfire:{title:'A Quiet Campfire',text:'Somebody left a fire burning by the road, with a coffee pot still warm. A good place to catch your breath, or to swap tall tales with a passing trader.',
-    choices:[{label:'Rest a while (restore 1 Grit, up to 2)',act:()=>{const r=run();if((r.grit||0)<2){r.grit=(r.grit||0)+1;return `You feel steadier. Grit: ${r.grit}.`;}return 'You’re as steady as you get. The coffee was good, though.';}},{label:'Take first watch: restore 1 Grit and +4 caps',req:['Grit',8],act:()=>{const r=run();r.grit=Math.min(2,(r.grit||0)+1);meta.caps+=4;return `You keep watch while the others sleep. Grit: ${r.grit}, and +4 caps.`;}},{label:'Swap stories (+4 caps)',act:()=>{meta.caps+=4;return 'The trader liked your story enough to pay for it. +4 caps.';}}]},
+    choices:[{label:'Rest a while (restore 1 Grit, up to 2)',act:()=>{const r=run();if((r.grit||0)<2){r.grit=(r.grit||0)+1;return `You feel steadier. Grit: ${r.grit}.`;}return 'You’re as steady as you get. The coffee was good, though.';}},{label:'Take first watch: restore 1 Grit and +4 caps',req:['Endurance',8],act:()=>{const r=run();r.grit=Math.min(2,(r.grit||0)+1);meta.caps+=4;return `You keep watch while the others sleep. Grit: ${r.grit}, and +4 caps.`;}},{label:'Swap stories (+4 caps)',act:()=>{meta.caps+=4;return 'The trader liked your story enough to pay for it. +4 caps.';}}]},
   medic:{title:'A Wandering Medic',text:'A medic offers chems from her bag at a fair price.',
-    choices:[{label:'Buy a random chem (2 caps)',cost:2,act:()=>{if(chemTotal()<chemMax()){const id=pick(Object.keys(CHEMS));meta.chems[id]=(meta.chems[id]||0)+1;return `You got a ${CHEMS[id].name}.`;}meta.caps+=2;return 'Your chem pouch is already full. She waves off the caps and wishes you luck.';}},{label:'Sweet-talk her into a free chem',req:['Charm',7],act:()=>{if(chemTotal()<chemMax()){const id=pick(Object.keys(CHEMS));meta.chems[id]=(meta.chems[id]||0)+1;return `She laughs, rummages in her bag and hands you a ${CHEMS[id].name}. No charge.`;}return 'Your chem pouch is already full. She wishes you luck anyway.';}},{label:'Decline',act:()=>'She nods and moves along.'}]},
+    choices:[{label:'Buy a random chem (2 caps)',cost:2,act:()=>{if(chemTotal()<chemMax()){const id=pick(Object.keys(CHEMS));meta.chems[id]=(meta.chems[id]||0)+1;return `You got a ${CHEMS[id].name}.`;}meta.caps+=2;return 'Your chem pouch is already full. She waves off the caps and wishes you luck.';}},{label:'Sweet-talk her into a free chem',req:['Charisma',7],act:()=>{if(chemTotal()<chemMax()){const id=pick(Object.keys(CHEMS));meta.chems[id]=(meta.chems[id]||0)+1;return `She laughs, rummages in her bag and hands you a ${CHEMS[id].name}. No charge.`;}return 'Your chem pouch is already full. She wishes you luck anyway.';}},{label:'Decline',act:()=>'She nods and moves along.'}]},
 };
 Object.assign(EVENTS,{
+  ambush:{title:'An Ambush on the Road',text:'The road narrows between two rock walls. Something glints on the ridge above: raiders, waiting. They haven’t seen you yet.',
+    choices:[{label:'Spot the best way around',req:['Perception',7],act:()=>{meta.caps+=6;return 'You pick out every raider and slip around. Their stash is unguarded: +6 caps.';}},
+             {label:'Dodge through the crossfire',req:['Agility',7],act:()=>'Bullets everywhere, and none of them hit. You’re through before they reload.'},
+             {label:'Pay them off (8 caps)',cost:8,act:()=>'They take the caps and look the other way.'},
+             {label:'Run for it',act:()=>{run().nextRules=['heavy'];return 'You make it, but they radio ahead. Next table: the dealer opens with 2 extra cards.';}}]},
   safe:{title:'A Pre-War Safe',text:'A rusted safe sits half-buried in the sand, its door welded shut by two centuries of rust. Somebody went to a lot of trouble hiding something in it.',
-    choices:[{label:'Crack the combination',req:['Smarts',7],act:()=>{const c=runAddCard({rank:pick(['A','4','5','6','7','8','9','10']),suit:pick(SUITS),mod:pick(Object.keys(MODS)),ed:rollEdition(null)});meta.caps+=6;showReveal('add','Inside the safe','An upgraded card with a special finish. It joins your deck.',[c]);return `Click. Inside: ${cardName(c)} (${MODS[c.mod].name}, ${EDITIONS[c.ed].name}) and 6 caps.`;}},
+    choices:[{label:'Crack the combination',req:['Intelligence',7],act:()=>{const c=runAddCard({rank:pick(['A','4','5','6','7','8','9','10']),suit:pick(SUITS),mod:pick(Object.keys(MODS)),ed:rollEdition(null)});meta.caps+=6;showReveal('add','Inside the safe','An upgraded card with a special finish. It joins your deck.',[c]);return `Click. Inside: ${cardName(c)} (${MODS[c.mod].name}, ${EDITIONS[c.ed].name}) and 6 caps.`;}},
              {label:'Force the door',req:['Strength',7],act:()=>{meta.caps+=14;return 'The hinges give with a shriek. You pocket 14 caps from inside.';}},
              {label:'Shake it for loose change',act:()=>{meta.caps+=3;return 'Something rattles. You get 3 caps out of the crack.';}}]},
   radstorm:{title:'A Radstorm',text:'The sky turns green over the ridge. A radstorm is rolling in, fast. Dig in and wait it out, or run for the next town and hope for the best.',
     choices:[{label:'Dig in and wait it out (4 caps of supplies)',cost:4,act:()=>'You sit tight under a tarp until it passes. A little poorer, a lot safer.'},
-             {label:'Run through it like you were born to it',req:['Grit',8],act:()=>{meta.caps+=6;return 'You barely notice. On the far side you find 6 caps in the debris.';}},
-             {label:'Run for it',act:()=>{run().nextRules=['light'];return 'You make it, but your hands shake. Next table: you hold one fewer card.';}}]},
+             {label:'Run through it like you were born to it',req:['Endurance',8],act:()=>{meta.caps+=6;return 'You barely notice. On the far side you find 6 caps in the debris.';}},
+             {label:'Spot a shelter in the rocks',req:['Perception',7],act:()=>{meta.caps+=4;return 'You spot an old culvert and ride the storm out in comfort. You even find 4 caps in it.';}},{label:'Run for it',act:()=>{run().nextRules=['light'];return 'You make it, but your hands shake. Next table: you hold one fewer card.';}}]},
 });
 function eventChoose(i){
   const r=run(),ev=EVENTS[r.event];if(!ev)return;const ch=ev.choices[i];if(!ch)return;

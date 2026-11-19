@@ -28,7 +28,7 @@ function renderRunMap(){
       const d=t===2?boss:r.dealers[s][t], ids=tableRuleIds(s,t).filter((x,i,a)=>a.indexOf(x)===i);
       const tag=t<2?TAGS[r.skipTags[s][t]]:null;
       return `<div class="rtable ${st}${t===2?' boss':''}">
-        <div class="rt-head">${t===2?bossPic(d,'rivalimg'):''}<div><small>${TABLE_KIND[t]}${isWC()?` · ${WC_COST[t]} days`:''}</small><b>${esc(d.name)}</b><span>${esc(d.blurb)}</span></div></div>
+        <div class="rt-head">${t===2?bossPic(d,'rivalimg'):''}<div><small>${TABLE_KIND[t]}${isWC()?` · ${wcCost(t)} days`:''}</small><b>${esc(d.name)}</b><span>${esc(d.blurb)}</span></div></div>
         ${t===2&&d.wcRule?`<div class="rulesbar"><span class="rb house-chip">Boss: ${esc(d.wcRule)}</span></div>`:''}
         ${ids.length?`<div class="rulesbar">${ids.map(ruleChip).join('')}${t===2&&d.rival?`<span class="rb house-chip">Rival: ${esc(RIVALS[d.rival].rule)}</span>`:''}</div>`:(t===2&&d.rival?`<div class="rulesbar"><span class="rb house-chip">Rival: ${esc(RIVALS[d.rival].rule)}</span></div>`:'')}
         ${ids.length?`<div class="ruledescs">${ids.map(id=>`<span><b>${BOSS_RULES[id].name}:</b> ${esc(BOSS_RULES[id].desc)}</span>`).join('')}</div>`:''}
@@ -44,7 +44,7 @@ function renderRunMap(){
   ${runHeaderHTML()}
   <div class="hubbtns kitbtns"><button class="btn" data-kitopen="deck">Your deck, perks & chems</button>${r.offers?`<button class="btn" data-runshopback>← Back to the trading post</button>`:''}</div>
   ${r.tagPick?`<section class="panel"><h3 class="sub" style="margin-top:0">Tag Skills: pick a free perk</h3><div class="plist">${r.tagPick.map(id=>`<button class="prow" data-tagpick="${id}"><div><b>${esc(PERKS[id].name)}</b><span>${esc(PERKS[id].desc)}</span></div></button>`).join('')}</div></section>`:''}
-  ${isWC()?`<div class="wcclock"><b class="num">${r.days}</b> days of water left<span>Saloon ${WC_COST[0]} · High Stakes ${WC_COST[1]} · Boss ${WC_COST[2]} · Skip ${WC_SKIP}</span></div>`:''}
+  ${isWC()?`<div class="wcclock"><b class="num">${r.days}</b> days of water left<span>Saloon ${wcCost(0)} · High Stakes ${wcCost(1)} · Boss ${wcCost(2)} · Skip ${WC_SKIP}</span></div>`:''}
   ${bossPickHTML()}
   <section class="panel trailmap"><div class="maplabel">${isWC()?'Vault 13 → The Cathedral':'Goodsprings → The Strip'}</div>${rows}</section>
   ${runPre?runPreHandHTML():''}
@@ -83,7 +83,8 @@ function renderRunSetup(){
   app.innerHTML=`
   <div class="mbar">${backBtn('home','Modes')}</div>
   <section class="hero small"><div class="neon sm">${nr.special==='waterchip'?'The Water Chip':'The Road'}</div><p class="tagline">${nr.special==='waterchip'?'Seven stops to save Vault 13, and 150 days of water to do it. You start with 1 Grit; run out and one more loss ends the run.':'Six stops to the Strip. You start with 1 Grit; run out and one more loss ends the run.'}</p></section>
-  ${meta.char?`<div class="charstrip"><img src="${portrait(meta.char)}" alt=""><div><small>Character</small><b>${esc(CHARS[meta.char].name)}</b><span>${CHARS[meta.char].traits.map(t=>t[1]).join(' · ')}</span></div><button class="btn" data-go="pickchar">Change</button></div>`:''}
+  ${meta.char?`<div class="charstrip"><img src="${portrait(meta.char)}" alt=""><div><small>Character</small><b>${esc(CHARS[meta.char].name)}</b><span>${esc(specialLine(meta.char))}${CHARS[meta.char].traits.length?' · '+CHARS[meta.char].traits.map(t=>t[1]).join(' · '):''}</span></div><button class="btn" data-go="pickchar">Change</button></div>`:''}
+  ${meta.char?`<section class="panel"><h2 style="font-size:22px">Your SPECIAL</h2>${specialBarsHTML(meta.char,currentGearIds())}${specialEffectsHTML(meta.char,currentGearIds())}<p class="note">Gear you wear adds to these. Change it at the Mojave Express.</p></section>`:''}
   <section class="panel dailybox">
     <h2 style="font-size:22px">Daily run</h2>
     ${(()=>{const day=dailySeed().slice(6),dl=(meta.dailyLog||{})[day],c=CHARS[dailyChar()];return `<p class="note">Same road for everyone today: ${esc(c.name)}, Plain deck, Copper Road, no gear. ${dl?`Your best today: ${dl.won?'reached Vegas':`stop ${dl.stop+1}`}. Streak: ${meta.dailyStreak||0} day${(meta.dailyStreak||0)===1?'':'s'}. Replay it for practice.`:'You haven’t played it yet. Your first finish pays NCR dollars.'}</p><button class="btn hot" data-rundaily>Play today’s daily</button>`;})()}
@@ -223,7 +224,7 @@ function kitHTML(){
   const tabBtn=(k,l)=>`<button class="btn" data-kitopen="${k}" aria-pressed="${tab===k}">${l}</button>`;
   return `<div class="overlay"><div class="panel result kitpop" role="dialog" aria-label="Your kit" style="text-align:left">
     <div class="sect-h"><h2 style="font-size:24px;margin:0">Your kit</h2><button class="btn" data-kitclose>Close</button></div>
-    <div class="tabs" role="group" aria-label="Kit section">${tabBtn('deck',`Deck (${meta.deck.length})`)}${tabBtn('perks',`Perks (${meta.perks.length}/${slots})`)}${tabBtn('chems',`Chems & more`)}</div>
+    <div class="tabs" role="group" aria-label="Kit section">${tabBtn('deck',`Deck (${meta.deck.length})`)}${tabBtn('perks',`Perks (${meta.perks.length}/${slots})`)}${tabBtn('special','SPECIAL')}${tabBtn('chems',`Chems & more`)}</div>
     ${tab==='deck'?`
       <p class="note">${deckSummary(meta.deck)} ${modCount()?`${modCount()} upgraded.`:''} ${meta.deck.filter(c=>c.ed).length?`${meta.deck.filter(c=>c.ed).length} with a special finish.`:''}</p>
       <p class="note">On the Road your deck changes at the trading post: add cards from bundles and singles, upgrade them at the workbench, and thin it out with the Burn pile.${back?' You can still go back to this stop’s trading post.':''}</p>
@@ -235,6 +236,10 @@ function kitHTML(){
       <h3 class="sub">${esc(CHARS[r.char].name)}</h3>
       <ul class="traits">${CHARS[r.char].traits.map(([k,n,dsc])=>`<li class="${k==='+'?'pro':k==='='?'meh':'con'}"><b>${k} ${esc(n)}</b> ${esc(dsc)}</li>`).join('')}</ul>
       <p class="note"><b>Deck twist:</b> ${esc(DECKS[deckIdx(r.deck)].twist)}</p>`
+    :tab==='special'?`
+      <h3 class="sub" style="margin-top:0">${esc(CHARS[r.char].name)}</h3>${specialBarsHTML(r.char,r.gear||[])}
+      <h3 class="sub">What it does for you</h3>${specialEffectsHTML(r.char,r.gear||[])}
+      ${(r.gear||[]).length?`<p class="note"><b>Gear:</b> ${r.gear.map(id=>`${esc(GEAR[id].name)} ${spChips(GEAR[id])}`).join(' · ')}</p>`:'<p class="note">No gear equipped this run.</p>'}`
     :`
       <h3 class="sub" style="margin-top:0">Chems <span class="note">${chemTotal()}/${chemMax()}</span></h3>
       ${chems.length?`<div class="plist">${chems.map(([id,n])=>`<div class="prow"><div><b>${CHEMS[id].name} ×${n}</b><span>${esc(CHEMS[id].desc)}</span></div></div>`).join('')}</div><p class="note">Use them during a hand, one per turn, after the opening.</p>`:'<p class="note">No chems. Buy them at the trading post.</p>'}

@@ -156,58 +156,57 @@ const CHEM_MAX=3, START_CAPS=50, MIN_DECK=30, MIN_NUMS=24, SAVE_KEY='mojave-cara
 // ---------- Road characters ----------
 const CHARS={
   vladmira:{name:'Vladmira',tag:'Vault strongwoman · slightly irradiated',bio:'Lifts engine blocks for fun. Talks her way into anything, reads her way into nothing.',
-    traits:[['+','Strong Back','Your caravans sell all the way up to 27.'],['+','Silver Tongue','20% off everything at the trading post.'],['−','Not Much of a Reader','Bounties pay half. Fine print? What fine print?']]},
+    traits:[]},
   nuke:{name:'Nuke Skywalker',tag:'Scientist & chemist',bio:'Can synthesize anything except confidence.',
     traits:[['+','Chemist','Carry up to 5 chems, and brew a free one after every win.'],['+','Probability Theory','You always see the next card you’ll draw.'],['−','Impostor Syndrome','Table winnings are 20% lower. He undersells himself.']]},
   chevy:{name:'Chevy Ford',tag:'Vault engineer & mechanic',bio:'If it moves, he fixed it. If it shouldn’t, he built a turret.',
     traits:[['+','Auto-Turret','Once per hand, shoot the top card off one of the dealer’s caravans. Uses your turn.'],['+','Tinkerer','One extra perk slot.'],['−','Union Dues','10% of table winnings go to the union.']]},
   ronald:{name:'Ronald Raygun',tag:'Distiller & radio host · Richmond, VA',bio:'Cooks rotgut in an oil-drum still and sells it live on air between call-in segments. Never met a jug, or a microphone, he didn’t like.',
-    traits:[['+','Bootlegger','+3 caps after every table you win. The jug sells itself.'],['+','Sponsored Segment','Your first reroll at every trading post is free.'],['−','Sampling the Product','You open every hand with 7 cards instead of 8.']]},
+    traits:[['+','Bootlegger','+3 caps after every table you win. The jug sells itself.'],['+','Sponsored Segment','Your first reroll at every trading post is free.']]},
   matt:{name:'Matt',tag:'Matt',bio:'Matt is here. Matt plays Caravan. The molerats seem to like him. That’s about it.',
     traits:[['=','Just Matt','No bonus. No drawback. Playing as Matt drains all the color out of the world.']]},
   greg:{name:'Greg',tag:'Big green mutant · gentle soul',bio:'Hulking, mustached and a little too friendly. Never goes anywhere without Alex, his doll and closest advisor.',locked:true,unlock:'Beat Greg at the Strip, playing as any starting character.',
     traits:[['+','Big Hands','Hold 6 cards instead of 5.'],['+','Bear Hug','Once per hand, hug the dealer. They skip their next turn recovering.'],['−','Gentle Giant','Your Jacks can’t touch the dealer’s cards. He doesn’t like being mean.']]},
   jeanita:{name:'Jeanita',tag:'Ghoul concierge',bio:'Was taking a reservation when the bombs dropped. Still at her post. The pantsuit has seen better centuries.',locked:true,unlock:'Beat Jeanita at the Strip, playing as Greg.',
-    traits:[['+','Party Line','The receivers fused to her head pick up everything: you always see the dealer’s hand.'],['+','Rad-Proof','Jokers can never remove your cards.'],['−','On Hold','Table winnings are 15% lower. Half her calls are still on hold.']]},
+    traits:[['+','Rad-Proof','Jokers can never remove your cards.'],['−','On Hold','Table winnings are 15% lower. Half her calls are still on hold.']]},
 };
 CHARS.snipsnip={name:'Snip Snip',tag:'Mr. Handy surgical unit',bio:'Three eyes, three arms, one setting: surgery. Very enthusiastic about trimming things. Including caravans.',locked:true,unlock:'Win a run without using a single chem.',
   traits:[['+','Self-Repair','Once per hand, take back your last turn, and the dealer’s reply with it.'],['+','Spare Parts','When the dealer’s Jack knocks one of your cards off, it comes back to your hand.'],['−','No Organics','He’s a robot. He can’t carry or use chems.']]};
 CHARS.threedog={name:'Three Dog',tag:'Galaxy News Radio DJ',bio:'Ow-ooooo! The voice of the Capital Wasteland, fighting the good fight one card at a time, live on air.',locked:true,unlock:'Beat the Strip with three different characters.',
   traits:[['+','Request Line','Once per hand, swap a card in your hand for the top card of your deck. Doesn’t use your turn.'],['+','The Good Fight','Every boss you beat pays 2 extra NCR dollars.'],['−','Public Enemy','Every boss table has one extra boss rule. Talon Company listens to the radio too.']]};
 CHARS.benny={name:'Benny',tag:'Chairmen boss · checkered suit',bio:'Ring-a-ding-ding, baby. Smooth talker, sharp dresser, and he’s holding a chip that isn’t his.',locked:true,unlock:'Beat the Strip on the Silver Road or harder.',
-  traits:[['+','Ring-a-Ding-Ding','Ties go to Benny: if your caravan matches the dealer’s, you sell it.'],['+','The Platinum Chip','Starts every run with the Platinum Chip Legend card in his deck.'],['−','Double-Crosser','Nobody trusts him: he starts every run with 1 less Grit.']]};
+  traits:[['+','Ring-a-Ding-Ding','Ties go to Benny: if your caravan matches the dealer’s, you sell it.'],['+','The Platinum Chip','Starts every run with the Platinum Chip Legend card in his deck.']]};
 CHARS.vaultdweller={name:'Vault Dweller',tag:'Vault 13 · blue and gold',bio:'Born and raised underground. Sent out with a canteen and a deadline to save everyone they know.',locked:true,unlock:'Save Vault 13 on the Water Chip run.',
   traits:[['+','Tag Skills','At the start of every run, choose 1 of 3 perks for free.'],['+','Vault Rations','A free Saddlebag bundle at every trading post.'],['−','Fresh Out of the Vault','Starts every run with 5 fewer caps.']]};
 CHARS.harold={name:'Harold',tag:'Ghoul · has a tree named Bob',bio:'An old ghoul with a tree growing out of his head. He named it Bob. They get along.',locked:true,unlock:'On the Water Chip run, beat Set at Necropolis without losing a table.',
   traits:[['+','Bob the Tree','Once per hand, regrow the last card the dealer knocked off your caravans.'],['+','Rad-Rich','Neon cards pay double.'],['−','Old Bones','Holds 4 cards instead of 5.']]};
 const CHAR_ORDER=['vladmira','nuke','chevy','ronald','matt','snipsnip','threedog','benny','vaultdweller','harold','greg','jeanita'];
 const CHAR_BIO={
-  vladmira:{stats:[10,2,9,7,5],quote:'You want to arm-wrestle for it? No? Then deal.',
+  vladmira:{stats:[10,3,7,9,2,4,5],quote:'You want to arm-wrestle for it? No? Then deal.',
     story:'Born and raised in a sealed vault, Vladmira spent her teens hauling reactor coolant by hand. That explains the arms, and the faint green glow. When the doors finally opened she walked out first and hasn’t stopped talking since. Folks can’t say no to her, mostly because they can’t get a word in.'},
-  nuke:{stats:[2,10,3,4,7],quote:'Statistically, I’ll lose. Sorry in advance.',
+  nuke:{stats:[2,7,4,3,10,5,7],quote:'Statistically, I’ll lose. Sorry in advance.',
     story:'Nuke ran the vault’s chemistry lab, mixing floor cleaner, cough syrup and the occasional explosive. He can calculate the odds of any card coming up, but not why anybody would want him at their table. Carries a flask of something green. Won’t say what.'},
-  chevy:{stats:[6,7,5,9,4],quote:'If it ain’t broke, I ain’t been paid yet.',
+  chevy:{stats:[6,4,8,5,7,6,4],quote:'If it ain’t broke, I ain’t been paid yet.',
     story:'Chevy spent twenty years keeping the vault’s generators alive with spit, wire and stubbornness. Out in the wasteland he’s never without a wrench, a toolbox and a folding turret he swears is for “home defense.” He plays cards like he fixes engines: patiently, then all at once.'},
-  ronald:{stats:[5,6,10,6,7],quote:'You’re listening to WRAY, the last signal on the James River. This hand is brought to you by Raygun’s Reserve.',
+  ronald:{stats:[5,4,6,10,6,3,7],quote:'You’re listening to WRAY, the last signal on the James River. This hand is brought to you by Raygun’s Reserve.',
     story:'Ronald Raygun stirs his mash in a rusted oil drum behind a collapsed tobacco warehouse on the James River, and broadcasts a pirate radio show out of the same shack. The Raygun Hour is mostly wasteland news, call-ins and ads for his own moonshine, which comes in a jug with a skull on it for legal reasons. He came west in the same battered hat and coat, chasing a bigger audience and a thirstier market. He found both at the card tables.'},
-  matt:{stats:[5,5,5,5,5],quote:'Yeah. Okay. Sure.',
+  matt:{stats:[5,5,5,5,5,5,5],quote:'Yeah. Okay. Sure.',
     story:'Matt grew up somewhere. He had a job, then a different job. Now he sits on a crate behind a scrap fence, holding a stick, while a family of molerats goes about its day around him. They’ve stopped noticing him. Most people have. When he walks into a room, the color quietly leaves it. Nobody knows why Matt is on the Road. Matt doesn’t really know either.'},
-  greg:{stats:[10,4,8,10,6],quote:'Alex says you look like a good friend.',
+  greg:{stats:[10,2,10,8,4,4,6],quote:'Alex says you look like a good friend.',
     story:'Nobody’s sure where Greg came from, including Greg. He’s eight feet of green muscle with the manners of a church usher and a mustache he combs twice a day. Alex, a hand-stitched doll with yarn hair, offers advice on every hand. Greg always listens.'},
-  jeanita:{stats:[3,8,6,10,9],quote:'Front desk, how may I direct your call? …Please hold.',
+  jeanita:{stats:[2,10,8,6,8,5,7],quote:'Front desk, how may I direct your call? …Please hold.',
     story:'Jeanita was manning the front desk of a swanky hotel, a phone on each ear, when the bombs fell. The receivers fused to her head, the pantsuit held together (mostly), and she never left her post. Two centuries of overhearing every guest have made her the best-informed player in the wasteland. She staples her hair back on every morning before her shift.'},
 };
-CHAR_BIO.snipsnip={stats:[6,8,2,9,4],quote:'Snip snip! Hold still, this won’t hurt. Much.',
+CHAR_BIO.snipsnip={stats:[5,7,8,2,8,8,4],quote:'Snip snip! Hold still, this won’t hurt. Much.',
   story:'Snip Snip came off the line as a top-of-the-range surgical Mr. Handy, three arms of scalpels, saws and a bonesaw that hums when he’s happy. Two centuries without a patient have made him very, very eager. He took up Caravan because a caravan, like a patient, always has something you can take off.'};
-CHAR_BIO.threedog={stats:[5,7,10,6,8],quote:'Ow-ooooo! This is Three Dog, and you’re listening to Galaxy News Radio!',
+CHAR_BIO.threedog={stats:[4,6,5,10,7,4,8],quote:'Ow-ooooo! This is Three Dog, and you’re listening to Galaxy News Radio!',
   story:'Three Dog has been telling the truth to the Capital Wasteland one broadcast at a time, playing the same handful of records between news of who’s winning and who’s getting shot. He came west chasing a story about a card game on the Strip, and figured he might as well sit down and play it.'};
-CHAR_BIO.benny={stats:[4,7,10,3,9],quote:'Ring-a-ding-ding, baby. The house always wins, and tonight I’m the house.',
+CHAR_BIO.benny={stats:[3,6,3,10,7,9,8],quote:'Ring-a-ding-ding, baby. The house always wins, and tonight I’m the house.',
   story:'Benny runs the Chairmen out of the Tops, wears a checkered suit you can see from orbit, and carries a platinum chip that a certain courier would very much like back. He plays Caravan the way he does business: all charm up front and a knife behind the back.'};
-CHAR_BIO.vaultdweller={stats:[6,6,6,6,6],quote:'The Overseer said 150 days. I’m going to need about 149 of them.',
+CHAR_BIO.vaultdweller={stats:[5,6,5,5,7,6,6],quote:'The Overseer said 150 days. I’m going to need about 149 of them.',
   story:'The Vault Dweller had never seen the sky until the vault door rolled open. Now they have a canteen, a Pip-Boy 2000, a blue jumpsuit with a big yellow 13 on the back, and a whole vault counting on them. They learned Caravan from a trader in Shady Sands and turned out to be annoyingly good at it.'};
-CHAR_BIO.harold={stats:[4,8,7,10,5],quote:'Don’t mind Bob. He’s friendly.',
+CHAR_BIO.harold={stats:[4,6,10,7,8,4,5],quote:'Don’t mind Bob. He’s friendly.',
   story:'Harold has been wandering the wasteland since before most people were born, getting a little greener and a little leafier every year. The tree on his head is named Bob. Harold talks to Bob. Bob, so far, has not talked back, which Harold takes as a sign of good manners.'};
-const STAT_NAMES=['Strength','Smarts','Charm','Grit','Luck'];
 const ORIGINALS=['vladmira','nuke','chevy','ronald','matt'];
 // Rival roster: who you meet on the Road depends on who you play.
 const RIVALS={
@@ -236,8 +235,8 @@ const CHAR_UNLOCK={
 };
 const charUnlocked=id=>CHAR_UNLOCK[id]?CHAR_UNLOCK[id]():true;
 const isChar=id=>meta&&meta.char===id;
-const chemMax=()=>isChar('snipsnip')?0:(isChar('nuke')?5:CHEM_MAX)+0;
-const disc=n=>{let m=isChar('vladmira')?0.8:1;if(runLive()){const r=meta.run;if(r.halfShop)m*=0.5;if(r.tier==='gold')m*=1.25;}return Math.max(1,Math.ceil(n*m));};
+const chemMax=()=>chemCap(specialChar());
+const disc=n=>{let m=SPX.discount(sp('C'));if(runLive()){const r=meta.run;if(r.halfShop)m*=0.5;if(r.tier==='gold')m*=1.25;}return Math.max(1,Math.ceil(Math.round(n*m*1000)/1000));};   // rounded first: 100*1.1 is 110.00000000000001
 const runLive=()=>!!(meta&&meta.run&&meta.run.phase!=='over');
 const winMult=()=>isChar('nuke')?0.8:isChar('chevy')?0.9:isChar('jeanita')?0.85:1;
 

@@ -126,6 +126,69 @@ const ok = (name, cond, extra) => { cond ? pass++ : fail++; console.log(`${cond 
   T('a run ends with a summary', R.summary);
   T('a save from before seeds and the Codex still loads and plays', R.oldSave);
 
+  // ---- SPECIAL ----
+  const SP = await page.evaluate(() => {
+    const o = {}; const realTimeout = window.setTimeout; window.setTimeout = () => 0;
+    const fresh = (ch, gear = []) => { meta.run = null; meta.char = ch; meta.decksUnlocked = 8; meta.gear = { owned: gear.slice(), on: {} }; for (const id of gear) meta.gear.on[GEAR[id].slot] = id; meta.newRun = { deck: 'plain', tier: 'copper', token: null, seed: 'sp-' + ch }; startRun(); return run(); };
+    const rules = (r) => { r.phase = 'table'; return runRules(0, 0); };
+    // data
+    o.sevenEach = CHAR_ORDER.every((c) => CHAR_BIO[c].stats.length === 7 && CHAR_BIO[c].stats.every((v) => v >= 1 && v <= 10));
+    o.names = STAT_NAMES.join(',');
+    o.gearKeys = Object.values(GEAR).every((g) => g.sp && Object.keys(g.sp).every((k) => statIdx(k) >= 0));
+    o.everySlotHasMods = GEAR_SLOTS.every((sl) => Object.values(GEAR).filter((g) => g.slot === sl.id).every((g) => g.sp));
+    o.eventNames = Object.values(EVENTS).every((e) => e.choices.every((c) => !c.req || statIdx(c.req[0]) >= 0));
+    // gear modifies stats, clamped to 1-10
+    o.gearAdds = specialFor('matt', ['fawkes'])[0] === 7 && specialFor('vladmira', ['hat'])[3] === 10 && specialFor('vladmira', ['fawkes'])[0] === 10;
+    o.gearTakes = specialFor('harold', ['sawedoff'])[1] === 5 && specialFor('greg', ['armor'])[5] === 3;
+    o.floor = specialFor('matt', ['sawedoff', 'armor']).every((v) => v >= 1);
+    o.effectsText = specialEffects(specialFor('vladmira', []), 'vladmira').map((f) => f.text).join(' | ');
+    // Strength: chems and sell ceiling
+    fresh('vladmira'); o.chemsVlad = chemMax(); o.ceilVlad = rules(run()).range.p[1];
+    fresh('matt'); o.chemsMatt = chemMax(); o.ceilMatt = rules(run()).range.p[1];
+    fresh('nuke'); o.chemsNuke = chemMax(); fresh('snipsnip'); o.chemsSnip = chemMax();
+    fresh('matt', ['fawkes']); o.chemsFawkes = chemMax();
+    // Perception: bundle size, dealer's hand
+    fresh('jeanita'); o.seeJeanita = bundleSee({ id: 'saddlebag' }); fresh('vladmira'); o.seeVlad = bundleSee({ id: 'saddlebag' }); fresh('matt'); o.seeMatt = bundleSee({ id: 'saddlebag' });
+    fresh('jeanita'); let r = run(); r.phase = 'table'; startRunTable(); o.peekJeanita = !!G.peek; fresh('matt'); r = run(); r.phase = 'table'; startRunTable(); o.peekMatt = !!G.peek;
+    // Endurance: starting Grit, Water Chip days
+    o.grit = ['harold', 'benny', 'chevy', 'matt'].map((c) => fresh(c).grit).join(','); fresh('harold'); o.wcHarold = wcCost(0); fresh('matt'); o.wcMatt = wcCost(0);
+    // Charisma: prices
+    o.disc = ['vladmira', 'ronald', 'snipsnip', 'matt'].map((c) => { fresh(c); return disc(100); }).join(',');
+    // Intelligence: rerolls, bundle keep, bounties
+    fresh('nuke'); o.rerollNuke = rerollCost(); fresh('matt'); o.rerollMatt = rerollCost();
+    fresh('nuke'); openBundle0({ id: 'saddlebag' }, false); o.keepNuke = run().picker.keep; fresh('matt'); openBundle0({ id: 'saddlebag' }, false); o.keepMatt = run().picker.keep;
+    fresh('vladmira'); const bv = bossBountyPay(2); fresh('matt'); o.bountyHalf = bv * 2 === bossBountyPay(2) || bv * 2 === bossBountyPay(2) + 1 || bv * 2 === bossBountyPay(2) - 1;
+    // Agility: opening hand, quick hands
+    o.deal = ['ronald', 'snipsnip', 'matt'].map((c) => { const rr = fresh(c); return rules(rr).deal.p; }).join(',');
+    fresh('benny'); r = run(); r.phase = 'table'; startRunTable(); o.quickOn = !!G.quick; G.setupLeft = { p: 0, a: 0 }; G.turn = 'p'; G.p.hand = [mk('K', 'S'), mk('2', 'H'), mk('3', 'C')]; busy = false;
+    doMove('p', { t: 'discard', ci: 0 }); o.quickFree = G.turn === 'p' && G.quickUsed; doMove('p', { t: 'discard', ci: 0 }); o.quickOnce = G.turn === 'a';
+    // Luck
+    fresh('matt'); const lm = rarityWeights(); fresh('benny'); const lb = rarityWeights(); fresh('snipsnip'); const ls = rarityWeights();
+    o.luckSkews = lb.legendary > lm.legendary && lb.common < lm.common && ls.common > lm.common && Math.abs(Object.values(lm).reduce((a, b) => a + b, 0) - 100) < 0.01;
+    fresh('benny', ['revolver']); o.luckyDraw = rules(run()).luckyDraw.p; fresh('matt'); o.luckyDrawMatt = rules(run()).luckyDraw.p;
+    // stats gate events by effective value (gear counts)
+    fresh('matt'); o.gateBase = statOf('Strength') >= 7; fresh('matt', ['fawkes']); o.gateGear = statOf('Strength') >= 7;
+    // screens
+    meta.run = null; meta.char = 'vladmira'; meta.gear = { owned: ['hat'], on: { head: 'hat' } }; screen = 'road'; render(); const setup = document.body.innerHTML;
+    o.setupPanel = setup.includes('Your SPECIAL') && setup.includes('Barter') && setup.includes('class="stat"');
+    charInfo = 'jeanita'; screen = 'pickchar'; render(); o.bio = document.querySelectorAll('.biocard .stat').length === 7 && document.body.innerHTML.includes('From SPECIAL'); charInfo = null;
+    screen = 'office'; render(); o.office = document.body.innerHTML.includes('class="gsp"') && document.body.innerHTML.includes('’s SPECIAL');
+    fresh('chevy', ['armor', 'combat']); kitOpen = 'special'; screen = 'road'; render(); o.kit = document.body.innerHTML.includes('What it does for you') && document.body.innerHTML.includes('Leather Armor'); kitOpen = null;
+    window.setTimeout = realTimeout; return o;
+  });
+  ok('every character has seven stats from 1 to 10, named like SPECIAL', SP.sevenEach && SP.names === 'Strength,Perception,Endurance,Charisma,Intelligence,Agility,Luck');
+  ok('every piece of gear carries stat modifiers and events use real stat names', SP.gearKeys && SP.everySlotHasMods && SP.eventNames);
+  ok('gear adds to and takes from stats, clamped to 1-10', SP.gearAdds && SP.gearTakes && SP.floor);
+  ok('Strength sets the chem pouch (Nuke and Snip Snip keep their own) and the sell ceiling at 9+', SP.chemsVlad === 5 && SP.ceilVlad === 27 && SP.chemsMatt === 3 && SP.ceilMatt === 26 && SP.chemsNuke === 5 && SP.chemsSnip === 0 && SP.chemsFawkes === 4, `${SP.chemsVlad}/${SP.ceilVlad}/${SP.chemsMatt}/${SP.chemsNuke}/${SP.chemsSnip}/${SP.chemsFawkes}`);
+  ok('Perception changes bundle size, and 10 shows the dealer’s hand', SP.seeJeanita === 5 && SP.seeVlad === 2 && SP.seeMatt === 3 && SP.peekJeanita && !SP.peekMatt, `${SP.seeJeanita}/${SP.seeVlad}/${SP.seeMatt}`);
+  ok('Endurance sets starting Grit and Water Chip day costs', SP.grit === '2,0,1,1' && SP.wcHarold === 5 && SP.wcMatt === 6, `${SP.grit}`);
+  ok('Charisma moves trading post prices', SP.disc === '85,80,110,100', SP.disc);
+  ok('Intelligence cheapens rerolls, keeps more bundle cards and halves bounties when very low', SP.rerollNuke === 2 && SP.rerollMatt === 3 && SP.keepNuke === 2 && SP.keepMatt === 1 && SP.bountyHalf, `${SP.rerollNuke}/${SP.keepNuke}`);
+  ok('Agility changes the opening hand and frees a discard once per hand', SP.deal === '7,9,8' && SP.quickOn && SP.quickFree && SP.quickOnce, SP.deal);
+  ok('Luck tilts rarity weights (still summing to 100) and Lucky cards draw 2 at 9+', SP.luckSkews && SP.luckyDraw === 2 && SP.luckyDrawMatt === 1);
+  ok('gear can lift a stat over an event threshold', !SP.gateBase && SP.gateGear);
+  ok('SPECIAL shows on the setup screen, bio cards, the Mojave Express and the in-run kit', SP.setupPanel && SP.bio && SP.office && SP.kit);
+
   // A real click-through: story card, Deal in, wager button, confirm, play the opening with real clicks.
   await page.evaluate(() => { meta.opt.confirm = false; meta.char = 'chevy'; meta.run = null; meta.decksUnlocked = 8; meta.newRun = { deck: 'plain', tier: 'copper', token: null, seed: 'clicks' }; startRun(); meta.caps = 40; screen = 'road'; render(); });
   await page.click('[data-runstoryok]'); await page.click('[data-runplay]'); await page.waitForSelector('[data-wager="5"]'); await page.click('[data-wager="5"]'); await page.click('[data-runconfirm]'); await page.waitForSelector('.hand');

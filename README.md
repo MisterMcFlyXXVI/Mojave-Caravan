@@ -12,6 +12,7 @@ style.css         all styles
 js/               classic scripts that share one global scope, loaded in this order:
   engine.js         rules engine and dealer AI (pure: also loads under Node)
   data.js           houses, dealers, decks, cosmetics, perks, chems, characters
+  special.js        SPECIAL stats: base values, gear modifiers, what each stat does (SPX), on-screen text
   tutorial.js       guided lessons
   state.js          save/load/migrate, small DOM helpers
   menus.js          rules text, home, Classic, deck builder, character picker

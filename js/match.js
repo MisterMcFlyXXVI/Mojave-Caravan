@@ -209,6 +209,7 @@ function abilityBar(myTurn){
   if(G.char==='greg')out.push(row(`<button class="btn ability" data-hug ${!G.hugUsed&&ready?'':'disabled'}>${G.hugUsed?(G.hugPending?'Hug coming…':'Hug given'):'Bear hug'}</button>`,G.hugPending?'The dealer skips their next turn.':G.hugUsed?'':'Once per hand. Doesn’t use your turn.'));
   if(G.char==='harold')out.push(row(`<button class="btn ability" data-regrow ${myTurn&&!G.regrowUsed&&G.lastLost?'':'disabled'}>${G.regrowUsed?'Bob is resting':'Bob: regrow'}</button>`,G.regrowUsed?'':G.lastLost?`Put back your ${esc(cardName(G.lastLost.e.card))}. Once per hand, doesn’t use your turn.`:'Once per hand, after the dealer knocks one of your cards off.'));
   if(G.bat)out.push(row(`<button class="btn ability${batMode?' armed':''}" data-bat ${(!G.batUsed&&ready)||batMode?'':'disabled'}>${G.batUsed?'Slugger swung':batMode?'Cancel':'Louisville Slugger'}</button>`,batMode?'Tap one of your caravans.':G.batUsed?'':'Once per hand: knock the top card off one of your caravans. Doesn’t use your turn.'));
+  if(G.quick&&!G.over)out.push(`<div class="chems"><span class="chem-note">${G.quickUsed?'Quick hands used this hand.':'Quick hands: your first discard this hand doesn’t use your turn.'}</span></div>`);
   if(G.canWalk&&!G.over)out.push(row(`<button class="btn ability" data-walk ${ready?'':'disabled'}>Walk away</button>`,'Pre-War Sneakers: lose this table without losing Grit. Once per stop.'));
   // companion chip
   if(G.comp&&GEAR[G.comp]){const id=G.comp,x=GEAR[id];let btn='',note='';
