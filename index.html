@@ -2136,7 +2136,7 @@ function renderMatch(){
   const dealt=new Set(G.dealtDone?[]:(G.dealt||[]));
   app.innerHTML=`
   <div class="mbar">
-    <div class="opp">${o.rival||(o.art&&G.runTable===2)?bossPic(o,'rivalimg big'):''}<h2>${esc(o.name)}</h2><small>${esc(o.place)}${G.stake?` · ${G.mode==='campaign'?'bet':'buy-in'} ${G.stake}`:''}</small></div>
+    <div class="opp">${o.rival||(o.art&&G.runTable===2)?bossPic(o,'rivalimg big'):''}<h2>${esc(o.name)}</h2><small>${esc(o.place)}${G.stake?` · ${G.mode==='campaign'?'bet':G.run?'wager':'buy-in'} ${G.stake}`:''}</small></div>
     <div class="mbtns">${goalsList().length?`<button class="btn ghost" data-goalsopen aria-label="Goals">Goals${goalsList().filter(g=>g.state!=='failed'&&g.state!=='done').length?` <span class="gcount">${goalsList().filter(g=>g.state!=='failed'&&g.state!=='done').length}</span>`:''}</button>`:''}<button class="btn ghost" data-rulesopen aria-label="Rules">Rules</button><button class="btn ghost${armedFold?' armed':''}" data-fold>${armedFold?(G.stake?`Fold, lose ${G.stake}`:'Tap to fold'):'Fold'}</button></div>
   </div>
   ${rulesBar()}
@@ -2722,7 +2722,7 @@ function achOnFinish(){
     if(G.mode==='campaign'&&(G.stake||0)>=500)unlock('all_in');
     if(G.mode==='road'&&G.opp>=0){
       if((G.ruleIds||[]).includes('sand'))unlock('blind');
-      if(meta.caps-(ov.delta||0)<=2)unlock('comeback');
+      if(meta.caps-(ov.delta||0)+(G.wager||0)<=2)unlock('comeback');
     }
     if(ov.bountyWon){st.bounties++;unlock('bounty1');}
     const ul=G.usedLegends||[];
@@ -2829,6 +2829,7 @@ const ROAD_RULES=`
   <li><b>Road events:</b> some choices need a stat from your character’s bio: Strength, Smarts, Charm, Grit or Luck. Choices you can’t take show what they need, so different characters see different options.</li>
   <li><b>Seeds and the daily run:</b> every run has a seed, shown on the map. The same seed gives the same bosses, shops and events. The Daily run is the same road for everyone today (set character, Plain deck, Copper, no gear), and your first finish each day pays NCR dollars and builds a streak.</li>
   <li><b>The Codex</b> (from the Road menu or after a run) remembers every perk, boss and event you’ve met, and each run ends with a summary of how it went.</li>
+  <li><b>Wagers and boss swaps:</b> before a table you can stake some caps (up to 5, plus 3 per stop). Win and you get the stake back with a bonus: 50% at a Saloon table, 100% at High Stakes, 150% at a Boss. Lose and it’s gone, though walking away in Pre-War Sneakers refunds it. Before a boss, you can also bribe the house to swap one of the boss’s rules for one of two others, once per boss.</li>
   <li><b>Perks</b> come in four rarities. You start with 3 slots, get a 4th from Boulder City on and a 5th from Fremont Street on. Sell a perk to make room.</li>
   <li><b>Card upgrades</b>: Steel can’t be Jacked, Gilded pays caps when it sells, Lucky draws an extra card, Glass is worth double but breaks, Wild matches any suit.</li>
   <li><b>Chems</b> are one-use boosts during a hand, one per turn, after the opening.</li>
@@ -4160,6 +4161,31 @@ function pickTag(used,stopTags){
   return pool[0];
 }
 function tagPair(r){const used={};for(const st of (r.skipTags||[]))if(st)for(const k of st)used[k]=(used[k]||0)+1;const a=pickTag(used,[]);return [a,pickTag(used,[a])];}
+// Boss rule swap: pay a bribe to replace one of a boss's own rules with one of two others (once per boss).
+const bossSwapCost=s=>10+3*s;
+function swapOptions(s,i){
+  const r=run(),cur=r.bosses[s],others=cur.filter((_,k)=>k!==i),bn=r.bounties[s];
+  const bad=id=>(id==='tight'&&bn==='p26')||(id==='noking'&&bn==='kings')||(id==='drought'&&bn==='calm'); // would make the bounty impossible
+  const pool=BOSS_POOL.filter(id=>!cur.includes(id)&&!bad(id)&&!RULE_CLASH.some(g=>g.includes(id)&&others.some(o=>g.includes(o))));
+  return withSeed('swap:'+s+':'+i+':'+(r.hands||0),()=>shuffle(pool).slice(0,2));
+}
+function rulesWithSwapHTML(r,s,t,ids){
+  if(!ids.length)return 'None. Straight Caravan.';
+  const cost=bossSwapCost(s),can=t===2&&!(r.swapUsed||{})[s]&&meta.caps>=cost&&!r.swapPick,pk=r.swapPick&&r.swapPick.s===s?r.swapPick:null;
+  return ids.map((id,i)=>{
+    const own=t===2&&i<(r.bosses[s]||[]).length&&r.bosses[s][i]===id;
+    let h=`<b>${BOSS_RULES[id].name}:</b> ${esc(BOSS_RULES[id].desc)}`;
+    if(own&&can)h+=` <button class="btn" data-rulesw="${i}" style="padding:2px 8px;font-size:12px">Swap · ${capN(cost)}</button>`;
+    if(pk&&pk.i===i)h+=`<div class="swapopts">Swap it for: ${pk.opts.map(o=>`<button class="btn hot" data-rulepick="${o}" style="padding:3px 8px;margin:3px 4px 0 0"><b>${BOSS_RULES[o].name}</b>: ${esc(BOSS_RULES[o].desc)} (${capN(cost)})</button>`).join('')}<button class="btn" data-rulekeep style="padding:3px 8px">Keep it</button></div>`;
+    return h;
+  }).join('<br>')+(can?'<br><span class="note">Bribe the house to swap one boss rule. Once per boss.</span>':'');
+}
+// Wagers: stake caps on a table. A win returns the stake plus a bonus; a loss forfeits it. Riskier tables pay more.
+const wagerMax=s=>5+3*s, WAGER_ODDS=[.5,1,1.5];
+function wagerRowHTML(r,s,t){
+  const mx=wagerMax(s),opts=[0,5,10,20,40].filter(x=>x===0||(x<=meta.caps&&x<=mx)),sel=((r.wagerSel||0)<=meta.caps&&(r.wagerSel||0)<=mx)?(r.wagerSel||0):0,mult=WAGER_ODDS[t];
+  return `<dt>Wager</dt><dd>${opts.map(x=>`<button class="btn${x===sel?' hot':''}" data-wager="${x}" style="padding:3px 10px;margin:0 4px 4px 0">${x?capN(x):'None'}</button>`).join('')}<br><span class="note">${sel?`Win: your ${sel} back plus ${Math.round(sel*mult)} more. Lose: it’s gone.`:`Stake caps on this table (up to ${mx}). Win and it comes back with a ${Math.round(mult*100)}% bonus. Lose and it’s gone.`}</span></dd>`;
+}
 function genRun(){
   const r=run(), t=tierIdx(r.tier);
   r.bosses=[];RUN_STOPS.forEach((_,s)=>{r.bosses[s]=drawRules((s<2?1:s<4?2:3)+(t>=1?1:0)+(r.deck==='gold'?1:0),s?r.bosses[s-1]:[]);});
@@ -4428,7 +4454,7 @@ function startRunTable(){
   G.bat=gear('bat');G.batUsed=false;G.duster=gear('duster');G.dustUsed=false;G.codsworth=gear('codsworth');G.tidyUsed=false;G.sawedoff=gear('sawedoff');
   G.canWalk=gear('sneakers')&&!((r.walkUsed||{})[r.stop]);G.walked=false;G.comp=meta.gear&&meta.gear.on&&meta.gear.on.comp&&r.gear&&r.gear.includes(meta.gear.on.comp)?meta.gear.on.comp:null;
   if(t===2){G.bounty=r.bounties[s];G.bountyPay=bossBountyPay(s);}
-  G.stake=0;r.nextRules=[];
+  G.stake=0;r.nextRules=[];{const w0=r.wagerSel||0,w=(w0<=meta.caps&&w0<=wagerMax(s))?w0:0;r.wagerSel=0;if(w>0){meta.caps-=w;G.wager=w;G.stake=w;}}
   G.ianDone=false;G.regrowUsed=false;G.lastLost=null;
   if(isWC()&&t===2&&WC_ROUTE[s]&&WC_ROUTE[s].final){G.master=true;G.masterN=0;G.masterBase=JSON.stringify(G.rules);masterShift();}
   enterMatch();
@@ -4507,6 +4533,7 @@ function runFinish(winner,ov){
   if(winner==='p'){
     const neon=[0,1,2].reduce((n,l)=>n+(lanes[l]==='p'?edIn(G.p.cv[l],'neon'):0),0);
     const w=Math.round(tableReward(s,t)*(has('roller')?1.5:1)*winMult()*(1+(isChar('harold')?0.5:0.25)*neon));meta.caps+=w;ov.win=w;if(neon)extras.push(`Neon: winnings +${25*neon}%`);
+    if(G.wager){const wp=G.wager+Math.round(G.wager*WAGER_ODDS[t]);meta.caps+=wp;extras.push(`Wager paid: +${wp} (your ${G.wager} back plus ${wp-G.wager})`);}
     if(t===2&&isWC()){const b=WC_ROUTE[s];
       if(b&&b.drop&&!b.final){extras.push(wcGive(b.drop,`${wcBoss(s).name} dropped something.`));}
       if(b&&b.comp&&!meta.gear.owned.includes(b.comp)){meta.gear.owned.push(b.comp);extras.push(`${GEAR[b.comp].name} joins you. Hire them at the Mojave Express from now on.`);}
@@ -4546,6 +4573,7 @@ function runFinish(winner,ov){
     }else{r.table++;r.phase='shop';openShop();}
   }else{
     r.losses=(r.losses||0)+1;
+    if(G.wager){if(G.walked){meta.caps+=G.wager;extras.push('Wager refunded: you walked away.');}else extras.push(`Lost your ${G.wager}-cap wager.`);}
     if(runV('tin')){const intr=Math.min(interestCap(),Math.floor(before/5));if(intr>0){meta.caps+=intr;extras.push(`${intr} interest (Savings Tin)`);}}
     if(G.walked){
       r.walkUsed=r.walkUsed||{};r.walkUsed[s]=1;ov.saved=true;extras.push('You walked away. No Grit lost.');
@@ -4788,8 +4816,9 @@ function runPreHandHTML(){
     <dl>
       <dt>Character</dt><dd>${esc(CHARS[r.char].name)}</dd>
       <dt>Reward</dt><dd>+${Math.round(tableReward(s,t)*(has('roller')?1.5:1)*winMult())} caps, plus interest (1 per 5 caps you hold, up to ${interestCap()})</dd>
+      ${wagerRowHTML(r,s,t)}
       <dt>Sell range</dt><dd>${rangeTxt(R.range.p)===rangeTxt(R.range.a)?rangeTxt(R.range.p):`You ${rangeTxt(R.range.p)} · dealer ${rangeTxt(R.range.a)}`}</dd>
-      <dt>Rules</dt><dd>${ids.length?ids.map(id=>`<b>${BOSS_RULES[id].name}:</b> ${esc(BOSS_RULES[id].desc)}`).join('<br>'):'None. Straight Caravan.'}</dd>
+      <dt>Rules</dt><dd>${rulesWithSwapHTML(r,s,t,ids)}</dd>
       ${d.rival?`<dt>Rival</dt><dd>${esc(RIVALS[d.rival].rule)}${s===RUN_STOPS.length-1&&d.rival==='greg'&&!charUnlocked('greg')?' Beat him to unlock Greg.':''}${s===RUN_STOPS.length-1&&d.rival==='jeanita'&&!charUnlocked('jeanita')?' Beat her to unlock Jeanita.':''}</dd>`:''}
       ${t===2?`<dt>Bounty</dt><dd>${BOUNTIES[r.bounties[s]].name}: ${esc(BOUNTIES[r.bounties[s]].desc)} +${bossBountyPay(s)}</dd>`:''}
       ${t===2&&AI_STYLES[d.name]&&AI_STYLES[d.name].tell?`<dt>Style</dt><dd>${esc(AI_STYLES[d.name].tell)}</dd>`:''}
@@ -5103,7 +5132,11 @@ function handleRunClick(d){
   if('runnew' in d){if(meta.run&&meta.run.daily&&meta.run.prevChar!==undefined)meta.char=meta.run.prevChar;meta.run=null;save();render();window.scrollTo(0,0);return true;}
   if('runabandon' in d){if(runArmed){runArmed=false;runLost(true);save();}else runArmed=true;render();return true;}
   if('runplay' in d){runPre=true;render();return true;}
-  if('runcancel' in d){runPre=false;render();return true;}
+  if('runcancel' in d){runPre=false;if(r){r.swapPick=null;r.wagerSel=0;}render();return true;}
+  if('wager' in d){if(r){const v=Math.max(0,+d.wager||0);r.wagerSel=(v<=meta.caps&&v<=wagerMax(r.stop))?v:0;}render();return true;}
+  if('rulesw' in d){const s2=r.stop,i=+d.rulesw;if(r.phase==='table'&&r.table===2&&!(r.swapUsed||{})[s2]&&meta.caps>=bossSwapCost(s2)){const opts=swapOptions(s2,i);if(opts.length)r.swapPick={s:s2,i,opts};}render();return true;}
+  if('rulepick' in d){const pk=r.swapPick;if(pk&&pk.opts.includes(d.rulepick)&&meta.caps>=bossSwapCost(pk.s)){meta.caps-=bossSwapCost(pk.s);r.bosses[pk.s][pk.i]=d.rulepick;r.bosses[pk.s].sort((a,b)=>(RANGE_RULES.includes(b)?1:0)-(RANGE_RULES.includes(a)?1:0));(r.swapUsed=r.swapUsed||{})[pk.s]=1;r.swapPick=null;save();}render();return true;}
+  if('rulekeep' in d){r.swapPick=null;render();return true;}
   if('runconfirm' in d){runPre=false;if(r.table===2){render();wantedPoster(()=>startRunTable());}else startRunTable();return true;}
   if('runskip' in d){skipTable();render();return true;}
   if('tychoskip' in d){if(r&&r.phase==='table'&&r.table===2&&gear('tycho')&&!r.tychoUsed&&r.stop<RUN_STOPS.length-1){r.tychoUsed=true;r.skips++;if(isWC()){r.days-=WC_SKIP;}r.stop++;r.table=0;r.phase='event';r.event=pickEvent();save();}render();return true;}
