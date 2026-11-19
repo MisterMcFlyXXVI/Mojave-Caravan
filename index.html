@@ -2471,7 +2471,7 @@ app.addEventListener('keydown',e=>{
   if((e.key==='Enter'||e.key===' ')&&e.target.matches('.lane[role="button"]')){e.preventDefault();e.target.click();}
 });
 
-app.addEventListener('input',e=>{if(e.target.id==='auth-email')authForm.email=e.target.value;if(e.target.id==='auth-pass')authForm.pass=e.target.value;});
+app.addEventListener('input',e=>{if(e.target.id==='seed-input'&&meta&&meta.newRun)meta.newRun.seed=e.target.value;if(e.target.id==='auth-email')authForm.email=e.target.value;if(e.target.id==='auth-pass')authForm.pass=e.target.value;});
 app.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.target.id==='auth-pass'||e.target.id==='auth-email')){e.preventDefault();doAuth('login');}});
 // ---------- achievements ----------
 const ACH_CATS=['Getting started','At the table','Milestones','Classic','The Road','Style','Characters','Mojave Express & Legends','Road feats','The Water Chip'];
@@ -2779,6 +2779,7 @@ const ROAD_RULES=`
   <li>The <b>Burn pile</b> removes up to 2 cards from your deck for good, once per visit. A thinner deck draws your best cards more often. Watch for free burn barrels on the road, too.</li>
   <li><b>Boss rewards:</b> beat a boss (other than the last) and choose one of three uncommon-or-better perks for free, or take caps instead. With full perk slots, sell one in the trading post first.</li>
   <li><b>Road events:</b> some choices need a stat from your character’s bio: Strength, Smarts, Charm, Grit or Luck. Choices you can’t take show what they need, so different characters see different options.</li>
+  <li><b>Seeds and the daily run:</b> every run has a seed, shown on the map. The same seed gives the same bosses, shops and events. The Daily run is the same road for everyone today (set character, Plain deck, Copper, no gear), and your first finish each day pays NCR dollars and builds a streak.</li>
   <li><b>Perks</b> come in four rarities. You start with 3 slots, get a 4th from Boulder City on and a 5th from Fremont Street on. Sell a perk to make room.</li>
   <li><b>Card upgrades</b>: Steel can’t be Jacked, Gilded pays caps when it sells, Lucky draws an extra card, Glass is worth double but breaks, Wild matches any suit.</li>
   <li><b>Chems</b> are one-use boosts during a hand, one per turn, after the opening.</li>
@@ -4064,10 +4065,10 @@ const tierIdx=id=>TIERS.findIndex(t=>t.id===id);
 const deckTierCount=d=>Math.max(1,((meta.deckTiers||{})[d])||1);
 const tierPips=d=>{const w=(meta.deckWon||{})[d]??-1;return ` <span class="tpips" title="${w<0?'Not won yet':'Won on the '+TIERS[w].name}">${TIERS.map((t,i)=>`<i class="tp ${t.id}${i<=w?' won':''}"></i>`).join('')}</span>`;};
 const tierUnlocked=(id,deck)=>tierIdx(id)<deckTierCount(deck||((meta.newRun&&meta.newRun.deck)||'plain'));
-function runRoster(cid){
+function runRoster(cid,daily){
   if(isWC())return RUN_STOPS.map(()=>null);
   const r=RUN_STOPS.map(()=>null);
-  const pool=shuffle([...ORIGINALS,...NEWCOMERS.filter(charUnlocked)].filter(x=>x!==cid)); // rivals come from the whole cast you've unlocked
+  const pool=shuffle([...ORIGINALS,...(daily?[]:NEWCOMERS.filter(charUnlocked))].filter(x=>x!==cid)); // rivals come from the whole cast you've unlocked
   if(ORIGINALS.includes(cid)||NEWCOMERS.includes(cid)){r[1]=pool[0];r[3]=pool[1];r[5]='greg';}
   else if(cid==='greg'){r[1]=pool[0];r[2]=pool[1];r[3]=pool[2];r[5]='jeanita';}
   else if(cid==='jeanita'){r[1]=pool[0];r[2]=pool[1];r[3]=pool[2];r[4]='greg';}
@@ -4189,17 +4190,42 @@ const sweepBonus=(s,t)=>Math.max(3,Math.ceil(tableReward(s,t)/2));
 const bossBountyPay=s=>Math.round((4+s)*(has('hunter')?2:1)*(isChar('vladmira')?0.5:1));
 
 function plainDeck(){return addFaces(baseNumbers(),{J:4,Q:4,K:4,JK:2});}
+// Seeded runs: the same seed gives the same bosses, shops, events and deals.
+// Randomness is swapped for a seeded stream at the points where the run rolls its content.
+const dailySeed=()=>'DAILY-'+new Date().toISOString().slice(0,10);
+const dailyChar=()=>ORIGINALS[hashStr(dailySeed())%ORIGINALS.length];
+const randomSeed=()=>Math.random().toString(36).slice(2,8).toUpperCase();
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+function withSeedStr(str,fn){const orig=Math.random;Math.random=mulberry32(hashStr(str));try{return fn();}finally{Math.random=orig;}}
+function withSeed(label,fn){const r=meta&&meta.run;if(!r||!r.seed)return fn();return withSeedStr(r.seed+'|'+label,fn);}
+function recordDaily(r,won){
+  if(!r.daily||!r.seed)return;
+  const day=r.seed.replace('DAILY-','');meta.dailyLog=meta.dailyLog||{};
+  const prev=meta.dailyLog[day],score=(won?100:0)+r.stop*10+r.won;
+  if(!prev||score>prev.score)meta.dailyLog[day]={won,stop:r.stop,tables:r.won,score};
+  if(meta.dailyDone!==day){
+    const y=new Date(Date.parse(day)-864e5).toISOString().slice(0,10);
+    meta.dailyStreak=(meta.dailyLog[y]?(meta.dailyStreak||0):0)+1;meta.dailyDone=day;
+    const b=won?10:5;r.scrip=(r.scrip||0)+b;meta.scrip=(meta.scrip||0)+b;r.dailyBonus=b;
+  }
+}
 function startRun(){
   const r0=meta.newRun||{};
-  const deck=deckUnlocked(r0.deck||'plain')?(r0.deck||'plain'):'plain', tier=tierUnlocked(r0.tier||'copper',deck)?(r0.tier||'copper'):'copper';
-  const token=r0.token&&meta.tokens.includes(r0.token)?r0.token:null;
-  const special=r0.special==='waterchip'?'waterchip':null;
-  meta.run={v:1,special,days:special?WC_DAYS:undefined,found:[],char:meta.char,deck,tier,token,stop:0,table:0,phase:'table',won:0,kings:0,skips:0,hands:0,vouchers:[],tags:[],nextRules:[],
+  const seed=r0.daily?dailySeed():(String(r0.seed||'').trim().toUpperCase().slice(0,24)||randomSeed());
+  withSeedStr(seed+'|start',()=>startRun0(seed));
+}
+function startRun0(seed){
+  const r0=meta.newRun||{};
+  const daily=!!r0.daily,prevChar=meta.char;if(daily)meta.char=dailyChar();
+  const deck=daily?'plain':(deckUnlocked(r0.deck||'plain')?(r0.deck||'plain'):'plain'), tier=daily?'copper':(tierUnlocked(r0.tier||'copper',deck)?(r0.tier||'copper'):'copper');
+  const token=daily?null:(r0.token&&meta.tokens.includes(r0.token)?r0.token:null);
+  const special=daily?null:(r0.special==='waterchip'?'waterchip':null);
+  meta.run={v:1,seed,daily,prevChar:daily?prevChar:undefined,special,days:special?WC_DAYS:undefined,found:[],char:meta.char,deck,tier,token,stop:0,table:0,phase:'table',won:0,kings:0,skips:0,hands:0,vouchers:[],tags:[],nextRules:[],
     grit:1+(token==='second'?1:0),halfShop:false,freeRerolls:0,freeBundles:[],freeUpgrade:0,started:Date.now(),voucherStop:-1,scrip:0,
-    gear:GEAR_SLOTS.map(sl=>meta.gear.on[sl.id]).filter(id=>id&&GEAR[id]&&meta.gear.owned.includes(id))};
+    gear:daily?[]:GEAR_SLOTS.map(sl=>meta.gear.on[sl.id]).filter(id=>id&&GEAR[id]&&meta.gear.owned.includes(id))};
   if(meta.char==='benny')meta.run.grit=Math.max(0,meta.run.grit-1);
   syncRoute();
-  meta.run.roster=runRoster(meta.char);
+  meta.run.roster=runRoster(meta.char,daily);
   genRun();
   meta.caps=[10,7,5][tierIdx(tier)]+(token==='stash'?8:0)-(meta.char==='vaultdweller'?5:0);
   let d=plainDeck();
@@ -4231,7 +4257,8 @@ function rollPerkOffer(n){
   return out;
 }
 // Boss reward: three perks, uncommon or better. Pick one free, or take caps instead.
-function rollBossPerks(){
+function rollBossPerks(){const r=run();return withSeed('bossperk:'+(r?r.stop:0)+':'+(r?r.hands||0:0),rollBossPerks0);}
+function rollBossPerks0(){
   const owned=new Set(meta.perks),out=[],W=[['uncommon',50],['rare',40],['legendary',10]];
   for(let k=0;k<40&&out.length<3;k++){
     let x=Math.random()*100,rar='uncommon';for(const [r,w] of W){x-=w;if(x<0){rar=r;break;}}
@@ -4289,7 +4316,8 @@ function genBundleCards0(b){
     if(!out.some(o=>key(o)===key(c)))out.push(c);}
   return out;
 }
-function openBundle(b,free){const keep=BUNDLES[b.id].keep+(runV('pockets')?1:0);run().picker={kind:'bundle',title:bundleName(b)+(free?' (free)':''),note:`Pick up to ${keep} to add to your deck.`,options:genBundleCards(b),keep,sel:[]};}
+function openBundle(b,free){const r=run();return withSeed('bundle:'+r.stop+':'+r.table+':'+(r.bundleN=(r.bundleN||0)+1),()=>openBundle0(b,free));}
+function openBundle0(b,free){const keep=BUNDLES[b.id].keep+(runV('pockets')?1:0);run().picker={kind:'bundle',title:bundleName(b)+(free?' (free)':''),note:`Pick up to ${keep} to add to your deck.`,options:genBundleCards(b),keep,sel:[]};}
 function openBurn(max,title,note){run().picker={kind:'burn',title,note,keep:max,sel:[]};}
 const burnRoom=()=>Math.max(0,meta.deck.length-MIN_DECK);
 const CRATES={perk:{name:'Perk crate',desc:'Pick 1 of 3 perks.',price:20},chem:{name:'Chem crate',desc:'Pick 1 of 3 chems.',price:5}};
@@ -4300,7 +4328,8 @@ function nextFreeBundle(){
   if(r.freeCrate){(r.freeBundles=r.freeBundles||[]).push(r.freeCrate==='collector'?'collector':'supply');r.freeCrate=0;} // runs saved before stacking
   if(r.freeBundles&&r.freeBundles.length&&!r.picker)openBundle({id:r.freeBundles.shift()},true);
 }
-function openShop(){
+function openShop(){const r=run();return withSeed('shop:'+r.stop+':'+r.table+':'+(r.hands||0),()=>{r.rerollN=0;return openShop0();});}
+function openShop0(){
   const r=run();
   r.offers={perks:rollPerkOffer(runV('rack')?3:2),cards:gear('cass')?[rollCard(true),rollCard(true),rollCard(true)]:[rollCard(true),rollCard(true)],chems:shuffle(Object.keys(CHEMS)).slice(0,2),
     upgrade:pick(Object.keys(MODS)),voucher:r.voucherStop===r.stop?null:pick(Object.keys(VOUCHERS).filter(v=>!r.vouchers.includes(v))),sold:{}};
@@ -4312,11 +4341,13 @@ function openShop(){
   if(isChar('vaultdweller'))(r.freeBundles=r.freeBundles||[]).push('saddlebag');
   nextFreeBundle();
 }
-function rerollShop(){
+function rerollShop(){const r=run();return withSeed('reroll:'+r.stop+':'+r.table+':'+(r.rerollN=(r.rerollN||0)+1),rerollShop0);}
+function rerollShop0(){
   const r=run();
   r.offers.perks=rollPerkOffer(runV('rack')?3:2);r.offers.cards=gear('cass')?[rollCard(true),rollCard(true),rollCard(true)]:[rollCard(true),rollCard(true)];r.offers.chems=shuffle(Object.keys(CHEMS)).slice(0,2);r.offers.upgrade=pick(Object.keys(MODS));r.offers.bundles=twoBundles();r.offers.sold={};
 }
-function openCrate(kind){
+function openCrate(kind){const r=run();return withSeed('crate:'+r.stop+':'+r.table+':'+(r.crateN=(r.crateN||0)+1),()=>openCrate0(kind));}
+function openCrate0(kind){
   const opts=kind==='card'?[rollCard(true),rollCard(true),rollCard(true)]:kind==='perk'?rollPerkOffer(3):shuffle(Object.keys(CHEMS)).slice(0,3);
   run().crate={kind,options:opts};
 }
@@ -4336,7 +4367,7 @@ function startRunTable(){
   const s=r.stop,t=r.table,ri=riOf(s);ensureStop(s);
   const R=runRules(s,t);
   const dealer=t===2?bossDealer(s):r.dealers[s][t];
-  G=newMatch(meta.deck,addFaces(baseNumbers(),runDealerExtra(s,t)),ri,R);
+  G=withSeed('match:'+s+':'+t+':'+(r.hands||0),()=>newMatch(meta.deck,addFaces(baseNumbers(),runDealerExtra(s,t)),ri,R));
   G.mode='road';G.run=true;G.runStop=s;G.runTable=t;G.dealer={...dealer,place:placeOf(s)};G.ruleIds=tableRuleIds(s,t);G.noise=runNoise(s,t);
   G.perks=[...meta.perks];G.char=r.char;G.turretUsed=false;G.hugUsed=false;G.hugPending=false;if(isChar('jeanita'))G.peek=true;
   G.repairUsed=false;G.requestUsed=false;G.booneUsed=false;G.ede=gear('ede');G.zapUsed=false;
@@ -4351,7 +4382,7 @@ function startRunTable(){
 function skipTable(){
   const r=run();if(!r||r.phase!=='table'||r.table>1)return;
   r.offers=null;r.halfShop=false;
-  const tag=r.skipTags[r.stop][r.table];applyTag(tag);if(gear('boots'))meta.caps+=5;
+  const tag=r.skipTags[r.stop][r.table];withSeed('skip:'+r.stop+':'+r.table,()=>applyTag(tag));if(gear('boots'))meta.caps+=5;
   if(r.special==='waterchip'){r.days=(r.days||0)-WC_SKIP;r.wcSkipped=(r.wcSkipped||0)+1;if(r.days<=0){r.days=0;r.dry=true;r.phase='over';r.result='lost';unlock('wc_dry');save();return;}}
   r.skips++;r.table++;if(r.skips>=3)unlock('skip3');
   save();
@@ -4482,12 +4513,12 @@ function runLost(abandon){
   const r=run();
   if(r.endless){r.phase='over';r.result='won';r.fellBeyond=true;r.unlocked=[];const h=(meta.runHist||[])[0];if(h)h.beyond=mileOf(r.stop);return;}
   r.phase='over';r.result='lost';
-  if(!abandon){const b=r.stop+1;r.scrip=(r.scrip||0)+b;meta.scrip=(meta.scrip||0)+b;r.scripMiles=b;}
+  if(!abandon){const b=r.stop+1;r.scrip=(r.scrip||0)+b;meta.scrip=(meta.scrip||0)+b;r.scripMiles=b;recordDaily(r,false);}
   meta.runHist=meta.runHist||[];meta.runHist.unshift({char:r.char,deck:r.deck,tier:r.tier,stop:r.stop,table:r.table,won:r.won,result:'lost',at:Date.now()});meta.runHist=meta.runHist.slice(0,12);
   meta.bestStop=Math.max(meta.bestStop||0,r.stop);
 }
 function runWon(ov){
-  const r=run();r.phase='over';r.result='won';
+  const r=run();r.phase='over';r.result='won';recordDaily(r,true);
   meta.runsWon=(meta.runsWon||0)+1;
   meta.runHist=meta.runHist||[];meta.runHist.unshift({char:r.char,deck:r.deck,tier:r.tier,stop:RUN_STOPS.length,won:r.won,result:'won',at:Date.now()});meta.runHist=meta.runHist.slice(0,12);
   meta.bestStop=RUN_STOPS.length;
@@ -4520,7 +4551,8 @@ function wcGive(id,why){
   if(!meta.deck.some(c=>c.legend===id))meta.deck.push({rank:'LG',suit:null,legend:id});
   return `${why} ${LEGENDS[id].name} is in your deck${added?', and from now on it can turn up at trading posts on any run':''}.`;
 }
-function pickEvent(){
+function pickEvent(){const r=run();return withSeed('event:'+(r?r.stop:0),pickEvent0);}
+function pickEvent0(){
   const r=run(),normal=Object.keys(EVENTS).filter(k=>!EVENTS[k].wc);
   if(r&&r.special==='waterchip'){
     if(r.stop===2&&!r.junk)return 'junktown';
@@ -4574,7 +4606,7 @@ function eventChoose(i){
   if(ch.req&&statOf(ch.req[0])<ch.req[1])return;
   if(ch.cost&&meta.caps<ch.cost)return;
   if(ch.cost)meta.caps-=ch.cost;
-  const res=ch.act();if(res!=null)r.eventResult=res;save();
+  const res=withSeed('ev:'+r.stop+':'+i,()=>ch.act());if(res!=null)r.eventResult=res;save();
 }
 function eventDone(){const r=run();r.event=null;r.eventResult=null;r.phase='shop';openShop();save();}
 
@@ -4639,7 +4671,7 @@ const ruleChip=id=>`<span class="rb house-chip" title="${esc(BOSS_RULES[id].desc
 function runHeaderHTML(){
   const r=run(),slots=perkSlots();
   return `<div class="charstrip"><img src="${portrait(r.char)}" alt=""><div><small>${esc(TIERS[tierIdx(r.tier)].name)} · ${esc(DECKS[deckIdx(r.deck)].name)}</small><b>${esc(CHARS[r.char].name)}</b>
-      <span>${isWC()?`The Water Chip · ${r.days} days left · `:''}${inBeyond(r.stop)?`Beyond the Strip · mile ${mileOf(r.stop)}`:`Stop ${r.stop+1} of ${RUN_STOPS.length}`} · ${r.won} table${r.won===1?'':'s'} won · Grit ${'●'.repeat(r.grit||0)||'none'}</span></div></div>
+      <span>${isWC()?`The Water Chip · ${r.days} days left · `:''}${inBeyond(r.stop)?`Beyond the Strip · mile ${mileOf(r.stop)}`:`Stop ${r.stop+1} of ${RUN_STOPS.length}`} · ${r.won} table${r.won===1?'':'s'} won · Grit ${'●'.repeat(r.grit||0)||'none'}${r.seed?(r.daily?' · Daily run':` · Seed ${esc(r.seed)}`):''}</span></div></div>
     <div class="hubbar">${capsHTML(meta.caps)}<button class="pill num kitpill" data-kitopen="deck">Deck ${meta.deck.length}${modCount()?` · ${modCount()} upgraded`:''}</button><button class="pill num kitpill" data-kitopen="perks">Perks ${meta.perks.length}/${slots}</button><button class="pill num kitpill" data-kitopen="chems">Chems ${chemTotal()}/${chemMax()}</button></div>
     ${meta.perks.length?`<div class="rulesbar" style="justify-content:center">${meta.perks.map(p=>`<span class="rb perk-chip rar-${PERK_RARITY[p]}" title="${esc(PERKS[p].desc)}">${PERKS[p].name}</span>`).join('')}${r.vouchers.map(v=>`<span class="rb char-chip" title="${esc(VOUCHERS[v].desc)}">${VOUCHERS[v].name}</span>`).join('')}</div>`:''}`;
 }
@@ -4717,6 +4749,10 @@ function renderRunSetup(){
   <div class="mbar">${backBtn('home','Modes')}</div>
   <section class="hero small"><div class="neon sm">${nr.special==='waterchip'?'The Water Chip':'The Road'}</div><p class="tagline">${nr.special==='waterchip'?'Seven stops to save Vault 13, and 150 days of water to do it. You start with 1 Grit; run out and one more loss ends the run.':'Six stops to the Strip. You start with 1 Grit; run out and one more loss ends the run.'}</p></section>
   ${meta.char?`<div class="charstrip"><img src="${portrait(meta.char)}" alt=""><div><small>Character</small><b>${esc(CHARS[meta.char].name)}</b><span>${CHARS[meta.char].traits.map(t=>t[1]).join(' · ')}</span></div><button class="btn" data-go="pickchar">Change</button></div>`:''}
+  <section class="panel dailybox">
+    <h2 style="font-size:22px">Daily run</h2>
+    ${(()=>{const day=dailySeed().slice(6),dl=(meta.dailyLog||{})[day],c=CHARS[dailyChar()];return `<p class="note">Same road for everyone today: ${esc(c.name)}, Plain deck, Copper Road, no gear. ${dl?`Your best today: ${dl.won?'reached Vegas':`stop ${dl.stop+1}`}. Streak: ${meta.dailyStreak||0} day${(meta.dailyStreak||0)===1?'':'s'}. Replay it for practice.`:'You haven’t played it yet. Your first finish pays NCR dollars.'}</p><button class="btn hot" data-rundaily>Play today’s daily</button>`;})()}
+  </section>
   <section class="panel">
     <h2 style="font-size:24px">New run</h2>
     <div class="runpick" role="radiogroup" aria-label="Which run">
@@ -4732,6 +4768,9 @@ function renderRunSetup(){
     <p class="note">${esc(TIERS[tierIdx(nr.tier)].desc)}${(()=>{const n=deckTierCount(nr.deck);return n<TIERS.length?` Win with this deck on the ${TIERS[n-1].name} to unlock the ${TIERS[n].name} for it.`:'';})()}</p>
     <h3 class="sub">Token</h3>
     ${meta.tokens.length?`<div class="hubbtns" style="margin-top:0"><button class="btn${!nr.token?' hot':''}" data-runtoken="">None</button>${meta.tokens.map(tk=>`<button class="btn${nr.token===tk?' hot':''}" data-runtoken="${tk}" title="${esc(TOKENS[tk].desc)}">${esc(TOKENS[tk].name)}</button>`).join('')}</div><p class="note">${nr.token?esc(TOKENS[nr.token].desc):'Bring one token into the run.'}</p>`:'<p class="note">Win runs to unlock tokens: small boosts you can bring into a run.</p>'}
+    <h3 class="sub">Seed</h3>
+    <input id="seed-input" type="text" maxlength="24" placeholder="Random" value="${esc(nr.seed||'')}" autocomplete="off" autocapitalize="characters" spellcheck="false" style="width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,.25);background:rgba(0,0,0,.3);color:inherit;font:inherit">
+    <p class="note">Leave it blank for a random road. The same seed gives the same bosses, shops and events, so you can share one with a friend.</p>
     <h3 class="sub">Loadout</h3>
     <div class="loadline"><p class="note" style="margin:0">${loadoutLine()}</p><button class="btn" data-go="office">Mojave Express ${scripHTML(meta.scrip||0)}</button></div>
     <button class="btn hot" data-runstart style="width:100%;margin-top:10px;font-size:16px;padding:12px">${nr.special==='waterchip'?'Leave Vault 13':'Start the run'}</button>
@@ -4759,6 +4798,8 @@ function renderRunOver(){
     ${r.special==='waterchip'?`<p>${won?`You brought the water chip home with ${r.days} days to spare. The Overseer thanked you, then exiled you.`:r.dry?`The vault’s water ran out while you were at ${esc(placeOf(r.stop))}.`:`You fell at ${esc(placeOf(r.stop))} with ${r.days} days of water left.`}</p>`:''}
     <p style="${r.special?'display:none':''}">${r.fellBeyond?`${esc(CHARS[r.char].name)} beat the Strip, then made it ${mileOf(r.stop)-1} stop${mileOf(r.stop)-1===1?'':'s'} past it before falling at ${esc(placeOf(r.stop))}. Best on the ${esc(TIERS[tierIdx(r.tier)].name)}: ${(meta.endlessBest||{})[r.tier]||0}.`:won?`${esc(CHARS[r.char].name)} beat the Strip on the ${esc(TIERS[tierIdx(r.tier)].name)} with the ${esc(DECKS[deckIdx(r.deck)].name)}.`:`${esc(CHARS[r.char].name)} fell at ${esc(placeOf(r.stop))}, ${TABLE_KIND[r.table].toLowerCase()}.`}</p>
     <p class="num">${r.won} tables won · ${r.skips} skipped · ${meta.caps} caps left</p>
+    ${r.seed?`<p class="note">${r.daily?'Daily run':'Seed'}: ${esc(r.seed)}${r.daily?'':' · share it to replay the same road'}</p>`:''}
+    ${r.dailyBonus?`<p class="num" style="color:var(--neon)">Daily bonus: +${r.dailyBonus} NCR dollars · streak ${meta.dailyStreak||1}</p>`:''}
     ${r.scrip?`<p class="num" style="color:var(--neon)">+${r.scrip} NCR dollars this run${r.scripMiles?` (${r.scripMiles} of it for the miles)`:''} · ${meta.scrip} to spend at the Mojave Express</p>`:''}
     ${won&&r.unlocked&&r.unlocked.length?`<h3 class="sub">Unlocked</h3><ul class="traits">${r.unlocked.map(u=>`<li class="pro"><b>+ ${esc(u)}</b></li>`).join('')}</ul>`:''}
     ${won&&!r.endless?`<div class="explain" style="text-align:left"><p><b>Beyond the Strip.</b> Keep this run going into endless stops past Vegas: more boss rules every stop, sharper dealers, bigger rewards. See how far you get. Your unlocks are already saved.</p></div>
@@ -4949,13 +4990,14 @@ function handleRunClick(d){
   if('bosspick' in d){if(r&&r.bossPick&&r.bossPick.includes(d.bosspick)&&meta.perks.length<perkSlots()){meta.perks.push(d.bosspick);meta.equipped=meta.perks;r.bossPick=null;if(meta.perks.length>=5)unlock('loaded');if(typeof sfx==='function')sfx('clink');save();}render();return true;}
   if('bossskip' in d){if(r&&r.bossPick){meta.caps+=r.bossCaps||bossPerkCaps(0);r.bossPick=null;if(typeof sfx==='function')sfx('clink');save();}render();return true;}
   if('tagpick' in d){if(r&&r.tagPick&&r.tagPick.includes(d.tagpick)){meta.perks.push(d.tagpick);meta.equipped=meta.perks;r.tagPick=null;save();}render();return true;}
-  if('runoffice' in d){meta.run=null;screen='office';save();render();window.scrollTo(0,0);return true;}
+  if('runoffice' in d){if(meta.run&&meta.run.daily&&meta.run.prevChar!==undefined)meta.char=meta.run.prevChar;meta.run=null;screen='office';save();render();window.scrollTo(0,0);return true;}
   if('runtier' in d){meta.newRun.tier=d.runtier;render();return true;}
   if('runtoken' in d){meta.newRun.token=d.runtoken||null;render();return true;}
+  if('rundaily' in d){if(runLive())return true;const old=meta.newRun;meta.newRun={deck:'plain',tier:'copper',token:null,special:null,daily:true};startRun();meta.newRun=old||{deck:'plain',tier:'copper',token:null};runPre=false;runArmed=false;render();window.scrollTo(0,0);return true;}
   if('runstart' in d){if(!meta.char){screen='pickchar';render();return true;}startRun();runPre=false;runArmed=false;render();window.scrollTo(0,0);return true;}
   if('runstoryok' in d){r.story.shift();save();render();return true;}
   if('runbeyond' in d){if(r&&r.result==='won'&&!r.endless){r.endless=true;r.phase='event';r.result=null;r.stop=RUN_STOPS.length;r.table=0;ensureStop(r.stop);r.event=pickEvent();r.eventResult=null;r.story=[{title:'Beyond the Strip',text:BEYOND_INTRO}];save();}render();window.scrollTo(0,0);return true;}
-  if('runnew' in d){meta.run=null;save();render();window.scrollTo(0,0);return true;}
+  if('runnew' in d){if(meta.run&&meta.run.daily&&meta.run.prevChar!==undefined)meta.char=meta.run.prevChar;meta.run=null;save();render();window.scrollTo(0,0);return true;}
   if('runabandon' in d){if(runArmed){runArmed=false;runLost(true);save();}else runArmed=true;render();return true;}
   if('runplay' in d){runPre=true;render();return true;}
   if('runcancel' in d){runPre=false;render();return true;}
