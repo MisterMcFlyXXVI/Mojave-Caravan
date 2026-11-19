@@ -105,6 +105,7 @@ function rulesBar(){
   if(G.run)for(const id of (G.ruleIds||[]).filter((x,i,a)=>a.indexOf(x)===i))bits.push(`<span class="rb house-chip" title="${esc(BOSS_RULES[id].desc)}">${BOSS_RULES[id].name}</span>`);
   if(G.char&&CHARS[G.char])bits.push(`<span class="rb char-chip">${CHARS[G.char].name}</span>`);
   if(o.rival)bits.push(`<span class="rb house-chip">Rival: ${RIVALS[o.rival].rule}</span>`);
+  if(G.sig)bits.push(`<span class="rb house-chip" title="${esc(BOSS_SIGS[G.sig.id].desc(G.sig.at))}">${esc(sigLabel())}</span>`);
   for(const p of (G.perks||[]))bits.push(`<span class="rb perk-chip">${PERKS[p].name}</span>`);
   if(G.bounty){const b=BOUNTIES[G.bounty];bits.push(`<button class="rb bounty-chip" data-goalsopen>Bounty: ${b.name} +${G.bountyPay}</button>`);}
   return `<div class="rulesbar">${bits.join('')}</div>`;

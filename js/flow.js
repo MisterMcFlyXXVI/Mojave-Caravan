@@ -90,7 +90,7 @@ function doMove(side,m){
   if(side==='p'&&m.t==='face')m._card=G.p.hand[m.ci];
   const pc=m.ci!=null?G[side].hand[m.ci]:null;
   const handIds=side==='p'?new Set(G.p.hand.map(c=>c.id)):null;
-  const beforeA=G.a.cv.reduce((n,cv)=>n+cv.length,0);
+  const beforeA=G.a.cv.reduce((n,cv)=>n+cv.length,0),sigWasSetup=G.setupLeft.a>0;
   applyMove(G,side,m,false);
   try{achOnMove(side,m,beforeA);}catch(e){}
   if(G.comp==='ian'&&!G.ianDone&&G.setupLeft.p===0&&G.setupLeft.a===0){G.ianDone=true;
@@ -98,6 +98,7 @@ function doMove(side,m){
     if(lanes.length){const l=pick(lanes);G[sd].cv[l].pop();G.log.unshift(mine?`Ian opens fire… and clips your own caravan ${ROMAN[l]}. “Sorry!”`:`Ian opens fire and shoots the top card off their caravan ${ROMAN[l]}.`);}}
   if(G.master&&side==='p'){G.masterN=(G.masterN||0)+1;if(G.masterN%3===0)masterShift();}
   G.log.unshift(d);
+  if(side==='a')sigAfterDealerMove(sigWasSetup);
   G.fx={side:m.t==='face'?m.side:side,lane:m.t==='discard'?-1:m.lane,kind:m.t,rank:pc&&pc.rank,card:pc?{rank:pc.rank,suit:pc.suit,pack:pc.pack}:null,idx:m.idx,by:side,done:false};
   if(side==='p'){G.dealt=G.p.hand.filter(c=>!handIds.has(c.id)).map(c=>c.id);G.dealtDone=false;}
   sfx(m.t==='face'?(pc.rank==='J'?'jack':'face'):m.t==='discard'?'swish':(m.t==='disband'||m.t==='turret'||m.t==='boone')?'jack':'snap',side);
@@ -116,7 +117,7 @@ function doMove(side,m){
   else if(side==='p'&&m.t==='face'&&m._card&&m._card.rank==='J'&&G.sawedoff){keep=true;G.log.unshift('Sawed-Off: your Jack didn’t use your turn.');}
   else if(side==='p'&&m.t==='discard'&&G.codsworth&&!G.tidyUsed){G.tidyUsed=true;keep=true;G.log.unshift('Codsworth tidies up. That discard was on the house.');}
   if(!keep&&side==='p'&&G.hugPending){G.hugPending=false;keep=true;G.log.unshift(`${OPP().name.split(' ').slice(-1)[0]} is still recovering from Greg’s hug. Your turn again.`);}
-  if(!keep){G.turn=other(side);if(G.turn==='p'){G.chemTurn=false;if(side==='a'){setTimeout(()=>sfx('turn'),180);buzz(12);}}}
+  if(!keep){G.turn=other(side);if(G.turn==='p'&&side==='a'&&G.sigSkip){G.sigSkip=false;G.turn='a';G.log.unshift('You skip a turn.');}if(G.turn==='p'){G.chemTurn=false;if(side==='a'){setTimeout(()=>sfx('turn'),180);buzz(12);}}}
   if(!G[G.turn].hand.length){
     finish(other(G.turn),G.turn==='p'?'You ran out of cards.':`${OPP().name} ran out of cards.`);
     render(); return;

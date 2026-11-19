@@ -32,50 +32,6 @@ const CLASSIC_DEALERS=[
   {level:'Expert',name:'The Cardsharp',place:'Classic table',blurb:'Nobody’s seen him lose.',noise:0.5,extra:{J:3,Q:3,K:3,JK:2}},
 ];
 const OPP=()=>G.opp<0?TUTORS[G.opp]:G.mode==='classic'?CLASSIC_DEALERS[G.opp]:G.mode==='campaign'?(G.rita?RITA:G.cd?{...G.cd,house:[]}:{name:'A dealer',place:'On the circuit',noise:20,house:[]}):{...ROAD[G.opp],...(G.dealer||{}),house:[],noise:G.noise??ROAD[G.opp].noise};
-// Boss play styles, tuned from simulated hands. jack/king/joker: how hard they hold that card back for a decisive play
-// (a King-savvy dealer wins ~60-70% against the stock AI). opp: how much they care about hurting you (default 0.8; low = defensive).
-const AI_STYLES={
-  'Mama Tallow':{opp:.4,tell:'Cautious: builds her own caravans and rarely goes after yours.'},
-  'Gus the Prospector':{joker:5,tell:'Holds his Jokers for one big swing instead of spending them early.'},
-  'Sergeant Brick':{king:2,tell:'By the book: spends Kings only where they count.'},
-  'Velvet Moreno':{king:6,tell:'Patient: saves her Kings for the decisive play.'},
-  'Silver Lou':{king:10,jack:3,tell:'The house never wastes a face card.'},
-  'Vladmira':{king:3,tell:'Saves her Kings for one huge caravan.'},
-  'Nuke Skywalker':{king:6,tell:'Counts everything. Rarely wastes a face card.'},
-  'Chevy Ford':{jack:5,tell:'Holds his Jacks for the one shot that matters.'},
-  'Greg':{jack:8,king:8,tell:'Gentle: almost never plays a Jack, but he stacks Kings like a champ.'},
-  'Jeanita':{king:8,tell:'She already knows your hand, so she never wastes a face card.'},
-  'Three Dog':{joker:4,tell:'Saves his Jokers for the big finish.'},
-  'Benny':{joker:6,king:6,tell:'Hoards Jokers and Kings for one wrecking play.'},
-  'Harold':{opp:.4,jack:4,tell:'Patient: waits for you to overextend.'},
-  'Smoke-Sister Vey':{joker:4,tell:'Reads your fortune, then waits to play her Jokers.'},
-  'Big Tom the Gentle':{opp:.4,jack:6,tell:'Slow and careful: rarely attacks.'},
-  'The Voice on the Mountain':{king:6,tell:'You never see a hand. You only see the result.'},
-  'The Dust Prophet':{king:4,joker:4,tell:'Walks out of the storm saving everything for the right moment.'},
-  'Professor Static':{king:8,tell:'Every face card is an experiment, and he runs few.'},
-  'Burned Ezekiel':{king:6,jack:3,tell:'Cheats politely: spends face cards only when it pays.'},
-  'The Ghost Croupier':{king:10,tell:'Hasn’t wasted a card since before the war.'},
-  'Colonel Ash':{king:10,jack:3,tell:'Holds the table for both armies, and every Jack and King for the kill.'},
-  'Tandi':{opp:.4,tell:'Stubborn: builds a wall before she swings.'},
-  'Killian Darkwater':{opp:.5,jack:3,tell:'Plays it straight and careful.'},
-  'Decker':{king:6,tell:'Runs the Hub. Never throws away a face card.'},
-  'Set':{opp:.4,king:6,tell:'Patient. Very, very patient.'},
-  'The Master':{king:8,joker:3,tell:'Many voices, many plans, very few wasted cards.'},
-};
-// Harder difficulties make every boss savvier with their Kings.
-const CLASSIC_STYLES={2:{jack:4},3:{king:4,jack:2}};
-function aiProfile(){
-  if(!G)return null;
-  if(G.mode==='road'&&G.run){
-    const r=run(),t=G.runTable,P={...(t===2?(AI_STYLES[OPP().name]||{}):{})};
-    if(t===2){const floor=inBeyond(G.runStop)?4:{copper:1,silver:3,gold:6}[r.tier]||1;if(floor>1)P.king=Math.max(P.king||1,floor);}
-    else if(t===1&&r.tier==='gold')P.king=3;
-    return P;
-  }
-  if(G.mode==='classic'&&G.opp>=0)return CLASSIC_STYLES[G.opp]||null;
-  if(G.mode==='campaign'&&G.cd&&(G.cd.slot==='c'||G.cd.slot==='h')&&G.cd.ti>=2)return {king:3};
-  return null;
-}
 const isClassicish=()=>G.mode==='classic'||G.mode==='campaign';
 
 // Ready-made decks for the classic card buy.

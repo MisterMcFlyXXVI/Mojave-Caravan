@@ -66,6 +66,7 @@ function runPreHandHTML(){
       <dt>Rules</dt><dd>${rulesWithSwapHTML(r,s,t,ids)}</dd>
       ${d.rival?`<dt>Rival</dt><dd>${esc(RIVALS[d.rival].rule)}${s===RUN_STOPS.length-1&&d.rival==='greg'&&!charUnlocked('greg')?' Beat him to unlock Greg.':''}${s===RUN_STOPS.length-1&&d.rival==='jeanita'&&!charUnlocked('jeanita')?' Beat her to unlock Jeanita.':''}</dd>`:''}
       ${t===2?`<dt>Bounty</dt><dd>${BOUNTIES[r.bounties[s]].name}: ${esc(BOUNTIES[r.bounties[s]].desc)} +${bossBountyPay(s)}</dd>`:''}
+      ${t===2&&BOSS_SIGS[d.name]?`<dt>Signature</dt><dd><b>${esc(BOSS_SIGS[d.name].name)}:</b> ${esc(sigDesc(BOSS_SIGS[d.name],r))}</dd>`:''}
       ${t===2&&AI_STYLES[d.name]&&AI_STYLES[d.name].tell?`<dt>Style</dt><dd>${esc(AI_STYLES[d.name].tell)}</dd>`:''}
       <dt>Deck twist</dt><dd>${esc(DECKS[deckIdx(r.deck)].twist)}</dd>
       <dt>Chems</dt><dd>${chems.length?chems.map(([id,n])=>`${CHEMS[id].name} ×${n}`).join(' · '):'None'}</dd>
@@ -145,7 +146,7 @@ function renderCodex(){
   }else if(codexTab==='bosses'){
     const names=codexBosses();count=`${names.filter(n=>c.boss[n]).length}/${names.length}`;
     body=`<div class="plist">${names.map(n=>{const b=c.boss[n];if(!b)return `<div class="prow"><div><b>???</b><span>You haven’t faced this boss yet.</span></div></div>`;const st=AI_STYLES[n];
-      return `<div class="prow">${bossPic({rival:b.rv,art:b.art},'rivalimg')}<div><b>${esc(n)}</b><span>Faced ${b.f} · beaten ${b.w}${st&&st.tell?` · ${esc(st.tell)}`:''}</span></div></div>`;}).join('')}</div>`;
+      return `<div class="prow">${bossPic({rival:b.rv,art:b.art},'rivalimg')}<div><b>${esc(n)}</b><span>Faced ${b.f} · beaten ${b.w}${st&&st.tell?` · ${esc(st.tell)}`:''}${BOSS_SIGS[n]?` · Signature: ${esc(BOSS_SIGS[n].name)}`:''}</span></div></div>`;}).join('')}</div>`;
   }else if(codexTab==='events'){
     const ks=Object.keys(EVENTS);count=`${ks.filter(k=>c.event[k]).length}/${ks.length}`;
     body=`<div class="plist">${ks.map(k=>{const e=EVENTS[k],n=c.event[k];return n?`<div class="prow"><div><b>${esc(e.title)}</b><span>${esc(e.text)} · met ${n} time${n>1?'s':''}</span></div></div>`:`<div class="prow"><div><b>???</b><span>Something you haven’t met on the road yet.</span></div></div>`;}).join('')}</div>`;

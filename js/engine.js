@@ -63,7 +63,7 @@ function canPlayFace(cv,idx,card){
 const inR=(v,r)=>v>=r[0]&&v<=r[1];
 function laneWinner(pv,av,R){
   const pi=inR(pv,R.range.p),ai=inR(av,R.range.a);
-  if(pi&&ai&&pv===av&&R.tieWin&&R.tieWin.p)return 'p';
+  if(pi&&ai&&pv===av&&R.tieWin){const tp=!!R.tieWin.p,ta=!!R.tieWin.a;if(tp&&!ta)return 'p';if(ta&&!tp)return 'a';}
   if(pi&&(!ai||pv>av))return 'p';
   if(ai&&(!pi||av>pv))return 'a';
   return null;

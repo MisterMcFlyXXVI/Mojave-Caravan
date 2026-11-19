@@ -67,6 +67,7 @@ function tableRulesHTML(){
   if(G.run)for(const id of (G.ruleIds||[]).filter((x,i,a)=>a.indexOf(x)===i))items.push(`<li><b>${BOSS_RULES[id].name}:</b> ${esc(BOSS_RULES[id].desc)}</li>`);
   for(const h of (o.house||[]))items.push(`<li><b>${HOUSE[h].name}:</b> ${esc(HOUSE[h].desc)}</li>`);
   if(o.rival)items.push(`<li><b>Rival:</b> ${esc(RIVALS[o.rival].rule)}</li>`);
+  if(G.sig)items.push(`<li><b>Signature · ${esc(BOSS_SIGS[G.sig.id].name)}:</b> ${esc(BOSS_SIGS[G.sig.id].desc(G.sig.at))}</li>`);
   if(G.mode==='road'&&G.char&&CHARS[G.char])for(const t of CHARS[G.char].traits)items.push(`<li><b>${esc(t[1])} (${esc(CHARS[G.char].name)}):</b> ${esc(t[2])}</li>`);
   if(G.run&&meta.run){const dk=DECKS[deckIdx(meta.run.deck)];if(dk&&dk.id!=='plain')items.push(`<li><b>${esc(dk.name)}:</b> ${esc(dk.twist)}</li>`);
     for(const pk of (G.perks||[]))if(PERKS[pk])items.push(`<li><b>${esc(PERKS[pk].name)} (perk):</b> ${esc(PERKS[pk].desc)}</li>`);}
@@ -320,7 +321,7 @@ function charBioHTML(id){
     <h3 class="sub">Abilities</h3>
     <ul class="traits">${c.traits.map(([k,n,dsc])=>`<li class="${k==='+'?'pro':k==='='?'meh':'con'}"><b>${k} ${esc(n)}</b> ${esc(dsc)}</li>`).join('')}</ul>
     <h3 class="sub">On the Road</h3>
-    <p class="route">${ORIGINALS.includes(id)||NEWCOMERS.includes(id)?'Meets two rivals from the cast each run. Final table: Greg.':id==='greg'?'Meets three rivals from the cast each run. Final table: Jeanita.':'Meets three rivals from the cast and Greg each run. Final table: Silver Lou.'}</p>
+    <p class="route">${ORIGINALS.includes(id)||NEWCOMERS.includes(id)?'Meets rivals from the cast along the way. Final table: Greg.':id==='greg'?'Meets three rivals from the cast each run. Final table: Jeanita.':'Meets three rivals from the cast and Greg each run. Final table: Silver Lou.'}</p>
     ${ok?'':`<p class="locknote">Locked. ${esc(c.unlock)}</p>`}
     <div class="hubbtns" style="justify-content:center">${ok?`<button class="btn${on?'':' hot'}" data-pickchar="${id}" ${on?'disabled':''}>${on?'Playing':'Play as '+esc(c.name.split(' ')[0])}</button>`:''}<button class="btn" data-closeinfo>Close</button></div>
   </div></div>`;

@@ -318,6 +318,8 @@ function runRoster(cid,daily){
   if(ORIGINALS.includes(cid)||NEWCOMERS.includes(cid)){r[1]=pool[0];r[3]=pool[1];r[5]='greg';}
   else if(cid==='greg'){r[1]=pool[0];r[2]=pool[1];r[3]=pool[2];r[5]='jeanita';}
   else if(cid==='jeanita'){r[1]=pool[0];r[2]=pool[1];r[3]=pool[2];r[4]='greg';}
+  else return r;
+  if(!(cid==='greg'||cid==='jeanita'))for(const s of [1,3])if(Math.random()<1/3)r[s]=null; // now and then the stop keeps its own boss (Mama Tallow, Sergeant Brick)
   return r;
 }
 const rosterOf=()=>{const r=run();return r.roster||runRoster(r.char);};
@@ -649,7 +651,7 @@ function startRunTable(){
   G.repairUsed=false;G.requestUsed=false;G.booneUsed=false;G.ede=gear('ede');G.zapUsed=false;
   G.bat=gear('bat');G.batUsed=false;G.duster=gear('duster');G.dustUsed=false;G.codsworth=gear('codsworth');G.tidyUsed=false;G.sawedoff=gear('sawedoff');
   G.canWalk=gear('sneakers')&&!((r.walkUsed||{})[r.stop]);G.walked=false;G.comp=meta.gear&&meta.gear.on&&meta.gear.on.comp&&r.gear&&r.gear.includes(meta.gear.on.comp)?meta.gear.on.comp:null;
-  if(t===2){G.bounty=r.bounties[s];G.bountyPay=bossBountyPay(s);}
+  if(t===2){G.bounty=r.bounties[s];G.bountyPay=bossBountyPay(s);setupSig(r);}
   G.stake=0;r.nextRules=[];{const w0=r.wagerSel||0,w=(w0<=meta.caps&&w0<=wagerMax(s))?w0:0;r.wagerSel=0;if(w>0){meta.caps-=w;G.wager=w;G.stake=w;}}
   G.ianDone=false;G.regrowUsed=false;G.lastLost=null;
   if(isWC()&&t===2&&WC_ROUTE[s]&&WC_ROUTE[s].final){G.master=true;G.masterN=0;G.masterBase=JSON.stringify(G.rules);masterShift();}
