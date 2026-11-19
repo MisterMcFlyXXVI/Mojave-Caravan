@@ -116,6 +116,7 @@ function doMove(side,m){
   else if(side==='p'&&G.extra&&m.t!=='disband'){G.extra=false;keep=true;}
   else if(side==='p'&&m.t==='face'&&m._card&&m._card.rank==='J'&&G.sawedoff){keep=true;G.log.unshift('Sawed-Off: your Jack didn’t use your turn.');}
   else if(side==='p'&&m.t==='discard'&&G.codsworth&&!G.tidyUsed){G.tidyUsed=true;keep=true;G.log.unshift('Codsworth tidies up. That discard was on the house.');}
+  else if(side==='p'&&m.t==='discard'&&G.quick&&!G.quickUsed){G.quickUsed=true;keep=true;G.log.unshift('Quick hands: that discard didn’t use your turn.');}
   if(!keep&&side==='p'&&G.hugPending){G.hugPending=false;keep=true;G.log.unshift(`${OPP().name.split(' ').slice(-1)[0]} is still recovering from Greg’s hug. Your turn again.`);}
   if(!keep){G.turn=other(side);if(G.turn==='p'&&side==='a'&&G.sigSkip){G.sigSkip=false;G.turn='a';G.log.unshift('You skip a turn.');}if(G.turn==='p'){G.chemTurn=false;if(side==='a'){setTimeout(()=>sfx('turn'),180);buzz(12);}}}
   if(!G[G.turn].hand.length){
