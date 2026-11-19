@@ -904,12 +904,12 @@ function addFaces(spec,extra){
 function baseRules(){
   return {range:{p:[21,26],a:[21,26]},kingMult:{p:2,a:2},hand:{p:5,a:5},deal:{p:8,a:8},
     color:{p:false,a:false},jackproof:{p:false,a:false},jokerproof:{p:false,a:false},freeDisband:{p:false,a:false},noDiscard:{p:false,a:false},jackDraw:{p:false,a:false},discardDraw:{p:1,a:1},banned:[],hideOpp:false,
-    kingproof:{p:false,a:false},queenproof:{p:false,a:false},allproof:{p:false,a:false},noJoker:{p:false,a:false},queenDraw:{p:false,a:false},luckyDraw:{p:1,a:1},bigJoker:{p:false,a:false},spareParts:{p:false,a:false},tieWin:{p:false,a:false},anyOrder:{p:false,a:false},dead:{p:[],a:[]}};
+    kingproof:{p:false,a:false},queenproof:{p:false,a:false},allproof:{p:false,a:false},noJoker:{p:false,a:false},queenDraw:{p:false,a:false},luckyDraw:{p:1,a:1},bigJoker:{p:false,a:false},spareParts:{p:false,a:false},tieWin:{p:false,a:false},anyOrder:{p:false,a:false},dead:{p:[],a:[]},kingDraw:{p:false,a:false},glassMult:{p:2,a:2}};
 }
 const RULES=g=>g.rules||baseRules();
 
 function cvValue(cv){
-  return cv.reduce((s,e)=>s+val(e.card)*(e.card.mod==='glass'?2:1)*e.faces.reduce((m,f)=>f.rank==='K'?m*(f.m||2):m,1),0);
+  return cv.reduce((s,e)=>s+val(e.card)*(e.card.mod==='glass'?(e.card.gx||2):1)*e.faces.reduce((m,f)=>f.rank==='K'?m*(f.m||2):m,1),0);
 }
 function cvState(cv){
   let dir=0,suit=null,wild=false;
@@ -993,6 +993,7 @@ function applyMove(g,side,m,sim){
   const card=me.hand.splice(m.ci,1)[0];
   if(!sim&&side==='p'&&card.ed==='gold'&&(m.t==='num'||m.t==='face'))g.goldCaps=(g.goldCaps||0)+3;
   if(m.t==='num'){
+    if(card.mod==='glass')card.gx=(R.glassMult&&R.glassMult[side])||2;
     me.cv[m.lane].push({card,faces:[]});
     if(wasSetup)g.setupLeft[side]--;
   }else if(m.t==='face'){
@@ -1017,7 +1018,7 @@ function applyMove(g,side,m,sim){
   if(m.t==='discard'){const n=(R.discardDraw&&R.discardDraw[side])||1;for(let i=0;i<n&&me.deck.length;i++)me.hand.push(me.deck.pop());}
   else if(!(m.t==='num'&&wasSetup))drawTo(g,side,R.hand[side]);
   if(m.t==='num'&&card.mod==='lucky')for(let i=0;i<((R.luckyDraw&&R.luckyDraw[side])||1)&&me.deck.length;i++)me.hand.push(me.deck.pop());
-  if(me.deck.length&&m.t==='face'&&((card.rank==='J'&&R.jackDraw&&R.jackDraw[side])||(card.rank==='Q'&&R.queenDraw&&R.queenDraw[side])))me.hand.push(me.deck.pop());
+  if(me.deck.length&&m.t==='face'&&((card.rank==='J'&&R.jackDraw&&R.jackDraw[side])||(card.rank==='Q'&&R.queenDraw&&R.queenDraw[side])||(card.rank==='K'&&R.kingDraw&&R.kingDraw[side])))me.hand.push(me.deck.pop());
 }
 // AI heuristics
 function laneScore(v,r){
@@ -2081,7 +2082,7 @@ function renderMatch(){
   const handOK=i=>myTurn&&(!tut||legal.some(m=>m.ci===i));
   const proj={};
   if(sel!=null)for(const m of selMoves){
-    if(m.t==='num')proj['L'+m.lane]=cvValue(G.p.cv[m.lane])+val(G.p.hand[sel])*(G.p.hand[sel].mod==='glass'?2:1);
+    if(m.t==='num')proj['L'+m.lane]=cvValue(G.p.cv[m.lane])+val(G.p.hand[sel])*(G.p.hand[sel].mod==='glass'?((G.rules.glassMult&&G.rules.glassMult.p)||2):1);
     else if(m.t==='face'&&!(G.rules.hideOpp&&m.side==='a')){const g2=clone(G);applyMove(g2,'p',m,true);proj[`E${m.side}${m.lane}${m.idx}`]=cvValue(g2[m.side].cv[m.lane]);}
   }
   const dealt=new Set(G.dealtDone?[]:(G.dealt||[]));
@@ -2269,7 +2270,7 @@ function doMove(side,m){
     G.stats.turns=(G.stats.turns||0)+1;
     if(m.t==='discard')G.stats.discards++;
     else if(m.t==='disband')G.stats.disbands++;
-    else if(m.t==='face'){const c=G.p.hand[m.ci];G.stats.faces++;if(c.rank==='JK')G.stats.jokers++;if(c.rank==='K')G.stats.kings++;if(c.rank==='J')G.stats.jacks=(G.stats.jacks||0)+1;}
+    else if(m.t==='face'){const c=G.p.hand[m.ci];G.stats.faces++;if(c.rank==='JK')G.stats.jokers++;if(c.rank==='K')G.stats.kings++;if(c.rank==='J'){G.stats.jacks=(G.stats.jacks||0)+1;if(m.side==='a')G.stats.jackHits=(G.stats.jackHits||0)+1;}}
     else if(m.t==='num'){const c=G.p.hand[m.ci];if(c.mod==='glass'&&c.si!=null)(G.glass=G.glass||[]).push(c.si);}
   }
   if(side==='p'&&m.t==='face')m._card=G.p.hand[m.ci];
@@ -2776,6 +2777,8 @@ const ROAD_RULES=`
   <li>Between tables, the <b>trading post</b> sells perks, single cards, chems, card upgrades and one voucher per stop. Reroll it if you don’t like what’s there.</li>
   <li><b>Card bundles</b> show you several cards and let you keep some: a Saddlebag (keep 1 of 3), a Supply bundle or Caravan haul (keep 2 of 5), a themed bundle of one suit or of Kings and Queens, or a Collector’s bundle (keep 1 of 4, all special finishes). You can always take nothing.</li>
   <li>The <b>Burn pile</b> removes up to 2 cards from your deck for good, once per visit. A thinner deck draws your best cards more often. Watch for free burn barrels on the road, too.</li>
+  <li><b>Boss rewards:</b> beat a boss (other than the last) and choose one of three uncommon-or-better perks for free, or take caps instead. With full perk slots, sell one in the trading post first.</li>
+  <li><b>Road events:</b> some choices need a stat from your character’s bio: Strength, Smarts, Charm, Grit or Luck. Choices you can’t take show what they need, so different characters see different options.</li>
   <li><b>Perks</b> come in four rarities. You start with 3 slots, get a 4th from Boulder City on and a 5th from Fremont Street on. Sell a perk to make room.</li>
   <li><b>Card upgrades</b>: Steel can’t be Jacked, Gilded pays caps when it sells, Lucky draws an extra card, Glass is worth double but breaks, Wild matches any suit.</li>
   <li><b>Chems</b> are one-use boosts during a hand, one per turn, after the opening.</li>
@@ -4027,7 +4030,8 @@ const edLine=c=>c&&c.ed&&EDITIONS[c.ed]?`${EDITIONS[c.ed].name}: ${EDITIONS[c.ed
 const PERK_RARITY={
   twotone:'common',honest:'common',nose:'common',
   shark:'uncommon',cool:'uncommon',kingpin:'uncommon',prospector:'uncommon',collector:'uncommon',hunter:'uncommon',scav:'uncommon',steady:'uncommon',
-  scrapper:'rare',wide:'rare',royal:'rare',roller:'rare',momentum:'rare',jackrabbit:'rare',
+  scrapper:'rare',wide:'rare',royal:'rare',roller:'rare',momentum:'rare',jackrabbit:'rare',heist:'rare',hazmat:'rare',courier:'rare',cannon:'rare',
+  ironclad:'uncommon',showcase:'uncommon',
   lead:'legendary',insure:'legendary',
 };
 const RARITY_PRICE={common:10,uncommon:16,rare:24,legendary:32};
@@ -4041,6 +4045,12 @@ Object.assign(PERKS,{
   collector:{name:'Collector',desc:'+1 cap per perk you own after every win.'},
   momentum:{name:'Momentum',desc:'Scales: +1 hand size for every 5 tables you win this run (up to +2).'},
   honest:{name:'Honest Work',desc:'+6 caps when you win without playing a face card.'},
+  ironclad:{name:'Ironclad',desc:'+2 caps for every Steel card in a caravan you sell.'},
+  showcase:{name:'Showcase',desc:'+2 caps for every card with a special finish in a caravan you sell.'},
+  heist:{name:'Heist',desc:'Every Jack you play on the dealer’s cards pays 2 caps when the hand ends, win or lose.'},
+  hazmat:{name:'Hazmat Suit',desc:'Jokers can never remove your cards, yours included.'},
+  courier:{name:'Royal Courier',desc:'Draw a card whenever you play a King.'},
+  cannon:{name:'Glass Cannon',desc:'Glass cards are worth triple instead of double. They still break.'},
 });
 PERKS.insure={name:'Guardian Angel',desc:'If you lose with no Grit left, the run doesn’t end: you get another shot at that table. Breaks when used.'};
 PERKS.scav={name:'Scavenger',desc:'After every table, win or lose, you pocket a random number card from the dealer’s caravans. It joins your deck.'};
@@ -4135,6 +4145,9 @@ function runRules(s,t){
   if(has('twotone'))R.color.p=true;
   if(has('cool'))R.freeDisband.p=true;
   if(has('jackrabbit'))R.jackDraw.p=true;
+  if(has('courier'))R.kingDraw.p=true;
+  if(has('hazmat'))R.jokerproof.p=true;
+  if(has('cannon'))R.glassMult.p=3;
   if(has('scrapper'))R.discardDraw.p=2;
   if(has('kingpin'))R.range.p=[R.range.p[0],R.range.p[1]+Math.min(3,Math.floor((r.kings||0)/3))];
   if(has('momentum'))R.hand.p+=Math.min(2,Math.floor((r.won||0)/5));
@@ -4217,6 +4230,17 @@ function rollPerkOffer(n){
   }
   return out;
 }
+// Boss reward: three perks, uncommon or better. Pick one free, or take caps instead.
+function rollBossPerks(){
+  const owned=new Set(meta.perks),out=[],W=[['uncommon',50],['rare',40],['legendary',10]];
+  for(let k=0;k<40&&out.length<3;k++){
+    let x=Math.random()*100,rar='uncommon';for(const [r,w] of W){x-=w;if(x<0){rar=r;break;}}
+    const pool=Object.keys(PERK_RARITY).filter(p=>PERK_RARITY[p]===rar&&!owned.has(p)&&!out.includes(p));
+    if(pool.length)out.push(pick(pool));
+  }
+  return out;
+}
+const bossPerkCaps=s=>12+3*Math.min(s,10);
 function rollCard(withMod){
   const r=Math.random();let rank;
   if(r<.07)rank='JK';else if(r<.22)rank='K';else if(r<.36)rank='J';else if(r<.45)rank='Q';else rank=pick(['10','10','9','9','8','7','6','5','4','A']);
@@ -4393,6 +4417,7 @@ function runFinish(winner,ov){
   if(gone.size)meta.deck=meta.deck.filter((c,i)=>!gone.has(i));
   if(played.size&&!gear('jeans'))extras.push(`${played.size} glass card${played.size>1?'s':''} broke`);
   if(spent.size)extras.push(`${spent.size} one-use Legend card${spent.size>1?'s':''} used up`);
+  {const jh=(G.stats&&G.stats.jackHits)||0;if(has('heist')&&jh){meta.caps+=2*jh;extras.push(`${2*jh} from Heist`);}}
   if(winner==='p'){
     const neon=[0,1,2].reduce((n,l)=>n+(lanes[l]==='p'?edIn(G.p.cv[l],'neon'):0),0);
     const w=Math.round(tableReward(s,t)*(has('roller')?1.5:1)*winMult()*(1+(isChar('harold')?0.5:0.25)*neon));meta.caps+=w;ov.win=w;if(neon)extras.push(`Neon: winnings +${25*neon}%`);
@@ -4409,6 +4434,9 @@ function runFinish(winner,ov){
     if(G.bounty&&bountyMet(G.bounty,lanes)){ov.bountyWon=G.bountyPay;meta.caps+=G.bountyPay;}
     let gild=0;[0,1,2].forEach(l=>{if(lanes[l]==='p')for(const e of G.p.cv[l])if(e.card.mod==='gilded')gild+=3;});
     if(gild){meta.caps+=gild;extras.push(`${gild} from Gilded cards`);}
+    {let steel=0,shown=0;[0,1,2].forEach(l=>{if(lanes[l]==='p')for(const e of G.p.cv[l]){if(e.card.mod==='steel')steel++;if(e.card.ed)shown++;}});
+     if(has('ironclad')&&steel){meta.caps+=2*steel;extras.push(`${2*steel} from Ironclad`);}
+     if(has('showcase')&&shown){meta.caps+=2*shown;extras.push(`${2*shown} from Showcase`);}}
     if(has('nose')){const n=[0,1,2].filter(l=>lanes[l]==='p'&&cvValue(G.p.cv[l])===26).length;if(n){meta.caps+=4*n;extras.push(`${4*n} from Bloodhound`);}}
     if(has('collector')){meta.caps+=meta.perks.length;extras.push(`${meta.perks.length} from Collector`);}
     if(has('honest')&&G.stats&&!G.stats.faces){meta.caps+=6;extras.push('6 from Honest Work');}
@@ -4428,7 +4456,7 @@ function runFinish(winner,ov){
         meta.charFlags=meta.charFlags||{};if(!r.usedChem)meta.charFlags.noChem=1;if(r.tier!=='copper')meta.charFlags.silver=1;
         for(const id of CHAR_ORDER)if(!had.includes(id)&&charUnlocked(id)){ov.newChar=id;(ov.newChars=ov.newChars||[]).push(id);}
         runWon(ov);
-      }else{r.stop++;r.table=0;r.phase='event';if(gear('cargo')){meta.caps+=3;extras.push('3 from Cargo Pants');}r.event=pickEvent();if(r.stop===RUN_STOPS.length-1&&!isWC())unlock('road_strip');if(r.endless){meta.endlessBest=meta.endlessBest||{};meta.endlessBest[r.tier]=Math.max(meta.endlessBest[r.tier]||0,mileOf(r.stop)-1);if(mileOf(r.stop)-1>=5)unlock('beyond5');if(mileOf(r.stop)-1>=10)unlock('beyond10');if(mileOf(r.stop)-1>=20)unlock('beyond20');}}
+      }else{r.stop++;r.table=0;r.phase='event';{const bp=rollBossPerks();r.bossPick=bp.length?bp:null;r.bossCaps=bossPerkCaps(s);if(bp.length)extras.push('Boss reward: pick a free perk');}if(gear('cargo')){meta.caps+=3;extras.push('3 from Cargo Pants');}r.event=pickEvent();if(r.stop===RUN_STOPS.length-1&&!isWC())unlock('road_strip');if(r.endless){meta.endlessBest=meta.endlessBest||{};meta.endlessBest[r.tier]=Math.max(meta.endlessBest[r.tier]||0,mileOf(r.stop)-1);if(mileOf(r.stop)-1>=5)unlock('beyond5');if(mileOf(r.stop)-1>=10)unlock('beyond10');if(mileOf(r.stop)-1>=20)unlock('beyond20');}}
     }else{r.table++;r.phase='shop';openShop();}
   }else{
     r.losses=(r.losses||0)+1;
@@ -4501,6 +4529,7 @@ function pickEvent(){
   }
   return pick(normal);
 }
+const statOf=n=>{const r=run(),b=r&&CHAR_BIO[r.char];return b?b.stats[STAT_NAMES.indexOf(n)]:5;};
 const EVENTS={
   junktown:{wc:true,title:'Junktown',text:'Junktown’s split in two. Killian Darkwater runs the store and the law; Gizmo runs the casino and wants Killian dead. Whoever you cross is who you’ll face at the boss table.',
     choices:[{label:'Side with Killian: play Gizmo',act:()=>{run().junk='gizmo';(meta.junkFaced=meta.junkFaced||{}).gizmo=1;checkJunk();return 'Killian nods. Gizmo is waiting for you at the casino tables.';}},
@@ -4512,26 +4541,37 @@ const EVENTS={
   policebox:{wc:true,title:'An Unusual Call Box',text:'A blue police call box stands alone in the desert. As you walk closer, it groans, wheezes, and fades away.',
     choices:[{label:'Stand where it was',act:()=>{const r=run();r.found.push('policebox');unlock('wc_policebox');r.days=(r.days||0)+20;return 'You feel a little younger. Somehow you’ve gained 20 days.';}}]},
   trader:{title:'A Traveling Trader',text:'A trader with a two-headed mule offers to swap one of your plain number cards for an upgraded one.',
-    choices:[{label:'Trade (5 caps)',cost:5,act:()=>{const plain=meta.deck.filter(c=>isNum(c)&&!c.mod);if(!plain.length){meta.caps+=5;return 'You have no plain number cards left to trade. The trader hands your caps back.';}const c=pick(plain);c.mod=pick(Object.keys(MODS));showReveal('change','Traded',`${MODS[c.mod].name}: ${MODS[c.mod].desc}`,[c]);return `Your ${cardName(c)} came back ${MODS[c.mod].name}.`;}},{label:'Keep walking',act:()=>'The trader shrugs and moves on.'}]},
+    choices:[{label:'Trade (5 caps)',cost:5,act:()=>{const plain=meta.deck.filter(c=>isNum(c)&&!c.mod);if(!plain.length){meta.caps+=5;return 'You have no plain number cards left to trade. The trader hands your caps back.';}const c=pick(plain);c.mod=pick(Object.keys(MODS));showReveal('change','Traded',`${MODS[c.mod].name}: ${MODS[c.mod].desc}`,[c]);return `Your ${cardName(c)} came back ${MODS[c.mod].name}.`;}},{label:'Spot the best piece in his cart: trade for free',req:['Smarts',7],act:()=>{const plain=meta.deck.filter(c=>isNum(c)&&!c.mod);if(!plain.length)return 'You have no plain number cards left to trade.';const c=pick(plain);c.mod=pick(Object.keys(MODS));showReveal('change','Good eye',`${MODS[c.mod].name}: ${MODS[c.mod].desc}`,[c]);return `You spot the gem in his cart. Your ${cardName(c)} came back ${MODS[c.mod].name}, no charge.`;}},{label:'Keep walking',act:()=>'The trader shrugs and moves on.'}]},
   toll:{title:'Raider Toll',text:'Raiders block the road and want 10 caps to let you pass.',
-    choices:[{label:'Pay up (10 caps)',cost:10,act:()=>'They wave you through.'},{label:'Refuse',act:()=>{run().nextRules=['heavy'];return 'They let you pass, but they tip off the next dealer. Your next table: the dealer opens with 2 extra cards.';}}]},
+    choices:[{label:'Pay up (10 caps)',cost:10,act:()=>'They wave you through.'},{label:'Stare them down',req:['Strength',6],act:()=>'They take one look at you and find somewhere else to be. No toll.'},{label:'Talk the price down (4 caps)',req:['Charm',7],cost:4,act:()=>'You haggle them down to a fraction. They wave you through, grumbling.'},{label:'Refuse',act:()=>{run().nextRules=['heavy'];return 'They let you pass, but they tip off the next dealer. Your next table: the dealer opens with 2 extra cards.';}}]},
   doctor:{title:'The Strange Doctor',text:'A doctor in a stained coat offers to “reinforce” a card. Results guaranteed, mostly.',
-    choices:[{label:'Steel a card (6 caps)',cost:6,act:()=>{const pool=meta.deck.filter(c=>isNum(c)&&!c.mod);if(!pool.length){meta.caps+=6;return 'He can’t find a plain card to work on and gives your caps back, looking disappointed.';}const c=pick(pool);c.mod='steel';showReveal('change','Reinforced',`Steel: ${MODS.steel.desc}`,[c]);return `Your ${cardName(c)} is now Steel.`;}},{label:'No thanks',act:()=>'You back away slowly.'}]},
+    choices:[{label:'Steel a card (6 caps)',cost:6,act:()=>{const pool=meta.deck.filter(c=>isNum(c)&&!c.mod);if(!pool.length){meta.caps+=6;return 'He can’t find a plain card to work on and gives your caps back, looking disappointed.';}const c=pick(pool);c.mod='steel';showReveal('change','Reinforced',`Steel: ${MODS.steel.desc}`,[c]);return `Your ${cardName(c)} is now Steel.`;}},{label:'Check his work first: Steel a card (3 caps)',req:['Smarts',7],cost:3,act:()=>{const pool=meta.deck.filter(c=>isNum(c)&&!c.mod);if(!pool.length){meta.caps+=3;return 'No plain card left to work on. He gives your caps back.';}const c=pick(pool);c.mod='steel';showReveal('change','Reinforced',`Steel: ${MODS.steel.desc}`,[c]);return `You spot his shortcuts and haggle. Your ${cardName(c)} is now Steel, for less.`;}},{label:'No thanks',act:()=>'You back away slowly.'}]},
   wreck:{title:'An Abandoned Caravan',text:'A wrecked caravan sits by the road. Something might be worth taking.',
-    choices:[{label:'Search the cargo',act:()=>{const a=runAddCard(rollCard(true)),b=runAddCard(rollCard(false));showReveal('add','From the wreck','You pull these out of the cargo. They join your deck.',[a,b]);return `You found ${cardName(a)}${a.mod?` (${MODS[a.mod].name})`:''}${a.ed?` (${EDITIONS[a.ed].name})`:''} and ${cardName(b)}, now in your deck.`;}},{label:'Take the loose caps',act:()=>{meta.caps+=6;return 'You pocket 6 caps.';}}]},
+    choices:[{label:'Search the cargo',act:()=>{const a=runAddCard(rollCard(true)),b=runAddCard(rollCard(false));showReveal('add','From the wreck','You pull these out of the cargo. They join your deck.',[a,b]);return `You found ${cardName(a)}${a.mod?` (${MODS[a.mod].name})`:''}${a.ed?` (${EDITIONS[a.ed].name})`:''} and ${cardName(b)}, now in your deck.`;}},{label:'Pry open the locked crate',req:['Strength',7],act:()=>{const a=runAddCard(rollCard(true)),b=runAddCard(rollCard(true));meta.caps+=6;showReveal('add','From the locked crate','You pry the lid off and take everything. These join your deck, plus 6 caps.',[a,b]);return `You pry it open: ${cardName(a)} and ${cardName(b)} join your deck, and you pocket 6 caps.`;}},{label:'Take the loose caps',act:()=>{meta.caps+=6;return 'You pocket 6 caps.';}}]},
   gambler:{title:'The Coin Flipper',text:'A grinning stranger offers a coin flip: double or nothing on 10 caps.',
-    choices:[{label:'Flip (10 caps)',cost:10,act:()=>{if(Math.random()<.5){meta.caps+=20;return 'Heads! You win 20 caps.';}return 'Tails. The stranger laughs and walks off with your caps.';}},{label:'Walk away',act:()=>'Probably wise.'}]},
+    choices:[{label:'Flip (10 caps)',cost:10,act:()=>{if(Math.random()<.5){meta.caps+=20;return 'Heads! You win 20 caps.';}return 'Tails. The stranger laughs and walks off with your caps.';}},{label:'Flip with a lucky coin (10 caps, 70% to win)',req:['Luck',7],cost:10,act:()=>{if(Math.random()<.7){meta.caps+=20;return 'Heads! Your lucky coin comes through. You win 20 caps.';}return 'Tails. Even a lucky coin has off days.';}},{label:'Walk away',act:()=>'Probably wise.'}]},
   shrine:{title:'A Roadside Shrine',text:'An old shrine to a forgotten casino. Leaving an offering here thins your deck of the cards you least need.',
     choices:[{label:'Leave an offering',act:()=>{const lows=meta.deck.map((c,i)=>({c,i})).filter(o=>isNum(o.c)&&!o.c.mod&&val(o.c)<=3).slice(0,3).map(o=>o.i);if(!lows.length)return 'You have no low plain cards to offer. The shrine stays quiet.';if(meta.deck.length-lows.length>=MIN_DECK){const gone=lows.map(i=>meta.deck[i]);meta.deck=meta.deck.filter((c,i)=>!lows.includes(i));showReveal('remove','The offering','These leave your deck for good.',gone);}else return 'Your deck is too thin to give anything up.';return `You removed ${lows.length} low cards from your deck.`;}},{label:'Move on',act:()=>'You tip your hat and keep going.'}]},
   barrel:{title:'A Burn Barrel',text:'A barrel fire crackles by the roadside, and nobody’s watching it. A good place to get rid of cards you don’t want.',
     choices:[{label:'Burn up to 3 cards (free)',act:()=>{openBurn(3,'Burn barrel','Pick up to 3 cards to burn. They’re gone for the rest of the run.');return null;}},{label:'Warm your hands and move on',act:()=>'You warm up and hit the road.'}]},
   campfire:{title:'A Quiet Campfire',text:'Somebody left a fire burning by the road, with a coffee pot still warm. A good place to catch your breath, or to swap tall tales with a passing trader.',
-    choices:[{label:'Rest a while (restore 1 Grit, up to 2)',act:()=>{const r=run();if((r.grit||0)<2){r.grit=(r.grit||0)+1;return `You feel steadier. Grit: ${r.grit}.`;}return 'You’re as steady as you get. The coffee was good, though.';}},{label:'Swap stories (+4 caps)',act:()=>{meta.caps+=4;return 'The trader liked your story enough to pay for it. +4 caps.';}}]},
+    choices:[{label:'Rest a while (restore 1 Grit, up to 2)',act:()=>{const r=run();if((r.grit||0)<2){r.grit=(r.grit||0)+1;return `You feel steadier. Grit: ${r.grit}.`;}return 'You’re as steady as you get. The coffee was good, though.';}},{label:'Take first watch: restore 1 Grit and +4 caps',req:['Grit',8],act:()=>{const r=run();r.grit=Math.min(2,(r.grit||0)+1);meta.caps+=4;return `You keep watch while the others sleep. Grit: ${r.grit}, and +4 caps.`;}},{label:'Swap stories (+4 caps)',act:()=>{meta.caps+=4;return 'The trader liked your story enough to pay for it. +4 caps.';}}]},
   medic:{title:'A Wandering Medic',text:'A medic offers chems from her bag at a fair price.',
-    choices:[{label:'Buy a random chem (2 caps)',cost:2,act:()=>{if(chemTotal()<chemMax()){const id=pick(Object.keys(CHEMS));meta.chems[id]=(meta.chems[id]||0)+1;return `You got a ${CHEMS[id].name}.`;}meta.caps+=2;return 'Your chem pouch is already full. She waves off the caps and wishes you luck.';}},{label:'Decline',act:()=>'She nods and moves along.'}]},
+    choices:[{label:'Buy a random chem (2 caps)',cost:2,act:()=>{if(chemTotal()<chemMax()){const id=pick(Object.keys(CHEMS));meta.chems[id]=(meta.chems[id]||0)+1;return `You got a ${CHEMS[id].name}.`;}meta.caps+=2;return 'Your chem pouch is already full. She waves off the caps and wishes you luck.';}},{label:'Sweet-talk her into a free chem',req:['Charm',7],act:()=>{if(chemTotal()<chemMax()){const id=pick(Object.keys(CHEMS));meta.chems[id]=(meta.chems[id]||0)+1;return `She laughs, rummages in her bag and hands you a ${CHEMS[id].name}. No charge.`;}return 'Your chem pouch is already full. She wishes you luck anyway.';}},{label:'Decline',act:()=>'She nods and moves along.'}]},
 };
+Object.assign(EVENTS,{
+  safe:{title:'A Pre-War Safe',text:'A rusted safe sits half-buried in the sand, its door welded shut by two centuries of rust. Somebody went to a lot of trouble hiding something in it.',
+    choices:[{label:'Crack the combination',req:['Smarts',7],act:()=>{const c=runAddCard({rank:pick(['A','4','5','6','7','8','9','10']),suit:pick(SUITS),mod:pick(Object.keys(MODS)),ed:rollEdition(null)});meta.caps+=6;showReveal('add','Inside the safe','An upgraded card with a special finish. It joins your deck.',[c]);return `Click. Inside: ${cardName(c)} (${MODS[c.mod].name}, ${EDITIONS[c.ed].name}) and 6 caps.`;}},
+             {label:'Force the door',req:['Strength',7],act:()=>{meta.caps+=14;return 'The hinges give with a shriek. You pocket 14 caps from inside.';}},
+             {label:'Shake it for loose change',act:()=>{meta.caps+=3;return 'Something rattles. You get 3 caps out of the crack.';}}]},
+  radstorm:{title:'A Radstorm',text:'The sky turns green over the ridge. A radstorm is rolling in, fast. Dig in and wait it out, or run for the next town and hope for the best.',
+    choices:[{label:'Dig in and wait it out (4 caps of supplies)',cost:4,act:()=>'You sit tight under a tarp until it passes. A little poorer, a lot safer.'},
+             {label:'Run through it like you were born to it',req:['Grit',8],act:()=>{meta.caps+=6;return 'You barely notice. On the far side you find 6 caps in the debris.';}},
+             {label:'Run for it',act:()=>{run().nextRules=['light'];return 'You make it, but your hands shake. Next table: you hold one fewer card.';}}]},
+});
 function eventChoose(i){
   const r=run(),ev=EVENTS[r.event];if(!ev)return;const ch=ev.choices[i];if(!ch)return;
+  if(ch.req&&statOf(ch.req[0])<ch.req[1])return;
   if(ch.cost&&meta.caps<ch.cost)return;
   if(ch.cost)meta.caps-=ch.cost;
   const res=ch.act();if(res!=null)r.eventResult=res;save();
@@ -4604,6 +4644,14 @@ function runHeaderHTML(){
     ${meta.perks.length?`<div class="rulesbar" style="justify-content:center">${meta.perks.map(p=>`<span class="rb perk-chip rar-${PERK_RARITY[p]}" title="${esc(PERKS[p].desc)}">${PERKS[p].name}</span>`).join('')}${r.vouchers.map(v=>`<span class="rb char-chip" title="${esc(VOUCHERS[v].desc)}">${VOUCHERS[v].name}</span>`).join('')}</div>`:''}`;
 }
 let runArmed=false, runPre=false;
+function bossPickHTML(){
+  const r=run();if(!r||!r.bossPick||!r.bossPick.length)return '';
+  const full=meta.perks.length>=perkSlots();
+  return `<section class="panel bossreward"><h3 class="sub" style="margin-top:0">Boss reward: pick a free perk</h3>
+    ${full?'<p class="note">Your perk slots are full. Sell a perk in the trading post to make room, or take the caps instead.</p>':'<p class="note">Choose one. These are uncommon or better.</p>'}
+    <div class="plist">${r.bossPick.map(id=>`<button class="prow" data-bosspick="${id}" ${full?'disabled':''}><div><b>${esc(PERKS[id].name)} <i class="rar rar-${PERK_RARITY[id]}">${PERK_RARITY[id]}</i></b><span>${esc(PERKS[id].desc)}</span></div></button>`).join('')}</div>
+    <button class="btn" data-bossskip>Take ${r.bossCaps||bossPerkCaps(0)} caps instead</button></section>`;
+}
 function renderRunMap(){
   const r=run();
   const idxs=inBeyond(r.stop)?[r.stop-1,r.stop,r.stop+1]:RUN_STOPS.map((_,i)=>i);
@@ -4633,6 +4681,7 @@ function renderRunMap(){
   <div class="hubbtns kitbtns"><button class="btn" data-kitopen="deck">Your deck, perks & chems</button>${r.offers?`<button class="btn" data-runshopback>← Back to the trading post</button>`:''}</div>
   ${r.tagPick?`<section class="panel"><h3 class="sub" style="margin-top:0">Tag Skills: pick a free perk</h3><div class="plist">${r.tagPick.map(id=>`<button class="prow" data-tagpick="${id}"><div><b>${esc(PERKS[id].name)}</b><span>${esc(PERKS[id].desc)}</span></div></button>`).join('')}</div></section>`:''}
   ${isWC()?`<div class="wcclock"><b class="num">${r.days}</b> days of water left<span>Saloon ${WC_COST[0]} · High Stakes ${WC_COST[1]} · Boss ${WC_COST[2]} · Skip ${WC_SKIP}</span></div>`:''}
+  ${bossPickHTML()}
   <section class="panel trailmap"><div class="maplabel">${isWC()?'Vault 13 → The Cathedral':'Goodsprings → The Strip'}</div>${rows}</section>
   ${runPre?runPreHandHTML():''}
   ${kitOpen?kitHTML():''}
@@ -4728,8 +4777,9 @@ function renderEvent(){
     <h2 style="font-size:26px;color:var(--neon)">${esc(ev.title)}</h2>
     <p class="story">${esc(ev.text)}</p>
     ${r.eventResult?`<p class="ex">${esc(r.eventResult)}</p><button class="btn hot" data-eventdone>Continue to the shop</button>`:
-      `<div class="spoils">${ev.choices.map((c,i)=>`<button class="spoil" data-eventpick="${i}" ${c.cost&&meta.caps<c.cost?'disabled':''}><b>${esc(c.label)}</b>${c.cost&&meta.caps<c.cost?'<span>Not enough caps.</span>':''}</button>`).join('')}</div>`}
+      `<div class="spoils">${ev.choices.map((c,i)=>{const low=c.req&&statOf(c.req[0])<c.req[1],poor=c.cost&&meta.caps<c.cost;return `<button class="spoil" data-eventpick="${i}" ${low||poor?'disabled':''}><b>${c.req?`[${c.req[0]} ${c.req[1]}] `:''}${esc(c.label)}</b>${low?`<span>Needs ${c.req[0]} ${c.req[1]}. You have ${statOf(c.req[0])}.</span>`:poor?'<span>Not enough caps.</span>':''}</button>`;}).join('')}</div><p class="note" style="margin-top:10px">${STAT_NAMES.map(n=>`${n} ${statOf(n)}`).join(' · ')}</p>`}
   </section>
+  ${bossPickHTML()}
   <div class="hubbtns kitbtns"><button class="btn" data-kitopen="deck">Your deck, perks & chems</button></div>
   ${r.picker?pickerHTML():''}
   ${kitOpen?kitHTML():''}
@@ -4749,6 +4799,7 @@ function kitHTML(){
     (r.freeBundles||[]).length?`${r.freeBundles.length>1?r.freeBundles.length+' free bundles':`A free ${r.freeBundles[0]==='collector'?'Collector’s':'Supply'} bundle`} at your next shop`:null,
     r.freeCrate?`A free ${r.freeCrate==='collector'?'Collector’s':'Supply'} bundle at your next shop`:null,
     r.halfShop&&!r.offers?'Your next shop is half price':null,
+    r.bossPick?'A free boss perk is waiting for you to pick it':null,
     (r.nextRules||[]).length?`Next table: ${r.nextRules.map(id=>`${BOSS_RULES[id].name} (${BOSS_RULES[id].desc})`).join(', ')}`:null,
   ].filter(Boolean);
   const tabBtn=(k,l)=>`<button class="btn" data-kitopen="${k}" aria-pressed="${tab===k}">${l}</button>`;
@@ -4784,6 +4835,7 @@ function renderRunShop(){
   app.innerHTML=`
   <div class="mbar"><span class="pill">${esc(placeOf(r.stop))} · next: ${TABLE_KIND[r.table]}</span>${capsHTML(meta.caps)}</div>
   ${runHeaderHTML()}
+  ${bossPickHTML()}
   <section class="panel">
     <div class="sect-h"><h2 style="font-size:26px">Trading post</h2><button class="btn hot" data-runnext>Next table →</button></div>
     ${r.halfShop?'<p class="note" style="color:var(--sage)">Clearance Sale: everything is half price this visit.</p>':''}
@@ -4894,6 +4946,8 @@ function handleRunClick(d){
   if('runspecial' in d){meta.newRun.special=d.runspecial||null;render();return true;}
   if('rundeck' in d){meta.newRun.deck=d.rundeck;if(!tierUnlocked(meta.newRun.tier,d.rundeck))meta.newRun.tier='copper';render();return true;}
   if('cashin' in d){if(r&&r.phase==='shop'&&!r.vouchUsed&&(meta.capVouch||[]).length){meta.capVouch.sort((a,b)=>b.caps-a.caps);const v=meta.capVouch.shift();meta.caps+=v.caps;r.vouchUsed=true;sfx('clink');checkState();save();}render();return true;}
+  if('bosspick' in d){if(r&&r.bossPick&&r.bossPick.includes(d.bosspick)&&meta.perks.length<perkSlots()){meta.perks.push(d.bosspick);meta.equipped=meta.perks;r.bossPick=null;if(meta.perks.length>=5)unlock('loaded');if(typeof sfx==='function')sfx('clink');save();}render();return true;}
+  if('bossskip' in d){if(r&&r.bossPick){meta.caps+=r.bossCaps||bossPerkCaps(0);r.bossPick=null;if(typeof sfx==='function')sfx('clink');save();}render();return true;}
   if('tagpick' in d){if(r&&r.tagPick&&r.tagPick.includes(d.tagpick)){meta.perks.push(d.tagpick);meta.equipped=meta.perks;r.tagPick=null;save();}render();return true;}
   if('runoffice' in d){meta.run=null;screen='office';save();render();window.scrollTo(0,0);return true;}
   if('runtier' in d){meta.newRun.tier=d.runtier;render();return true;}
