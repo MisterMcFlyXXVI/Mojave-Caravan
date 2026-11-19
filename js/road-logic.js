@@ -441,7 +441,7 @@ function runRules(s,t){
   R.luckyDraw.p=Math.max(SPX.luckyDraw(sp('L')),gear('revolver')?2:1);
   if(gear('dynamite'))R.bigJoker.p=true;
   if(isChar('snipsnip'))R.spareParts.p=true;
-  if(isChar('benny'))R.tieWin.p=true;
+  if(isChar('benny')){R.tieWin.p=true;R.hand.a+=1;}   // Double-Crosser: nobody trusts him, so every dealer holds an extra card
   if(isChar('harold'))R.hand.p=Math.max(3,R.hand.p-1);
   return R;
 }

@@ -14,7 +14,7 @@ const SPX={
   ceiling:S=>S>=9?1:0,                                        // sell ceiling bonus
   bundleSee:P=>P>=10?2:P>=7?1:P<=3?-1:0,                      // extra cards shown in every bundle
   peek:P=>P>=10,                                              // always see the dealer's hand
-  grit:E=>(E>=9?1:0)-(E<=3?1:0),                              // starting Grit
+  grit:E=>(E>=10?1:0)-(E<=3?1:0),                             // starting Grit (a point of Grit is worth ~30 win-rate points, so only a 10 earns it)
   wcDays:E=>E>=7?1:0,                                         // days saved per table on the Water Chip run
   discount:C=>C>=10?0.8:C>=9?0.85:C>=8?0.9:C>=7?0.95:C<=3?1.1:1, // trading post price multiplier
   reroll:I=>I>=7?1:0,                                         // shop reroll discount
@@ -49,7 +49,7 @@ function specialEffects(v,charId){
   if(P>=10)add('P','+','Eagle eyes: you always see the dealer’s hand, and bundles show 2 more cards.');
   else if(P>=7)add('P','+','Sharp eyes: bundles show 1 more card.');
   else if(P<=3)add('P','−','Squinting: bundles show 1 fewer card.');
-  if(E>=9)add('E','+','Tough as nails: you start every run with 1 more Grit.');
+  if(E>=10)add('E','+','Tough as nails: you start every run with 1 more Grit.');
   if(E>=7)add('E','+','Hardy: on the Water Chip run, every table costs 1 fewer day.');
   if(E<=3)add('E','−','Frail: you start every run with 1 less Grit.');
   const dc=SPX.discount(C);
