@@ -131,9 +131,9 @@ const GEAR_SLOTS=[
   {id:'gun',name:'Gun'},{id:'melee',name:'Melee'},{id:'throw',name:'Throwable'},{id:'comp',name:'Companion'},
 ];
 const GEAR={
-  hat:{slot:'head',name:'Desperado Hat',price:15,sp:{C:1},desc:'The first boss you beat each run gives you back 1 Grit (up to 2).'},
-  lamp:{slot:'head',name:'Prospector’s Headlamp',price:30,sp:{P:1},desc:'Every bundle you open has at least one upgraded card in it.'},
-  beret:{slot:'head',name:'Ranger Beret',price:50,sp:{P:1,A:1},desc:'The dealer opens every hand with 7 cards instead of 8.'},
+  hat:{slot:'head',name:'Desperado Hat',price:45,sp:{C:1},desc:'The first boss you beat each run gives you back 1 Grit (up to 2).'},
+  lamp:{slot:'head',name:'Prospector’s Headlamp',price:30,sp:{P:2},desc:'Every bundle you open has at least one upgraded card in it.'},
+  beret:{slot:'head',name:'Ranger Beret',price:50,sp:{P:1,A:1,E:1},desc:'The dealer opens every hand with 7 cards instead of 8.'},
   duster:{slot:'coat',name:'Dusty Duster',price:15,sp:{E:1},desc:'Dust in their eyes: the dealer’s first play each hand is a random one.'},
   labcoat:{slot:'coat',name:'Lab Coat',price:30,sp:{I:1},desc:'Every chem you use also draws you a card.'},
   armor:{slot:'coat',name:'Leather Armor',price:45,sp:{E:2,A:-1},desc:'The dealer can’t play Queens on your caravans.'},
