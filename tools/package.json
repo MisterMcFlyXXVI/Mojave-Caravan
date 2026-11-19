@@ -1,0 +1,13 @@
+{
+  "name": "mojave-caravan-tools",
+  "private": true,
+  "description": "Dev tools for Mojave Caravan: engine tests, a browser smoke test and a run-simulating balance bot. Not part of the deployed site.",
+  "scripts": {
+    "test": "node engine-tests.js && node smoke.js",
+    "test:quick": "node engine-tests.js --quick && node smoke.js",
+    "sim": "node simulate-runs.js"
+  },
+  "devDependencies": {
+    "playwright": "^1.40.0"
+  }
+}

@@ -1,0 +1,145 @@
+#!/usr/bin/env node
+// Browser smoke test: loads the real page in headless Chromium and exercises the game's features.
+//   cd tools && npm install && npx playwright install chromium     (once)
+//   node tools/smoke.js
+const path = require('path');
+const { chromium } = require('playwright');
+
+let pass = 0, fail = 0;
+const ok = (name, cond, extra) => { cond ? pass++ : fail++; console.log(`${cond ? 'PASS' : 'FAIL'}  ${name}${extra !== undefined ? '  (' + extra + ')' : ''}`); };
+
+(async () => {
+  const browser = await chromium.launch();
+  const page = await browser.newPage({ viewport: { width: 430, height: 900 } });
+  const errors = [], missing = [];
+  // The sandbox/CI may block fonts and the Firebase script; those aren't game errors.
+  const noise = /ERR_FILE_NOT_FOUND|ERR_TUNNEL|ERR_NAME|ERR_INTERNET|ERR_CONNECTION|ERR_FAILED/;
+  page.on('pageerror', (e) => errors.push('PAGEERR ' + e.message));
+  page.on('console', (m) => { if (m.type() === 'error' && !noise.test(m.text())) errors.push('CONSOLE ' + m.text()); });
+  page.on('requestfailed', (r) => { const u = r.url(); if (u.startsWith('file:') && /\.(js|css)$/.test(u)) missing.push(u); });
+  await page.goto('file://' + path.resolve(__dirname, '..', 'index.html'));
+  await page.waitForTimeout(1500);
+
+  const boot = await page.evaluate(() => ({ scripts: document.querySelectorAll('script[src]').length, home: document.body.innerHTML.includes('CAR'), css: [...document.styleSheets].some((s) => /style\.css/.test(s.href || '')) }));
+  ok('the page boots with its stylesheet and every script', boot.home && boot.css && boot.scripts >= 16 && !missing.length, `${boot.scripts} scripts`);
+
+  // Everything below runs inside the page, against the real game code.
+  const R = await page.evaluate(() => {
+    const out = {};
+    const realTimeout = window.setTimeout;
+    window.setTimeout = () => 0;                                   // run dealer turns by hand, restored at the end
+    const fresh = (o = {}) => { meta.run = null; meta.char = o.char || 'vladmira'; meta.decksUnlocked = 8; meta.deckTiers = { plain: 3, scorched: 3 }; meta.newRun = { deck: o.deck || 'plain', tier: o.tier || 'copper', token: null, seed: o.seed || 'smoke' }; startRun(); return run(); };
+
+    // --- seeds ---
+    const snap = (seed) => { fresh({ seed }); const r = run(); r.phase = 'shop'; openShop(); return JSON.stringify({ b: r.bosses, d: r.dealers.map((x) => x.map((y) => y.name)), ro: r.roster, sh: r.offers.perks, c: r.offers.cards.map((c) => c.rank + c.suit), bu: r.offers.bundles.map((x) => x.id) }); };
+    out.seedSame = snap('hello') === snap('HELLO'); out.seedDiff = snap('hello') !== snap('world');
+    out.randomNative = Math.random.toString().includes('[native code]');
+
+    // --- daily ---
+    meta.run = null; meta.char = 'nuke'; meta.dailyLog = {}; meta.dailyDone = null; meta.dailyStreak = 0; meta.scrip = 0;
+    handleRunClick({ rundaily: '' }); const d = run();
+    out.daily = d.daily && d.deck === 'plain' && d.tier === 'copper' && d.gear.length === 0 && ORIGINALS.includes(d.char);
+    runLost(); out.dailyBonus = d.dailyBonus; handleRunClick({ runnew: '' }); out.charRestored = meta.char === 'nuke';
+    handleRunClick({ rundaily: '' }); const d2 = run(); runLost(); out.dailyOnce = !d2.dailyBonus; handleRunClick({ runnew: '' });
+    handleRunClick({ rundaily: '' }); const sc = meta.scrip; runLost(true); out.abandonPays = meta.scrip - sc; handleRunClick({ runnew: '' });
+
+    // --- boss reward and perks ---
+    let r = fresh(); r.phase = 'table'; r.stop = 1; r.table = 2; startRunTable(); finish('p', 'x');
+    out.rewardOffered = (r.bossPick || []).length === 3 && r.phase === 'event';
+    handleRunClick({ bosspick: r.bossPick[0] }); out.rewardTaken = r.bossPick === null && meta.perks.length === 1;
+    r.bossPick = rollBossPerks(); meta.perks = ['wide', 'royal', 'steady']; r.bossCaps = 15; const c0 = meta.caps; handleRunClick({ bossskip: '' }); out.rewardCaps = meta.caps - c0;
+    r = fresh(); meta.perks = ['courier', 'hazmat', 'cannon']; r.phase = 'table'; startRunTable();
+    out.perkRules = G.rules.kingDraw.p && G.rules.jokerproof.p && G.rules.glassMult.p === 3;
+    r = fresh({ deck: 'scorched' }); out.scorched = meta.deck.length === 48 && meta.deck.filter((c) => !isNum(c)).length === 8;
+
+    // --- every event, every character ---
+    const bad = [];
+    for (const ch of CHAR_ORDER) for (const key of Object.keys(EVENTS)) {
+      if (EVENTS[key].wc) continue;
+      EVENTS[key].choices.forEach((c, i) => { const rr = fresh({ char: ch }); rr.stop = 1; rr.phase = 'event'; rr.event = key; rr.eventResult = null; meta.caps = 40; try { eventChoose(i); screen = 'road'; render(); } catch (e) { bad.push(`${ch}/${key}/${i}: ${e.message}`); } });
+    }
+    out.eventErrors = bad.length; out.eventFirst = bad[0];
+    r = fresh({ char: 'matt' }); r.stop = 1; r.phase = 'event'; r.event = 'safe'; r.eventResult = null; meta.caps = 0; eventChoose(0); out.lockedRejected = r.eventResult === null;
+
+    // --- wagers ---
+    r = fresh(); r.stop = 2; r.table = 1; r.phase = 'table'; meta.caps = 60; handleRunClick({ wager: '10' }); const w0 = meta.caps; startRunTable(); out.stake = w0 - meta.caps;
+    const w1 = meta.caps; finish('p', 't'); out.wagerPaid = (G.over.extras || []).some((x) => /Wager paid: \+20/.test(x)); out.wagerGain = meta.caps - w1 > 20;
+    r = fresh(); r.stop = 1; r.phase = 'table'; meta.caps = 40; r.wagerSel = 5; startRunTable(); const w2 = meta.caps; finish('a', 't'); out.wagerLost = meta.caps === w2;
+    r = fresh(); r.stop = 1; r.phase = 'table'; meta.caps = 40; r.wagerSel = 5; startRunTable(); G.walked = true; const w3 = meta.caps; finish('a', 't'); out.wagerRefund = meta.caps - w3 === 5;
+    r = fresh(); meta.caps = 3; r.wagerSel = 5; startRunTable(); out.wagerPoor = !G.wager;
+
+    // --- boss rule swap ---
+    r = fresh('x'); r.stop = 3; r.table = 2; r.phase = 'table'; meta.caps = 80; ensureStop(3);
+    handleRunClick({ rulesw: '0' }); const pick = r.swapPick && r.swapPick.opts[0]; const cap0 = meta.caps; handleRunClick({ rulepick: pick });
+    out.swap = meta.caps === cap0 - bossSwapCost(3) && r.bosses[3].includes(pick); handleRunClick({ rulesw: '0' }); out.swapOnce = !r.swapPick;
+    let viol = 0; for (let k = 0; k < 60; k++) { const rr = fresh({ seed: 'p' + k, tier: ['copper', 'silver', 'gold'][k % 3] }); for (let st = 1; st < 6; st++) { ensureStop(st); rr.stop = st; for (let i = 0; i < rr.bosses[st].length; i++) { const others = rr.bosses[st].filter((_, j) => j !== i), bn = rr.bounties[st]; for (const id of swapOptions(st, i)) { if (rr.bosses[st].includes(id) || RULE_CLASH.some((g) => g.includes(id) && others.some((x) => g.includes(x))) || (id === 'tight' && bn === 'p26') || (id === 'noking' && bn === 'kings') || (id === 'drought' && bn === 'calm')) viol++; } } } }
+    out.swapViolations = viol;
+
+    // --- boss signatures ---
+    const boss = (name, tier) => { const rr = fresh({ tier }); rr.phase = 'table'; rr.stop = 3; rr.table = 2; startRunTable(); G.dealer = { ...G.dealer, name }; delete G.sig; setupSig(rr); G.setupLeft = { p: 0, a: 0 }; G.log = []; busy = false; return rr; };
+    const dealer = (n) => { for (let i = 0; i < n; i++) { const ms = legalMoves(G, 'a').filter((m) => m.t === 'num' || m.t === 'discard'); if (!ms.length) break; G.turn = 'a'; doMove('a', ms[0]); if (G.over) break; } };
+    const E = (rank, suit) => ({ card: mk(rank, suit), faces: [] });
+    const hand = (cards) => cards.map(([a, b]) => mk(a, b));
+    boss('Velvet Moreno', 'copper'); G.p.cv = [[E('2', 'S')], [E('9', 'H'), E('10', 'S')], [E('4', 'D')]]; G.a.cv = [[], [], []];
+    G.a.hand = hand([['A', 'S'], ['A', 'H'], ['A', 'D'], ['A', 'C'], ['2', 'C'], ['2', 'D'], ['2', 'H'], ['5', 'C']]); dealer(4); out.knifeEarly = !G.sig.fired && G.p.cv[1].length === 2; dealer(1); out.knife = G.sig.fired && G.p.cv[1].length === 1 && G.lastLost.lane === 1;
+    boss('Greg', 'copper'); G.a.hand = hand([['A', 'S'], ['2', 'H'], ['3', 'D'], ['4', 'C'], ['5', 'S'], ['6', 'H'], ['7', 'D'], ['8', 'C']]); G.p.cv = [[E('9', 'S')], [E('9', 'H')], [E('9', 'D')]]; G.a.cv = [[], [], []]; dealer(7); out.hug = G.sig.fired && G.turn === 'a';
+    boss('Benny', 'copper'); G.a.hand = hand([['A', 'S'], ['2', 'H'], ['3', 'D'], ['4', 'C'], ['5', 'S'], ['6', 'H'], ['7', 'D'], ['8', 'C'], ['9', 'S'], ['10', 'H']]); G.a.cv = [[], [], []]; dealer(G.sig.at - 1); const chipEarly = G.rules.range.a[0] === 21; dealer(1); out.chip = chipEarly && G.rules.range.a[0] === 18 && G.rules.range.a[1] === 30;
+    boss('Mama Tallow', 'copper'); G.a.hand = hand([['A', 'S'], ['2', 'H'], ['3', 'D'], ['4', 'C'], ['5', 'S']]); G.a.cv = [[], [], []]; G.a.deck = hand([['6', 'S'], ['7', 'S'], ['8', 'S'], ['9', 'S'], ['10', 'S'], ['6', 'H']]); dealer(2); const hb = G.a.hand.length; dealer(1); out.feast = G.sig.fired && G.a.hand.length >= hb + 1;
+    out.sigTiers = ['copper', 'silver', 'gold'].map((t) => { boss('Greg', t); return G.sig.at; }).join(',') === '7,6,5';
+    boss('Silver Lou', 'copper'); out.edge = G.rules.tieWin.a && laneWinner(24, 24, G.rules) === 'a';
+    boss('Velvet Moreno', 'copper'); screen = 'match'; rulesOpen = false; render(); out.sigChip = document.body.innerHTML.includes('Signature: Knife Throw in 5 turns');
+    let n1 = 0, n3 = 0; for (let i = 0; i < 300; i++) { const ro = runRoster('nuke', false); if (!ro[1]) n1++; if (!ro[3]) n3++; }
+    out.rosterVariety = n1 > 60 && n1 < 160 && n3 > 60 && n3 < 160;
+
+    // --- codex, run summary, old saves ---
+    meta.codex = { perk: {}, boss: {}, event: {} };
+    r = fresh(); r.phase = 'shop'; openShop(); const offered = r.offers.perks.slice(); out.codexSeen = offered.every((id) => (meta.codex.perk[id] || 0) & 1);
+    r.phase = 'table'; r.stop = 1; r.table = 2; startRunTable(); const bn = G.dealer.name; finish('p', 'x'); out.codexBoss = !!meta.codex.boss[bn] && meta.codex.boss[bn].f === 1;
+    let tabs = 0; for (const t of ['perks', 'legends', 'bosses', 'events', 'upgrades']) { codexTab = t; screen = 'codex'; try { render(); tabs++; } catch (e) {} } out.codexTabs = tabs === 5;
+    r = fresh(); r.phase = 'table'; r.stop = 0; r.table = 0; startRunTable(); finish('p', 'x'); runLost(); screen = 'road'; render(); out.summary = document.body.innerHTML.includes('How it went');
+    r = fresh(); delete r.seed; delete r.rs; delete meta.codex; r.phase = 'shop'; meta = migrate(JSON.parse(JSON.stringify(meta))); openShop(); rerollShop(); screen = 'road'; render();
+    { const old = run(); old.phase = 'table'; old.stop = 1; old.table = 2; startRunTable(); finish('p', 'x'); out.oldSave = !!run().bossPick && !!meta.codex.boss; }
+    window.setTimeout = realTimeout;
+    return out;
+  });
+
+  const T = (name, v) => ok(name, !!v);
+  T('same seed gives the same bosses, rivals and shops; a different seed differs', R.seedSame && R.seedDiff);
+  T('seeded randomness is switched off again afterwards', R.randomNative);
+  T('the daily run has its fixed setup', R.daily);
+  ok('the daily pays a bonus once, restores your character, and abandoning pays nothing', R.dailyBonus === 5 && R.charRestored && R.dailyOnce && R.abandonPays === 0, `bonus ${R.dailyBonus}`);
+  T('beating a boss offers three perks and one can be taken', R.rewardOffered && R.rewardTaken);
+  ok('with full perk slots you can take caps instead', R.rewardCaps === 15, R.rewardCaps);
+  T('new perk rules are wired up (King draw, Joker-proof, Glass Cannon)', R.perkRules);
+  T('the Scorched deck burns six face cards', R.scorched);
+  ok('every event runs for every character', R.eventErrors === 0, R.eventFirst || '');
+  T('a stat-locked event choice is rejected', R.lockedRejected);
+  ok('wagers: stake taken, paid on a win, lost on a loss, refunded on a walk-away, ignored if you can’t afford it', R.stake === 10 && R.wagerPaid && R.wagerGain && R.wagerLost && R.wagerRefund && R.wagerPoor);
+  ok('boss rule swap costs caps, replaces the rule, and works once per boss', R.swap && R.swapOnce);
+  ok('swap options never clash or make the bounty impossible', R.swapViolations === 0, `${R.swapViolations} violations`);
+  ok('signatures: knife, hug, platinum chip and extra cards fire on the right turn', R.knifeEarly && R.knife && R.hug && R.chip && R.feast);
+  T('signatures fire earlier on Silver and Gold', R.sigTiers);
+  T('House Edge gives the dealer ties', R.edge);
+  T('the signature countdown shows at the table', R.sigChip);
+  T('Mama Tallow and Sergeant Brick turn up on stops 2 and 4 now and then', R.rosterVariety);
+  T('the Codex records perks and bosses, and all its tabs render', R.codexSeen && R.codexBoss && R.codexTabs);
+  T('a run ends with a summary', R.summary);
+  T('a save from before seeds and the Codex still loads and plays', R.oldSave);
+
+  // A real click-through: story card, Deal in, wager button, confirm, play the opening with real clicks.
+  await page.evaluate(() => { meta.opt.confirm = false; meta.char = 'chevy'; meta.run = null; meta.decksUnlocked = 8; meta.newRun = { deck: 'plain', tier: 'copper', token: null, seed: 'clicks' }; startRun(); meta.caps = 40; screen = 'road'; render(); });
+  await page.click('[data-runstoryok]'); await page.click('[data-runplay]'); await page.waitForSelector('[data-wager="5"]'); await page.click('[data-wager="5"]'); await page.click('[data-runconfirm]'); await page.waitForSelector('.hand');
+  ok('clicking through to a match takes the wager', await page.evaluate(() => screen === 'match' && meta.caps === 35 && document.body.innerHTML.includes('wager 5')));
+  for (let i = 0; i < 3; i++) {
+    await page.waitForFunction(() => G && G.turn === 'p' && !busy);
+    await page.click('.hand .card-btn:has(.card:not(.face):not(.joker):not(.legend))');
+    await page.click('.lane.can[data-side="p"]');
+    await page.waitForTimeout(1300);
+  }
+  ok('the opening can be played with real clicks', await page.evaluate(() => G.setupLeft.p === 0));
+
+  ok('no script errors in the whole session', errors.length === 0, errors[0] || '');
+  await browser.close();
+  console.log(`\n${pass} passed, ${fail} failed`);
+  process.exit(fail ? 1 : 0);
+})();
