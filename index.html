@@ -904,12 +904,12 @@ function addFaces(spec,extra){
 function baseRules(){
   return {range:{p:[21,26],a:[21,26]},kingMult:{p:2,a:2},hand:{p:5,a:5},deal:{p:8,a:8},
     color:{p:false,a:false},jackproof:{p:false,a:false},jokerproof:{p:false,a:false},freeDisband:{p:false,a:false},noDiscard:{p:false,a:false},jackDraw:{p:false,a:false},discardDraw:{p:1,a:1},banned:[],hideOpp:false,
-    kingproof:{p:false,a:false},queenproof:{p:false,a:false},allproof:{p:false,a:false},noJoker:{p:false,a:false},queenDraw:{p:false,a:false},luckyDraw:{p:1,a:1},bigJoker:{p:false,a:false},spareParts:{p:false,a:false},tieWin:{p:false,a:false},anyOrder:{p:false,a:false},dead:{p:[],a:[]}};
+    kingproof:{p:false,a:false},queenproof:{p:false,a:false},allproof:{p:false,a:false},noJoker:{p:false,a:false},queenDraw:{p:false,a:false},luckyDraw:{p:1,a:1},bigJoker:{p:false,a:false},spareParts:{p:false,a:false},tieWin:{p:false,a:false},anyOrder:{p:false,a:false},dead:{p:[],a:[]},kingDraw:{p:false,a:false},glassMult:{p:2,a:2}};
 }
 const RULES=g=>g.rules||baseRules();
 
 function cvValue(cv){
-  return cv.reduce((s,e)=>s+val(e.card)*(e.card.mod==='glass'?2:1)*e.faces.reduce((m,f)=>f.rank==='K'?m*(f.m||2):m,1),0);
+  return cv.reduce((s,e)=>s+val(e.card)*(e.card.mod==='glass'?(e.card.gx||2):1)*e.faces.reduce((m,f)=>f.rank==='K'?m*(f.m||2):m,1),0);
 }
 function cvState(cv){
   let dir=0,suit=null,wild=false;
@@ -993,6 +993,7 @@ function applyMove(g,side,m,sim){
   const card=me.hand.splice(m.ci,1)[0];
   if(!sim&&side==='p'&&card.ed==='gold'&&(m.t==='num'||m.t==='face'))g.goldCaps=(g.goldCaps||0)+3;
   if(m.t==='num'){
+    if(card.mod==='glass')card.gx=(R.glassMult&&R.glassMult[side])||2;
     me.cv[m.lane].push({card,faces:[]});
     if(wasSetup)g.setupLeft[side]--;
   }else if(m.t==='face'){
@@ -1017,7 +1018,7 @@ function applyMove(g,side,m,sim){
   if(m.t==='discard'){const n=(R.discardDraw&&R.discardDraw[side])||1;for(let i=0;i<n&&me.deck.length;i++)me.hand.push(me.deck.pop());}
   else if(!(m.t==='num'&&wasSetup))drawTo(g,side,R.hand[side]);
   if(m.t==='num'&&card.mod==='lucky')for(let i=0;i<((R.luckyDraw&&R.luckyDraw[side])||1)&&me.deck.length;i++)me.hand.push(me.deck.pop());
-  if(me.deck.length&&m.t==='face'&&((card.rank==='J'&&R.jackDraw&&R.jackDraw[side])||(card.rank==='Q'&&R.queenDraw&&R.queenDraw[side])))me.hand.push(me.deck.pop());
+  if(me.deck.length&&m.t==='face'&&((card.rank==='J'&&R.jackDraw&&R.jackDraw[side])||(card.rank==='Q'&&R.queenDraw&&R.queenDraw[side])||(card.rank==='K'&&R.kingDraw&&R.kingDraw[side])))me.hand.push(me.deck.pop());
 }
 // AI heuristics
 function laneScore(v,r){
@@ -1027,14 +1028,14 @@ function laneScore(v,r){
   if(v<=hi)return 62+(v-lo)*2;
   return 8-(v-hi)*4;
 }
-function evalState(g,side){
+function evalState(g,side,P){
   const w=winnerOf(g);
   if(w)return w===side?100000:-100000;
   const R=RULES(g),os=other(side),me=g[side],op=g[os];
   let s=0;
   for(let l=0;l<3;l++){
     const mv=cvValue(me.cv[l]),ov=cvValue(op.cv[l]);
-    s+=laneScore(mv,R.range[side])-laneScore(ov,R.range[os])*0.8;
+    s+=laneScore(mv,R.range[side])-laneScore(ov,R.range[os])*((P&&P.opp)||0.8);
     if(inR(mv,R.range[side])&&inR(ov,R.range[os]))s+=mv>ov?25:mv<ov?-25:0;
     const st=cvState(me.cv[l]);
     if(me.cv[l].length>1&&mv<R.range[side][0]){
@@ -1044,21 +1045,24 @@ function evalState(g,side){
   }
   return s;
 }
-const KEEP={J:7,Q:2,K:6,JK:12};
-function moveCost(g,side,m){
+const KEEP={J:7,Q:2,K:6,JK:12},KEEPK={J:'jack',Q:'queen',K:'king',JK:'joker'};
+// A dealer's play style scales how much they value holding each face card. Higher = holds it back for a decisive play.
+// (Measured over thousands of simulated hands: a King-savvy dealer, holding Kings for the decisive play, beats the stock AI 61-70% of the time.)
+const keepCost=(c,P)=>KEEP[c.rank]*((P&&P[KEEPK[c.rank]])||1);
+function moveCost(g,side,m,P){
   if(m.t==='disband')return 3;
   const c=g[side].hand[m.ci];
-  if(m.t==='discard')return isNum(c)?2+(val(c)>=9?0:1):KEEP[c.rank]+4;
-  if(m.t==='face')return KEEP[c.rank];
+  if(m.t==='discard')return isNum(c)?2+(val(c)>=9?0:1):keepCost(c,P)+4;
+  if(m.t==='face')return keepCost(c,P);
   return 0;
 }
-function chooseAIMove(g,side,noise){
+function chooseAIMove(g,side,noise,P){
   const moves=legalMoves(g,side);
   if(!moves.length)return null;
   let best=null,bs=-Infinity;
   for(const m of moves){
     const g2=clone(g); applyMove(g2,side,m,true);
-    const sc=evalState(g2,side)-moveCost(g,side,m)+Math.random()*noise;
+    const sc=evalState(g2,side,P)-moveCost(g,side,m,P)+Math.random()*noise;
     if(sc>bs){bs=sc;best=m;}
   }
   return best;
@@ -1106,6 +1110,50 @@ const CLASSIC_DEALERS=[
   {level:'Expert',name:'The Cardsharp',place:'Classic table',blurb:'Nobody’s seen him lose.',noise:0.5,extra:{J:3,Q:3,K:3,JK:2}},
 ];
 const OPP=()=>G.opp<0?TUTORS[G.opp]:G.mode==='classic'?CLASSIC_DEALERS[G.opp]:G.mode==='campaign'?(G.rita?RITA:G.cd?{...G.cd,house:[]}:{name:'A dealer',place:'On the circuit',noise:20,house:[]}):{...ROAD[G.opp],...(G.dealer||{}),house:[],noise:G.noise??ROAD[G.opp].noise};
+// Boss play styles, tuned from simulated hands. jack/king/joker: how hard they hold that card back for a decisive play
+// (a King-savvy dealer wins ~60-70% against the stock AI). opp: how much they care about hurting you (default 0.8; low = defensive).
+const AI_STYLES={
+  'Mama Tallow':{opp:.4,tell:'Cautious: builds her own caravans and rarely goes after yours.'},
+  'Gus the Prospector':{joker:5,tell:'Holds his Jokers for one big swing instead of spending them early.'},
+  'Sergeant Brick':{king:2,tell:'By the book: spends Kings only where they count.'},
+  'Velvet Moreno':{king:6,tell:'Patient: saves her Kings for the decisive play.'},
+  'Silver Lou':{king:10,jack:3,tell:'The house never wastes a face card.'},
+  'Vladmira':{king:3,tell:'Saves her Kings for one huge caravan.'},
+  'Nuke Skywalker':{king:6,tell:'Counts everything. Rarely wastes a face card.'},
+  'Chevy Ford':{jack:5,tell:'Holds his Jacks for the one shot that matters.'},
+  'Greg':{jack:8,king:8,tell:'Gentle: almost never plays a Jack, but he stacks Kings like a champ.'},
+  'Jeanita':{king:8,tell:'She already knows your hand, so she never wastes a face card.'},
+  'Three Dog':{joker:4,tell:'Saves his Jokers for the big finish.'},
+  'Benny':{joker:6,king:6,tell:'Hoards Jokers and Kings for one wrecking play.'},
+  'Harold':{opp:.4,jack:4,tell:'Patient: waits for you to overextend.'},
+  'Smoke-Sister Vey':{joker:4,tell:'Reads your fortune, then waits to play her Jokers.'},
+  'Big Tom the Gentle':{opp:.4,jack:6,tell:'Slow and careful: rarely attacks.'},
+  'The Voice on the Mountain':{king:6,tell:'You never see a hand. You only see the result.'},
+  'The Dust Prophet':{king:4,joker:4,tell:'Walks out of the storm saving everything for the right moment.'},
+  'Professor Static':{king:8,tell:'Every face card is an experiment, and he runs few.'},
+  'Burned Ezekiel':{king:6,jack:3,tell:'Cheats politely: spends face cards only when it pays.'},
+  'The Ghost Croupier':{king:10,tell:'Hasn’t wasted a card since before the war.'},
+  'Colonel Ash':{king:10,jack:3,tell:'Holds the table for both armies, and every Jack and King for the kill.'},
+  'Tandi':{opp:.4,tell:'Stubborn: builds a wall before she swings.'},
+  'Killian Darkwater':{opp:.5,jack:3,tell:'Plays it straight and careful.'},
+  'Decker':{king:6,tell:'Runs the Hub. Never throws away a face card.'},
+  'Set':{opp:.4,king:6,tell:'Patient. Very, very patient.'},
+  'The Master':{king:8,joker:3,tell:'Many voices, many plans, very few wasted cards.'},
+};
+// Harder difficulties make every boss savvier with their Kings.
+const CLASSIC_STYLES={2:{jack:4},3:{king:4,jack:2}};
+function aiProfile(){
+  if(!G)return null;
+  if(G.mode==='road'&&G.run){
+    const r=run(),t=G.runTable,P={...(t===2?(AI_STYLES[OPP().name]||{}):{})};
+    if(t===2){const floor=inBeyond(G.runStop)?4:{copper:1,silver:3,gold:6}[r.tier]||1;if(floor>1)P.king=Math.max(P.king||1,floor);}
+    else if(t===1&&r.tier==='gold')P.king=3;
+    return P;
+  }
+  if(G.mode==='classic'&&G.opp>=0)return CLASSIC_STYLES[G.opp]||null;
+  if(G.mode==='campaign'&&G.cd&&(G.cd.slot==='c'||G.cd.slot==='h')&&G.cd.ti>=2)return {king:3};
+  return null;
+}
 const isClassicish=()=>G.mode==='classic'||G.mode==='campaign';
 
 // Ready-made decks for the classic card buy.
@@ -1425,7 +1473,7 @@ function freshMeta(){
     classic:{deck:null,wins:0,losses:0,rec:{},camp:null}};
   return meta;
 }
-function save(){meta.match=G&&!G.over?G:null;meta.updatedAt=Date.now();try{localStorage.setItem(SAVE_KEY,JSON.stringify(meta));}catch(e){}if(typeof schedulePush==='function')schedulePush();}
+function save(){meta.match=G&&!G.over?G:null;meta.updatedAt=Date.now();try{codexSync();}catch(e){}try{localStorage.setItem(SAVE_KEY,JSON.stringify(meta));}catch(e){}if(typeof schedulePush==='function')schedulePush();}
 function load(){try{const s=localStorage.getItem(SAVE_KEY);if(s)return JSON.parse(s);}catch(e){}return null;}
 function migrate(m){
   // special finishes are for number cards only
@@ -1470,6 +1518,7 @@ function migrate(m){
   {const L=(m.legends||[]).map(id=>id==='goldbar'?'starcap':id);if(L.includes('mesmetron')&&!m.legendsFixed)L.push('bobble');m.legends=[...new Set(L)];m.legendsFixed=1;}
   if(m.run&&Array.isArray(m.deck))m.deck.forEach(c=>{if(c&&c.legend==='goldbar')c.legend='starcap';});
   m.charFlags=m.charFlags||{};
+  m.codex=m.codex||{};m.codex.perk=m.codex.perk||{};m.codex.boss=m.codex.boss||{};m.codex.event=m.codex.event||{};
   return m;
 }
 
@@ -2081,13 +2130,13 @@ function renderMatch(){
   const handOK=i=>myTurn&&(!tut||legal.some(m=>m.ci===i));
   const proj={};
   if(sel!=null)for(const m of selMoves){
-    if(m.t==='num')proj['L'+m.lane]=cvValue(G.p.cv[m.lane])+val(G.p.hand[sel])*(G.p.hand[sel].mod==='glass'?2:1);
+    if(m.t==='num')proj['L'+m.lane]=cvValue(G.p.cv[m.lane])+val(G.p.hand[sel])*(G.p.hand[sel].mod==='glass'?((G.rules.glassMult&&G.rules.glassMult.p)||2):1);
     else if(m.t==='face'&&!(G.rules.hideOpp&&m.side==='a')){const g2=clone(G);applyMove(g2,'p',m,true);proj[`E${m.side}${m.lane}${m.idx}`]=cvValue(g2[m.side].cv[m.lane]);}
   }
   const dealt=new Set(G.dealtDone?[]:(G.dealt||[]));
   app.innerHTML=`
   <div class="mbar">
-    <div class="opp">${o.rival||(o.art&&G.runTable===2)?bossPic(o,'rivalimg big'):''}<h2>${esc(o.name)}</h2><small>${esc(o.place)}${G.stake?` · ${G.mode==='campaign'?'bet':'buy-in'} ${G.stake}`:''}</small></div>
+    <div class="opp">${o.rival||(o.art&&G.runTable===2)?bossPic(o,'rivalimg big'):''}<h2>${esc(o.name)}</h2><small>${esc(o.place)}${G.stake?` · ${G.mode==='campaign'?'bet':G.run?'wager':'buy-in'} ${G.stake}`:''}</small></div>
     <div class="mbtns">${goalsList().length?`<button class="btn ghost" data-goalsopen aria-label="Goals">Goals${goalsList().filter(g=>g.state!=='failed'&&g.state!=='done').length?` <span class="gcount">${goalsList().filter(g=>g.state!=='failed'&&g.state!=='done').length}</span>`:''}</button>`:''}<button class="btn ghost" data-rulesopen aria-label="Rules">Rules</button><button class="btn ghost${armedFold?' armed':''}" data-fold>${armedFold?(G.stake?`Fold, lose ${G.stake}`:'Tap to fold'):'Fold'}</button></div>
   </div>
   ${rulesBar()}
@@ -2175,7 +2224,7 @@ function render(){
   const fxNow=G&&G.fx&&!G.fx.done?{...G.fx}:null, prevScreen=document.body.dataset.screen;
   document.getElementById('sky').style.display=screen==='match'?'none':'block';
   document.body.dataset.screen=screen;
-  const R={help:renderHelp,settings:renderSettings,custom:renderCustom,home:renderHome,road:renderRoadRun,shop:renderRoadRun,classic:renderClassic,build:renderBuild,match:renderMatch,campaign:renderCampaign,rundown:renderRundown,town:renderTown,journal:renderJournal,vendor:renderVendor,look:renderLook,ach:renderAch,pickchar:renderPickChar,office:renderOffice};
+  const R={help:renderHelp,settings:renderSettings,custom:renderCustom,home:renderHome,road:renderRoadRun,shop:renderRoadRun,classic:renderClassic,build:renderBuild,match:renderMatch,campaign:renderCampaign,rundown:renderRundown,town:renderTown,journal:renderJournal,vendor:renderVendor,look:renderLook,ach:renderAch,pickchar:renderPickChar,office:renderOffice,codex:renderCodex};
   (R[screen]||renderHome)();
   if(screen!=='match')app.insertAdjacentHTML('afterbegin',topbarHTML());
   if(typeof setDeckAttr==='function')setDeckAttr();
@@ -2269,7 +2318,7 @@ function doMove(side,m){
     G.stats.turns=(G.stats.turns||0)+1;
     if(m.t==='discard')G.stats.discards++;
     else if(m.t==='disband')G.stats.disbands++;
-    else if(m.t==='face'){const c=G.p.hand[m.ci];G.stats.faces++;if(c.rank==='JK')G.stats.jokers++;if(c.rank==='K')G.stats.kings++;if(c.rank==='J')G.stats.jacks=(G.stats.jacks||0)+1;}
+    else if(m.t==='face'){const c=G.p.hand[m.ci];G.stats.faces++;if(c.rank==='JK')G.stats.jokers++;if(c.rank==='K')G.stats.kings++;if(c.rank==='J'){G.stats.jacks=(G.stats.jacks||0)+1;if(m.side==='a')G.stats.jackHits=(G.stats.jackHits||0)+1;}}
     else if(m.t==='num'){const c=G.p.hand[m.ci];if(c.mod==='glass'&&c.si!=null)(G.glass=G.glass||[]).push(c.si);}
   }
   if(side==='p'&&m.t==='face')m._card=G.p.hand[m.ci];
@@ -2323,7 +2372,7 @@ function aiTurn(){
     if(step&&step.ai){m=resolveSpec(step.ai,'a');G.tut.step++;}
   }
   if(!m&&G.duster&&!G.dustUsed&&G.setupLeft.a===0){const ms=legalMoves(G,'a').filter(x=>x.t!=='disband');if(ms.length){m=pick(ms);G.dustUsed=true;G.log.unshift('Dust in their eyes: the dealer’s play is a wild guess.');}}
-  if(!m)m=chooseAIMove(G,'a',OPP().noise);
+  if(!m)m=chooseAIMove(G,'a',OPP().noise,aiProfile());
   busy=false;
   if(!m){finish('p',`${OPP().name} has no move left.`);render();return;}
   doMove('a',m);
@@ -2470,7 +2519,7 @@ app.addEventListener('keydown',e=>{
   if((e.key==='Enter'||e.key===' ')&&e.target.matches('.lane[role="button"]')){e.preventDefault();e.target.click();}
 });
 
-app.addEventListener('input',e=>{if(e.target.id==='auth-email')authForm.email=e.target.value;if(e.target.id==='auth-pass')authForm.pass=e.target.value;});
+app.addEventListener('input',e=>{if(e.target.id==='seed-input'&&meta&&meta.newRun)meta.newRun.seed=e.target.value;if(e.target.id==='auth-email')authForm.email=e.target.value;if(e.target.id==='auth-pass')authForm.pass=e.target.value;});
 app.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.target.id==='auth-pass'||e.target.id==='auth-email')){e.preventDefault();doAuth('login');}});
 // ---------- achievements ----------
 const ACH_CATS=['Getting started','At the table','Milestones','Classic','The Road','Style','Characters','Mojave Express & Legends','Road feats','The Water Chip'];
@@ -2673,7 +2722,7 @@ function achOnFinish(){
     if(G.mode==='campaign'&&(G.stake||0)>=500)unlock('all_in');
     if(G.mode==='road'&&G.opp>=0){
       if((G.ruleIds||[]).includes('sand'))unlock('blind');
-      if(meta.caps-(ov.delta||0)<=2)unlock('comeback');
+      if(meta.caps-(ov.delta||0)+(G.wager||0)<=2)unlock('comeback');
     }
     if(ov.bountyWon){st.bounties++;unlock('bounty1');}
     const ul=G.usedLegends||[];
@@ -2776,6 +2825,11 @@ const ROAD_RULES=`
   <li>Between tables, the <b>trading post</b> sells perks, single cards, chems, card upgrades and one voucher per stop. Reroll it if you don’t like what’s there.</li>
   <li><b>Card bundles</b> show you several cards and let you keep some: a Saddlebag (keep 1 of 3), a Supply bundle or Caravan haul (keep 2 of 5), a themed bundle of one suit or of Kings and Queens, or a Collector’s bundle (keep 1 of 4, all special finishes). You can always take nothing.</li>
   <li>The <b>Burn pile</b> removes up to 2 cards from your deck for good, once per visit. A thinner deck draws your best cards more often. Watch for free burn barrels on the road, too.</li>
+  <li><b>Boss rewards:</b> beat a boss (other than the last) and choose one of three uncommon-or-better perks for free, or take caps instead. With full perk slots, sell one in the trading post first.</li>
+  <li><b>Road events:</b> some choices need a stat from your character’s bio: Strength, Smarts, Charm, Grit or Luck. Choices you can’t take show what they need, so different characters see different options.</li>
+  <li><b>Seeds and the daily run:</b> every run has a seed, shown on the map. The same seed gives the same bosses, shops and events. The Daily run is the same road for everyone today (set character, Plain deck, Copper, no gear), and your first finish each day pays NCR dollars and builds a streak.</li>
+  <li><b>The Codex</b> (from the Road menu or after a run) remembers every perk, boss and event you’ve met, and each run ends with a summary of how it went.</li>
+  <li><b>Wagers and boss swaps:</b> before a table you can stake some caps (up to 5, plus 3 per stop). Win and you get the stake back with a bonus: 50% at a Saloon table, 100% at High Stakes, 150% at a Boss. Lose and it’s gone, though walking away in Pre-War Sneakers refunds it. Before a boss, you can also bribe the house to swap one of the boss’s rules for one of two others, once per boss.</li>
   <li><b>Perks</b> come in four rarities. You start with 3 slots, get a 4th from Boulder City on and a 5th from Fremont Street on. Sell a perk to make room.</li>
   <li><b>Card upgrades</b>: Steel can’t be Jacked, Gilded pays caps when it sells, Lucky draws an extra card, Glass is worth double but breaks, Wild matches any suit.</li>
   <li><b>Chems</b> are one-use boosts during a hand, one per turn, after the opening.</li>
@@ -4027,7 +4081,8 @@ const edLine=c=>c&&c.ed&&EDITIONS[c.ed]?`${EDITIONS[c.ed].name}: ${EDITIONS[c.ed
 const PERK_RARITY={
   twotone:'common',honest:'common',nose:'common',
   shark:'uncommon',cool:'uncommon',kingpin:'uncommon',prospector:'uncommon',collector:'uncommon',hunter:'uncommon',scav:'uncommon',steady:'uncommon',
-  scrapper:'rare',wide:'rare',royal:'rare',roller:'rare',momentum:'rare',jackrabbit:'rare',
+  scrapper:'rare',wide:'rare',royal:'rare',roller:'rare',momentum:'rare',jackrabbit:'rare',heist:'rare',hazmat:'rare',courier:'rare',cannon:'rare',
+  ironclad:'uncommon',showcase:'uncommon',
   lead:'legendary',insure:'legendary',
 };
 const RARITY_PRICE={common:10,uncommon:16,rare:24,legendary:32};
@@ -4041,6 +4096,12 @@ Object.assign(PERKS,{
   collector:{name:'Collector',desc:'+1 cap per perk you own after every win.'},
   momentum:{name:'Momentum',desc:'Scales: +1 hand size for every 5 tables you win this run (up to +2).'},
   honest:{name:'Honest Work',desc:'+6 caps when you win without playing a face card.'},
+  ironclad:{name:'Ironclad',desc:'+2 caps for every Steel card in a caravan you sell.'},
+  showcase:{name:'Showcase',desc:'+2 caps for every card with a special finish in a caravan you sell.'},
+  heist:{name:'Heist',desc:'Every Jack you play on the dealer’s cards pays 2 caps when the hand ends, win or lose.'},
+  hazmat:{name:'Hazmat Suit',desc:'Jokers can never remove your cards, yours included.'},
+  courier:{name:'Royal Courier',desc:'Draw a card whenever you play a King.'},
+  cannon:{name:'Glass Cannon',desc:'Glass cards are worth triple instead of double. They still break.'},
 });
 PERKS.insure={name:'Guardian Angel',desc:'If you lose with no Grit left, the run doesn’t end: you get another shot at that table. Breaks when used.'};
 PERKS.scav={name:'Scavenger',desc:'After every table, win or lose, you pocket a random number card from the dealer’s caravans. It joins your deck.'};
@@ -4054,10 +4115,10 @@ const tierIdx=id=>TIERS.findIndex(t=>t.id===id);
 const deckTierCount=d=>Math.max(1,((meta.deckTiers||{})[d])||1);
 const tierPips=d=>{const w=(meta.deckWon||{})[d]??-1;return ` <span class="tpips" title="${w<0?'Not won yet':'Won on the '+TIERS[w].name}">${TIERS.map((t,i)=>`<i class="tp ${t.id}${i<=w?' won':''}"></i>`).join('')}</span>`;};
 const tierUnlocked=(id,deck)=>tierIdx(id)<deckTierCount(deck||((meta.newRun&&meta.newRun.deck)||'plain'));
-function runRoster(cid){
+function runRoster(cid,daily){
   if(isWC())return RUN_STOPS.map(()=>null);
   const r=RUN_STOPS.map(()=>null);
-  const pool=shuffle([...ORIGINALS,...NEWCOMERS.filter(charUnlocked)].filter(x=>x!==cid)); // rivals come from the whole cast you've unlocked
+  const pool=shuffle([...ORIGINALS,...(daily?[]:NEWCOMERS.filter(charUnlocked))].filter(x=>x!==cid)); // rivals come from the whole cast you've unlocked
   if(ORIGINALS.includes(cid)||NEWCOMERS.includes(cid)){r[1]=pool[0];r[3]=pool[1];r[5]='greg';}
   else if(cid==='greg'){r[1]=pool[0];r[2]=pool[1];r[3]=pool[2];r[5]='jeanita';}
   else if(cid==='jeanita'){r[1]=pool[0];r[2]=pool[1];r[3]=pool[2];r[4]='greg';}
@@ -4100,6 +4161,31 @@ function pickTag(used,stopTags){
   return pool[0];
 }
 function tagPair(r){const used={};for(const st of (r.skipTags||[]))if(st)for(const k of st)used[k]=(used[k]||0)+1;const a=pickTag(used,[]);return [a,pickTag(used,[a])];}
+// Boss rule swap: pay a bribe to replace one of a boss's own rules with one of two others (once per boss).
+const bossSwapCost=s=>10+3*s;
+function swapOptions(s,i){
+  const r=run(),cur=r.bosses[s],others=cur.filter((_,k)=>k!==i),bn=r.bounties[s];
+  const bad=id=>(id==='tight'&&bn==='p26')||(id==='noking'&&bn==='kings')||(id==='drought'&&bn==='calm'); // would make the bounty impossible
+  const pool=BOSS_POOL.filter(id=>!cur.includes(id)&&!bad(id)&&!RULE_CLASH.some(g=>g.includes(id)&&others.some(o=>g.includes(o))));
+  return withSeed('swap:'+s+':'+i+':'+(r.hands||0),()=>shuffle(pool).slice(0,2));
+}
+function rulesWithSwapHTML(r,s,t,ids){
+  if(!ids.length)return 'None. Straight Caravan.';
+  const cost=bossSwapCost(s),can=t===2&&!(r.swapUsed||{})[s]&&meta.caps>=cost&&!r.swapPick,pk=r.swapPick&&r.swapPick.s===s?r.swapPick:null;
+  return ids.map((id,i)=>{
+    const own=t===2&&i<(r.bosses[s]||[]).length&&r.bosses[s][i]===id;
+    let h=`<b>${BOSS_RULES[id].name}:</b> ${esc(BOSS_RULES[id].desc)}`;
+    if(own&&can)h+=` <button class="btn" data-rulesw="${i}" style="padding:2px 8px;font-size:12px">Swap · ${capN(cost)}</button>`;
+    if(pk&&pk.i===i)h+=`<div class="swapopts">Swap it for: ${pk.opts.map(o=>`<button class="btn hot" data-rulepick="${o}" style="padding:3px 8px;margin:3px 4px 0 0"><b>${BOSS_RULES[o].name}</b>: ${esc(BOSS_RULES[o].desc)} (${capN(cost)})</button>`).join('')}<button class="btn" data-rulekeep style="padding:3px 8px">Keep it</button></div>`;
+    return h;
+  }).join('<br>')+(can?'<br><span class="note">Bribe the house to swap one boss rule. Once per boss.</span>':'');
+}
+// Wagers: stake caps on a table. A win returns the stake plus a bonus; a loss forfeits it. Riskier tables pay more.
+const wagerMax=s=>5+3*s, WAGER_ODDS=[.5,1,1.5];
+function wagerRowHTML(r,s,t){
+  const mx=wagerMax(s),opts=[0,5,10,20,40].filter(x=>x===0||(x<=meta.caps&&x<=mx)),sel=((r.wagerSel||0)<=meta.caps&&(r.wagerSel||0)<=mx)?(r.wagerSel||0):0,mult=WAGER_ODDS[t];
+  return `<dt>Wager</dt><dd>${opts.map(x=>`<button class="btn${x===sel?' hot':''}" data-wager="${x}" style="padding:3px 10px;margin:0 4px 4px 0">${x?capN(x):'None'}</button>`).join('')}<br><span class="note">${sel?`Win: your ${sel} back plus ${Math.round(sel*mult)} more. Lose: it’s gone.`:`Stake caps on this table (up to ${mx}). Win and it comes back with a ${Math.round(mult*100)}% bonus. Lose and it’s gone.`}</span></dd>`;
+}
 function genRun(){
   const r=run(), t=tierIdx(r.tier);
   r.bosses=[];RUN_STOPS.forEach((_,s)=>{r.bosses[s]=drawRules((s<2?1:s<4?2:3)+(t>=1?1:0)+(r.deck==='gold'?1:0),s?r.bosses[s-1]:[]);});
@@ -4135,6 +4221,9 @@ function runRules(s,t){
   if(has('twotone'))R.color.p=true;
   if(has('cool'))R.freeDisband.p=true;
   if(has('jackrabbit'))R.jackDraw.p=true;
+  if(has('courier'))R.kingDraw.p=true;
+  if(has('hazmat'))R.jokerproof.p=true;
+  if(has('cannon'))R.glassMult.p=3;
   if(has('scrapper'))R.discardDraw.p=2;
   if(has('kingpin'))R.range.p=[R.range.p[0],R.range.p[1]+Math.min(3,Math.floor((r.kings||0)/3))];
   if(has('momentum'))R.hand.p+=Math.min(2,Math.floor((r.won||0)/5));
@@ -4176,17 +4265,42 @@ const sweepBonus=(s,t)=>Math.max(3,Math.ceil(tableReward(s,t)/2));
 const bossBountyPay=s=>Math.round((4+s)*(has('hunter')?2:1)*(isChar('vladmira')?0.5:1));
 
 function plainDeck(){return addFaces(baseNumbers(),{J:4,Q:4,K:4,JK:2});}
+// Seeded runs: the same seed gives the same bosses, shops, events and deals.
+// Randomness is swapped for a seeded stream at the points where the run rolls its content.
+const dailySeed=()=>'DAILY-'+new Date().toISOString().slice(0,10);
+const dailyChar=()=>ORIGINALS[hashStr(dailySeed())%ORIGINALS.length];
+const randomSeed=()=>Math.random().toString(36).slice(2,8).toUpperCase();
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+function withSeedStr(str,fn){const orig=Math.random;Math.random=mulberry32(hashStr(str));try{return fn();}finally{Math.random=orig;}}
+function withSeed(label,fn){const r=meta&&meta.run;if(!r||!r.seed)return fn();return withSeedStr(r.seed+'|'+label,fn);}
+function recordDaily(r,won){
+  if(!r.daily||!r.seed)return;
+  const day=r.seed.replace('DAILY-','');meta.dailyLog=meta.dailyLog||{};
+  const prev=meta.dailyLog[day],score=(won?100:0)+r.stop*10+r.won;
+  if(!prev||score>prev.score)meta.dailyLog[day]={won,stop:r.stop,tables:r.won,score};
+  if(meta.dailyDone!==day){
+    const y=new Date(Date.parse(day)-864e5).toISOString().slice(0,10);
+    meta.dailyStreak=(meta.dailyLog[y]?(meta.dailyStreak||0):0)+1;meta.dailyDone=day;
+    const b=won?10:5;r.scrip=(r.scrip||0)+b;meta.scrip=(meta.scrip||0)+b;r.dailyBonus=b;
+  }
+}
 function startRun(){
   const r0=meta.newRun||{};
-  const deck=deckUnlocked(r0.deck||'plain')?(r0.deck||'plain'):'plain', tier=tierUnlocked(r0.tier||'copper',deck)?(r0.tier||'copper'):'copper';
-  const token=r0.token&&meta.tokens.includes(r0.token)?r0.token:null;
-  const special=r0.special==='waterchip'?'waterchip':null;
-  meta.run={v:1,special,days:special?WC_DAYS:undefined,found:[],char:meta.char,deck,tier,token,stop:0,table:0,phase:'table',won:0,kings:0,skips:0,hands:0,vouchers:[],tags:[],nextRules:[],
+  const seed=r0.daily?dailySeed():(String(r0.seed||'').trim().toUpperCase().slice(0,24)||randomSeed());
+  withSeedStr(seed+'|start',()=>startRun0(seed));
+}
+function startRun0(seed){
+  const r0=meta.newRun||{};
+  const daily=!!r0.daily,prevChar=meta.char;if(daily)meta.char=dailyChar();
+  const deck=daily?'plain':(deckUnlocked(r0.deck||'plain')?(r0.deck||'plain'):'plain'), tier=daily?'copper':(tierUnlocked(r0.tier||'copper',deck)?(r0.tier||'copper'):'copper');
+  const token=daily?null:(r0.token&&meta.tokens.includes(r0.token)?r0.token:null);
+  const special=daily?null:(r0.special==='waterchip'?'waterchip':null);
+  meta.run={v:1,seed,daily,prevChar:daily?prevChar:undefined,special,days:special?WC_DAYS:undefined,found:[],char:meta.char,deck,tier,token,stop:0,table:0,phase:'table',won:0,kings:0,skips:0,hands:0,vouchers:[],tags:[],nextRules:[],
     grit:1+(token==='second'?1:0),halfShop:false,freeRerolls:0,freeBundles:[],freeUpgrade:0,started:Date.now(),voucherStop:-1,scrip:0,
-    gear:GEAR_SLOTS.map(sl=>meta.gear.on[sl.id]).filter(id=>id&&GEAR[id]&&meta.gear.owned.includes(id))};
+    gear:daily?[]:GEAR_SLOTS.map(sl=>meta.gear.on[sl.id]).filter(id=>id&&GEAR[id]&&meta.gear.owned.includes(id))};
   if(meta.char==='benny')meta.run.grit=Math.max(0,meta.run.grit-1);
   syncRoute();
-  meta.run.roster=runRoster(meta.char);
+  meta.run.roster=runRoster(meta.char,daily);
   genRun();
   meta.caps=[10,7,5][tierIdx(tier)]+(token==='stash'?8:0)-(meta.char==='vaultdweller'?5:0);
   let d=plainDeck();
@@ -4208,7 +4322,12 @@ function startRun(){
   if(meta.char==='vaultdweller'){const pool=Object.keys(PERK_RARITY).filter(p=>PERK_RARITY[p]!=='legendary'&&!meta.perks.includes(p));meta.run.tagPick=shuffle(pool).slice(0,3);}
   save();
 }
-function rollPerkOffer(n){
+// Codex: remembers every perk, boss and event you've met. Perk state bits: 1 seen, 2 owned, 4 won a run with it.
+const cdx=()=>{meta.codex=meta.codex||{};const c=meta.codex;c.perk=c.perk||{};c.boss=c.boss||{};c.event=c.event||{};return c;};
+function seePerks(list){const c=cdx();for(const id of list)c.perk[id]=(c.perk[id]||0)|1;}
+function codexSync(){if(!meta||!meta.perks)return;const c=cdx();for(const id of meta.perks)c.perk[id]=(c.perk[id]||0)|3;}
+function rollPerkOffer(n){const o=rollPerkOffer0(n);seePerks(o);return o;}
+function rollPerkOffer0(n){
   const owned=new Set(meta.perks);const out=[];
   for(let k=0;k<n*6&&out.length<n;k++){
     const roll=Math.random()*100;let rar='common',acc=0;for(const [r,w] of Object.entries(RARITY_WEIGHT)){acc+=w;if(roll<acc){rar=r;break;}}
@@ -4217,6 +4336,18 @@ function rollPerkOffer(n){
   }
   return out;
 }
+// Boss reward: three perks, uncommon or better. Pick one free, or take caps instead.
+function rollBossPerks(){const r=run(),o=withSeed('bossperk:'+(r?r.stop:0)+':'+(r?r.hands||0:0),rollBossPerks0);seePerks(o);return o;}
+function rollBossPerks0(){
+  const owned=new Set(meta.perks),out=[],W=[['uncommon',50],['rare',40],['legendary',10]];
+  for(let k=0;k<40&&out.length<3;k++){
+    let x=Math.random()*100,rar='uncommon';for(const [r,w] of W){x-=w;if(x<0){rar=r;break;}}
+    const pool=Object.keys(PERK_RARITY).filter(p=>PERK_RARITY[p]===rar&&!owned.has(p)&&!out.includes(p));
+    if(pool.length)out.push(pick(pool));
+  }
+  return out;
+}
+const bossPerkCaps=s=>12+3*Math.min(s,10);
 function rollCard(withMod){
   const r=Math.random();let rank;
   if(r<.07)rank='JK';else if(r<.22)rank='K';else if(r<.36)rank='J';else if(r<.45)rank='Q';else rank=pick(['10','10','9','9','8','7','6','5','4','A']);
@@ -4265,7 +4396,8 @@ function genBundleCards0(b){
     if(!out.some(o=>key(o)===key(c)))out.push(c);}
   return out;
 }
-function openBundle(b,free){const keep=BUNDLES[b.id].keep+(runV('pockets')?1:0);run().picker={kind:'bundle',title:bundleName(b)+(free?' (free)':''),note:`Pick up to ${keep} to add to your deck.`,options:genBundleCards(b),keep,sel:[]};}
+function openBundle(b,free){const r=run();return withSeed('bundle:'+r.stop+':'+r.table+':'+(r.bundleN=(r.bundleN||0)+1),()=>openBundle0(b,free));}
+function openBundle0(b,free){const keep=BUNDLES[b.id].keep+(runV('pockets')?1:0);run().picker={kind:'bundle',title:bundleName(b)+(free?' (free)':''),note:`Pick up to ${keep} to add to your deck.`,options:genBundleCards(b),keep,sel:[]};}
 function openBurn(max,title,note){run().picker={kind:'burn',title,note,keep:max,sel:[]};}
 const burnRoom=()=>Math.max(0,meta.deck.length-MIN_DECK);
 const CRATES={perk:{name:'Perk crate',desc:'Pick 1 of 3 perks.',price:20},chem:{name:'Chem crate',desc:'Pick 1 of 3 chems.',price:5}};
@@ -4276,7 +4408,8 @@ function nextFreeBundle(){
   if(r.freeCrate){(r.freeBundles=r.freeBundles||[]).push(r.freeCrate==='collector'?'collector':'supply');r.freeCrate=0;} // runs saved before stacking
   if(r.freeBundles&&r.freeBundles.length&&!r.picker)openBundle({id:r.freeBundles.shift()},true);
 }
-function openShop(){
+function openShop(){const r=run();return withSeed('shop:'+r.stop+':'+r.table+':'+(r.hands||0),()=>{r.rerollN=0;return openShop0();});}
+function openShop0(){
   const r=run();
   r.offers={perks:rollPerkOffer(runV('rack')?3:2),cards:gear('cass')?[rollCard(true),rollCard(true),rollCard(true)]:[rollCard(true),rollCard(true)],chems:shuffle(Object.keys(CHEMS)).slice(0,2),
     upgrade:pick(Object.keys(MODS)),voucher:r.voucherStop===r.stop?null:pick(Object.keys(VOUCHERS).filter(v=>!r.vouchers.includes(v))),sold:{}};
@@ -4288,11 +4421,13 @@ function openShop(){
   if(isChar('vaultdweller'))(r.freeBundles=r.freeBundles||[]).push('saddlebag');
   nextFreeBundle();
 }
-function rerollShop(){
+function rerollShop(){const r=run();return withSeed('reroll:'+r.stop+':'+r.table+':'+(r.rerollN=(r.rerollN||0)+1),rerollShop0);}
+function rerollShop0(){
   const r=run();
   r.offers.perks=rollPerkOffer(runV('rack')?3:2);r.offers.cards=gear('cass')?[rollCard(true),rollCard(true),rollCard(true)]:[rollCard(true),rollCard(true)];r.offers.chems=shuffle(Object.keys(CHEMS)).slice(0,2);r.offers.upgrade=pick(Object.keys(MODS));r.offers.bundles=twoBundles();r.offers.sold={};
 }
-function openCrate(kind){
+function openCrate(kind){const r=run();return withSeed('crate:'+r.stop+':'+r.table+':'+(r.crateN=(r.crateN||0)+1),()=>openCrate0(kind));}
+function openCrate0(kind){
   const opts=kind==='card'?[rollCard(true),rollCard(true),rollCard(true)]:kind==='perk'?rollPerkOffer(3):shuffle(Object.keys(CHEMS)).slice(0,3);
   run().crate={kind,options:opts};
 }
@@ -4312,14 +4447,14 @@ function startRunTable(){
   const s=r.stop,t=r.table,ri=riOf(s);ensureStop(s);
   const R=runRules(s,t);
   const dealer=t===2?bossDealer(s):r.dealers[s][t];
-  G=newMatch(meta.deck,addFaces(baseNumbers(),runDealerExtra(s,t)),ri,R);
+  G=withSeed('match:'+s+':'+t+':'+(r.hands||0),()=>newMatch(meta.deck,addFaces(baseNumbers(),runDealerExtra(s,t)),ri,R));
   G.mode='road';G.run=true;G.runStop=s;G.runTable=t;G.dealer={...dealer,place:placeOf(s)};G.ruleIds=tableRuleIds(s,t);G.noise=runNoise(s,t);
   G.perks=[...meta.perks];G.char=r.char;G.turretUsed=false;G.hugUsed=false;G.hugPending=false;if(isChar('jeanita'))G.peek=true;
   G.repairUsed=false;G.requestUsed=false;G.booneUsed=false;G.ede=gear('ede');G.zapUsed=false;
   G.bat=gear('bat');G.batUsed=false;G.duster=gear('duster');G.dustUsed=false;G.codsworth=gear('codsworth');G.tidyUsed=false;G.sawedoff=gear('sawedoff');
   G.canWalk=gear('sneakers')&&!((r.walkUsed||{})[r.stop]);G.walked=false;G.comp=meta.gear&&meta.gear.on&&meta.gear.on.comp&&r.gear&&r.gear.includes(meta.gear.on.comp)?meta.gear.on.comp:null;
   if(t===2){G.bounty=r.bounties[s];G.bountyPay=bossBountyPay(s);}
-  G.stake=0;r.nextRules=[];
+  G.stake=0;r.nextRules=[];{const w0=r.wagerSel||0,w=(w0<=meta.caps&&w0<=wagerMax(s))?w0:0;r.wagerSel=0;if(w>0){meta.caps-=w;G.wager=w;G.stake=w;}}
   G.ianDone=false;G.regrowUsed=false;G.lastLost=null;
   if(isWC()&&t===2&&WC_ROUTE[s]&&WC_ROUTE[s].final){G.master=true;G.masterN=0;G.masterBase=JSON.stringify(G.rules);masterShift();}
   enterMatch();
@@ -4327,7 +4462,7 @@ function startRunTable(){
 function skipTable(){
   const r=run();if(!r||r.phase!=='table'||r.table>1)return;
   r.offers=null;r.halfShop=false;
-  const tag=r.skipTags[r.stop][r.table];applyTag(tag);if(gear('boots'))meta.caps+=5;
+  const tag=r.skipTags[r.stop][r.table];withSeed('skip:'+r.stop+':'+r.table,()=>applyTag(tag));if(gear('boots'))meta.caps+=5;
   if(r.special==='waterchip'){r.days=(r.days||0)-WC_SKIP;r.wcSkipped=(r.wcSkipped||0)+1;if(r.days<=0){r.days=0;r.dry=true;r.phase='over';r.result='lost';unlock('wc_dry');save();return;}}
   r.skips++;r.table++;if(r.skips>=3)unlock('skip3');
   save();
@@ -4386,6 +4521,7 @@ function applyTag(tag){
 function runFinish(winner,ov){
   const r=run(),s=G.runStop,t=G.runTable,lanes=lanesResult(G);
   ov.run=true;r.hands++;const before=meta.caps;
+  if(t===2){const bd=G.dealer||{},c=cdx(),bb=c.boss[bd.name]=c.boss[bd.name]||{f:0,w:0};bb.f++;if(winner==='p')bb.w++;bb.rv=bd.rival||null;bb.art=bd.art||null;}
   const extras=[];
   if(G.goldCaps){meta.caps+=G.goldCaps;extras.push(`${G.goldCaps} from Golden cards`);}
   // glass breaks
@@ -4393,9 +4529,11 @@ function runFinish(winner,ov){
   if(gone.size)meta.deck=meta.deck.filter((c,i)=>!gone.has(i));
   if(played.size&&!gear('jeans'))extras.push(`${played.size} glass card${played.size>1?'s':''} broke`);
   if(spent.size)extras.push(`${spent.size} one-use Legend card${spent.size>1?'s':''} used up`);
+  {const jh=(G.stats&&G.stats.jackHits)||0;if(has('heist')&&jh){meta.caps+=2*jh;extras.push(`${2*jh} from Heist`);}}
   if(winner==='p'){
     const neon=[0,1,2].reduce((n,l)=>n+(lanes[l]==='p'?edIn(G.p.cv[l],'neon'):0),0);
     const w=Math.round(tableReward(s,t)*(has('roller')?1.5:1)*winMult()*(1+(isChar('harold')?0.5:0.25)*neon));meta.caps+=w;ov.win=w;if(neon)extras.push(`Neon: winnings +${25*neon}%`);
+    if(G.wager){const wp=G.wager+Math.round(G.wager*WAGER_ODDS[t]);meta.caps+=wp;extras.push(`Wager paid: +${wp} (your ${G.wager} back plus ${wp-G.wager})`);}
     if(t===2&&isWC()){const b=WC_ROUTE[s];
       if(b&&b.drop&&!b.final){extras.push(wcGive(b.drop,`${wcBoss(s).name} dropped something.`));}
       if(b&&b.comp&&!meta.gear.owned.includes(b.comp)){meta.gear.owned.push(b.comp);extras.push(`${GEAR[b.comp].name} joins you. Hire them at the Mojave Express from now on.`);}
@@ -4409,6 +4547,9 @@ function runFinish(winner,ov){
     if(G.bounty&&bountyMet(G.bounty,lanes)){ov.bountyWon=G.bountyPay;meta.caps+=G.bountyPay;}
     let gild=0;[0,1,2].forEach(l=>{if(lanes[l]==='p')for(const e of G.p.cv[l])if(e.card.mod==='gilded')gild+=3;});
     if(gild){meta.caps+=gild;extras.push(`${gild} from Gilded cards`);}
+    {let steel=0,shown=0;[0,1,2].forEach(l=>{if(lanes[l]==='p')for(const e of G.p.cv[l]){if(e.card.mod==='steel')steel++;if(e.card.ed)shown++;}});
+     if(has('ironclad')&&steel){meta.caps+=2*steel;extras.push(`${2*steel} from Ironclad`);}
+     if(has('showcase')&&shown){meta.caps+=2*shown;extras.push(`${2*shown} from Showcase`);}}
     if(has('nose')){const n=[0,1,2].filter(l=>lanes[l]==='p'&&cvValue(G.p.cv[l])===26).length;if(n){meta.caps+=4*n;extras.push(`${4*n} from Bloodhound`);}}
     if(has('collector')){meta.caps+=meta.perks.length;extras.push(`${meta.perks.length} from Collector`);}
     if(has('honest')&&G.stats&&!G.stats.faces){meta.caps+=6;extras.push('6 from Honest Work');}
@@ -4428,10 +4569,11 @@ function runFinish(winner,ov){
         meta.charFlags=meta.charFlags||{};if(!r.usedChem)meta.charFlags.noChem=1;if(r.tier!=='copper')meta.charFlags.silver=1;
         for(const id of CHAR_ORDER)if(!had.includes(id)&&charUnlocked(id)){ov.newChar=id;(ov.newChars=ov.newChars||[]).push(id);}
         runWon(ov);
-      }else{r.stop++;r.table=0;r.phase='event';if(gear('cargo')){meta.caps+=3;extras.push('3 from Cargo Pants');}r.event=pickEvent();if(r.stop===RUN_STOPS.length-1&&!isWC())unlock('road_strip');if(r.endless){meta.endlessBest=meta.endlessBest||{};meta.endlessBest[r.tier]=Math.max(meta.endlessBest[r.tier]||0,mileOf(r.stop)-1);if(mileOf(r.stop)-1>=5)unlock('beyond5');if(mileOf(r.stop)-1>=10)unlock('beyond10');if(mileOf(r.stop)-1>=20)unlock('beyond20');}}
+      }else{r.stop++;r.table=0;r.phase='event';{const bp=rollBossPerks();r.bossPick=bp.length?bp:null;r.bossCaps=bossPerkCaps(s);if(bp.length)extras.push('Boss reward: pick a free perk');}if(gear('cargo')){meta.caps+=3;extras.push('3 from Cargo Pants');}r.event=pickEvent();if(r.stop===RUN_STOPS.length-1&&!isWC())unlock('road_strip');if(r.endless){meta.endlessBest=meta.endlessBest||{};meta.endlessBest[r.tier]=Math.max(meta.endlessBest[r.tier]||0,mileOf(r.stop)-1);if(mileOf(r.stop)-1>=5)unlock('beyond5');if(mileOf(r.stop)-1>=10)unlock('beyond10');if(mileOf(r.stop)-1>=20)unlock('beyond20');}}
     }else{r.table++;r.phase='shop';openShop();}
   }else{
     r.losses=(r.losses||0)+1;
+    if(G.wager){if(G.walked){meta.caps+=G.wager;extras.push('Wager refunded: you walked away.');}else extras.push(`Lost your ${G.wager}-cap wager.`);}
     if(runV('tin')){const intr=Math.min(interestCap(),Math.floor(before/5));if(intr>0){meta.caps+=intr;extras.push(`${intr} interest (Savings Tin)`);}}
     if(G.walked){
       r.walkUsed=r.walkUsed||{};r.walkUsed[s]=1;ov.saved=true;extras.push('You walked away. No Grit lost.');
@@ -4448,18 +4590,21 @@ function runFinish(winner,ov){
     if(r.days<=0){r.days=0;r.dry=true;ov.runOver=true;r.phase='over';r.result='lost';{const b=r.stop+1;r.scrip=(r.scrip||0)+b;meta.scrip=(meta.scrip||0)+b;r.scripMiles=b;}unlock('wc_dry');
       meta.runHist=meta.runHist||[];meta.runHist.unshift({char:r.char,deck:r.deck,tier:r.tier,stop:r.stop,table:r.table,won:r.won,result:'lost',special:'waterchip',at:Date.now()});meta.runHist=meta.runHist.slice(0,12);}}
   if(has('scav')&&!ov.runOver){const pool=G.a.cv.flat().map(e=>e.card).filter(c=>isNum(c)&&c.suit);if(pool.length){const c=pick(pool);runAddCard({rank:c.rank,suit:c.suit});extras.push(`Scavenger: you pocketed the dealer’s ${cardName(c)}`);}}
+  {const rs=r.rs=r.rs||{},g=G.stats||{},add=(k,v)=>{rs[k]=(rs[k]||0)+(v||0);};
+   add('turns',g.turns);add('kings',g.kings);add('jacks',g.jacks);add('jokers',g.jokers);add('discards',g.discards);
+   if(winner==='p'){add('caps',Math.max(0,meta.caps-before));rs.best=Math.max(rs.best||0,ov.win||0);if(lanes.every(x=>x==='p'))add('sweeps',1);if(ov.bountyWon)add('bounties',1);}}
   ov.extras=extras;ov.delta=meta.caps-before;
 }
 function runLost(abandon){
   const r=run();
   if(r.endless){r.phase='over';r.result='won';r.fellBeyond=true;r.unlocked=[];const h=(meta.runHist||[])[0];if(h)h.beyond=mileOf(r.stop);return;}
-  r.phase='over';r.result='lost';
-  if(!abandon){const b=r.stop+1;r.scrip=(r.scrip||0)+b;meta.scrip=(meta.scrip||0)+b;r.scripMiles=b;}
+  r.phase='over';r.result='lost';r.endedAt=Date.now();
+  if(!abandon){const b=r.stop+1;r.scrip=(r.scrip||0)+b;meta.scrip=(meta.scrip||0)+b;r.scripMiles=b;recordDaily(r,false);}
   meta.runHist=meta.runHist||[];meta.runHist.unshift({char:r.char,deck:r.deck,tier:r.tier,stop:r.stop,table:r.table,won:r.won,result:'lost',at:Date.now()});meta.runHist=meta.runHist.slice(0,12);
   meta.bestStop=Math.max(meta.bestStop||0,r.stop);
 }
 function runWon(ov){
-  const r=run();r.phase='over';r.result='won';
+  const r=run();r.phase='over';r.result='won';recordDaily(r,true);r.endedAt=Date.now();{const c=cdx();for(const id of meta.perks)c.perk[id]=(c.perk[id]||0)|4;}
   meta.runsWon=(meta.runsWon||0)+1;
   meta.runHist=meta.runHist||[];meta.runHist.unshift({char:r.char,deck:r.deck,tier:r.tier,stop:RUN_STOPS.length,won:r.won,result:'won',at:Date.now()});meta.runHist=meta.runHist.slice(0,12);
   meta.bestStop=RUN_STOPS.length;
@@ -4492,7 +4637,8 @@ function wcGive(id,why){
   if(!meta.deck.some(c=>c.legend===id))meta.deck.push({rank:'LG',suit:null,legend:id});
   return `${why} ${LEGENDS[id].name} is in your deck${added?', and from now on it can turn up at trading posts on any run':''}.`;
 }
-function pickEvent(){
+function pickEvent(){const r=run();return withSeed('event:'+(r?r.stop:0),pickEvent0);}
+function pickEvent0(){
   const r=run(),normal=Object.keys(EVENTS).filter(k=>!EVENTS[k].wc);
   if(r&&r.special==='waterchip'){
     if(r.stop===2&&!r.junk)return 'junktown';
@@ -4501,6 +4647,7 @@ function pickEvent(){
   }
   return pick(normal);
 }
+const statOf=n=>{const r=run(),b=r&&CHAR_BIO[r.char];return b?b.stats[STAT_NAMES.indexOf(n)]:5;};
 const EVENTS={
   junktown:{wc:true,title:'Junktown',text:'Junktown’s split in two. Killian Darkwater runs the store and the law; Gizmo runs the casino and wants Killian dead. Whoever you cross is who you’ll face at the boss table.',
     choices:[{label:'Side with Killian: play Gizmo',act:()=>{run().junk='gizmo';(meta.junkFaced=meta.junkFaced||{}).gizmo=1;checkJunk();return 'Killian nods. Gizmo is waiting for you at the casino tables.';}},
@@ -4512,29 +4659,41 @@ const EVENTS={
   policebox:{wc:true,title:'An Unusual Call Box',text:'A blue police call box stands alone in the desert. As you walk closer, it groans, wheezes, and fades away.',
     choices:[{label:'Stand where it was',act:()=>{const r=run();r.found.push('policebox');unlock('wc_policebox');r.days=(r.days||0)+20;return 'You feel a little younger. Somehow you’ve gained 20 days.';}}]},
   trader:{title:'A Traveling Trader',text:'A trader with a two-headed mule offers to swap one of your plain number cards for an upgraded one.',
-    choices:[{label:'Trade (5 caps)',cost:5,act:()=>{const plain=meta.deck.filter(c=>isNum(c)&&!c.mod);if(!plain.length){meta.caps+=5;return 'You have no plain number cards left to trade. The trader hands your caps back.';}const c=pick(plain);c.mod=pick(Object.keys(MODS));showReveal('change','Traded',`${MODS[c.mod].name}: ${MODS[c.mod].desc}`,[c]);return `Your ${cardName(c)} came back ${MODS[c.mod].name}.`;}},{label:'Keep walking',act:()=>'The trader shrugs and moves on.'}]},
+    choices:[{label:'Trade (5 caps)',cost:5,act:()=>{const plain=meta.deck.filter(c=>isNum(c)&&!c.mod);if(!plain.length){meta.caps+=5;return 'You have no plain number cards left to trade. The trader hands your caps back.';}const c=pick(plain);c.mod=pick(Object.keys(MODS));showReveal('change','Traded',`${MODS[c.mod].name}: ${MODS[c.mod].desc}`,[c]);return `Your ${cardName(c)} came back ${MODS[c.mod].name}.`;}},{label:'Spot the best piece in his cart: trade for free',req:['Smarts',7],act:()=>{const plain=meta.deck.filter(c=>isNum(c)&&!c.mod);if(!plain.length)return 'You have no plain number cards left to trade.';const c=pick(plain);c.mod=pick(Object.keys(MODS));showReveal('change','Good eye',`${MODS[c.mod].name}: ${MODS[c.mod].desc}`,[c]);return `You spot the gem in his cart. Your ${cardName(c)} came back ${MODS[c.mod].name}, no charge.`;}},{label:'Keep walking',act:()=>'The trader shrugs and moves on.'}]},
   toll:{title:'Raider Toll',text:'Raiders block the road and want 10 caps to let you pass.',
-    choices:[{label:'Pay up (10 caps)',cost:10,act:()=>'They wave you through.'},{label:'Refuse',act:()=>{run().nextRules=['heavy'];return 'They let you pass, but they tip off the next dealer. Your next table: the dealer opens with 2 extra cards.';}}]},
+    choices:[{label:'Pay up (10 caps)',cost:10,act:()=>'They wave you through.'},{label:'Stare them down',req:['Strength',6],act:()=>'They take one look at you and find somewhere else to be. No toll.'},{label:'Talk the price down (4 caps)',req:['Charm',7],cost:4,act:()=>'You haggle them down to a fraction. They wave you through, grumbling.'},{label:'Refuse',act:()=>{run().nextRules=['heavy'];return 'They let you pass, but they tip off the next dealer. Your next table: the dealer opens with 2 extra cards.';}}]},
   doctor:{title:'The Strange Doctor',text:'A doctor in a stained coat offers to “reinforce” a card. Results guaranteed, mostly.',
-    choices:[{label:'Steel a card (6 caps)',cost:6,act:()=>{const pool=meta.deck.filter(c=>isNum(c)&&!c.mod);if(!pool.length){meta.caps+=6;return 'He can’t find a plain card to work on and gives your caps back, looking disappointed.';}const c=pick(pool);c.mod='steel';showReveal('change','Reinforced',`Steel: ${MODS.steel.desc}`,[c]);return `Your ${cardName(c)} is now Steel.`;}},{label:'No thanks',act:()=>'You back away slowly.'}]},
+    choices:[{label:'Steel a card (6 caps)',cost:6,act:()=>{const pool=meta.deck.filter(c=>isNum(c)&&!c.mod);if(!pool.length){meta.caps+=6;return 'He can’t find a plain card to work on and gives your caps back, looking disappointed.';}const c=pick(pool);c.mod='steel';showReveal('change','Reinforced',`Steel: ${MODS.steel.desc}`,[c]);return `Your ${cardName(c)} is now Steel.`;}},{label:'Check his work first: Steel a card (3 caps)',req:['Smarts',7],cost:3,act:()=>{const pool=meta.deck.filter(c=>isNum(c)&&!c.mod);if(!pool.length){meta.caps+=3;return 'No plain card left to work on. He gives your caps back.';}const c=pick(pool);c.mod='steel';showReveal('change','Reinforced',`Steel: ${MODS.steel.desc}`,[c]);return `You spot his shortcuts and haggle. Your ${cardName(c)} is now Steel, for less.`;}},{label:'No thanks',act:()=>'You back away slowly.'}]},
   wreck:{title:'An Abandoned Caravan',text:'A wrecked caravan sits by the road. Something might be worth taking.',
-    choices:[{label:'Search the cargo',act:()=>{const a=runAddCard(rollCard(true)),b=runAddCard(rollCard(false));showReveal('add','From the wreck','You pull these out of the cargo. They join your deck.',[a,b]);return `You found ${cardName(a)}${a.mod?` (${MODS[a.mod].name})`:''}${a.ed?` (${EDITIONS[a.ed].name})`:''} and ${cardName(b)}, now in your deck.`;}},{label:'Take the loose caps',act:()=>{meta.caps+=6;return 'You pocket 6 caps.';}}]},
+    choices:[{label:'Search the cargo',act:()=>{const a=runAddCard(rollCard(true)),b=runAddCard(rollCard(false));showReveal('add','From the wreck','You pull these out of the cargo. They join your deck.',[a,b]);return `You found ${cardName(a)}${a.mod?` (${MODS[a.mod].name})`:''}${a.ed?` (${EDITIONS[a.ed].name})`:''} and ${cardName(b)}, now in your deck.`;}},{label:'Pry open the locked crate',req:['Strength',7],act:()=>{const a=runAddCard(rollCard(true)),b=runAddCard(rollCard(true));meta.caps+=6;showReveal('add','From the locked crate','You pry the lid off and take everything. These join your deck, plus 6 caps.',[a,b]);return `You pry it open: ${cardName(a)} and ${cardName(b)} join your deck, and you pocket 6 caps.`;}},{label:'Take the loose caps',act:()=>{meta.caps+=6;return 'You pocket 6 caps.';}}]},
   gambler:{title:'The Coin Flipper',text:'A grinning stranger offers a coin flip: double or nothing on 10 caps.',
-    choices:[{label:'Flip (10 caps)',cost:10,act:()=>{if(Math.random()<.5){meta.caps+=20;return 'Heads! You win 20 caps.';}return 'Tails. The stranger laughs and walks off with your caps.';}},{label:'Walk away',act:()=>'Probably wise.'}]},
+    choices:[{label:'Flip (10 caps)',cost:10,act:()=>{if(Math.random()<.5){meta.caps+=20;return 'Heads! You win 20 caps.';}return 'Tails. The stranger laughs and walks off with your caps.';}},{label:'Flip with a lucky coin (10 caps, 70% to win)',req:['Luck',7],cost:10,act:()=>{if(Math.random()<.7){meta.caps+=20;return 'Heads! Your lucky coin comes through. You win 20 caps.';}return 'Tails. Even a lucky coin has off days.';}},{label:'Walk away',act:()=>'Probably wise.'}]},
   shrine:{title:'A Roadside Shrine',text:'An old shrine to a forgotten casino. Leaving an offering here thins your deck of the cards you least need.',
     choices:[{label:'Leave an offering',act:()=>{const lows=meta.deck.map((c,i)=>({c,i})).filter(o=>isNum(o.c)&&!o.c.mod&&val(o.c)<=3).slice(0,3).map(o=>o.i);if(!lows.length)return 'You have no low plain cards to offer. The shrine stays quiet.';if(meta.deck.length-lows.length>=MIN_DECK){const gone=lows.map(i=>meta.deck[i]);meta.deck=meta.deck.filter((c,i)=>!lows.includes(i));showReveal('remove','The offering','These leave your deck for good.',gone);}else return 'Your deck is too thin to give anything up.';return `You removed ${lows.length} low cards from your deck.`;}},{label:'Move on',act:()=>'You tip your hat and keep going.'}]},
   barrel:{title:'A Burn Barrel',text:'A barrel fire crackles by the roadside, and nobody’s watching it. A good place to get rid of cards you don’t want.',
     choices:[{label:'Burn up to 3 cards (free)',act:()=>{openBurn(3,'Burn barrel','Pick up to 3 cards to burn. They’re gone for the rest of the run.');return null;}},{label:'Warm your hands and move on',act:()=>'You warm up and hit the road.'}]},
   campfire:{title:'A Quiet Campfire',text:'Somebody left a fire burning by the road, with a coffee pot still warm. A good place to catch your breath, or to swap tall tales with a passing trader.',
-    choices:[{label:'Rest a while (restore 1 Grit, up to 2)',act:()=>{const r=run();if((r.grit||0)<2){r.grit=(r.grit||0)+1;return `You feel steadier. Grit: ${r.grit}.`;}return 'You’re as steady as you get. The coffee was good, though.';}},{label:'Swap stories (+4 caps)',act:()=>{meta.caps+=4;return 'The trader liked your story enough to pay for it. +4 caps.';}}]},
+    choices:[{label:'Rest a while (restore 1 Grit, up to 2)',act:()=>{const r=run();if((r.grit||0)<2){r.grit=(r.grit||0)+1;return `You feel steadier. Grit: ${r.grit}.`;}return 'You’re as steady as you get. The coffee was good, though.';}},{label:'Take first watch: restore 1 Grit and +4 caps',req:['Grit',8],act:()=>{const r=run();r.grit=Math.min(2,(r.grit||0)+1);meta.caps+=4;return `You keep watch while the others sleep. Grit: ${r.grit}, and +4 caps.`;}},{label:'Swap stories (+4 caps)',act:()=>{meta.caps+=4;return 'The trader liked your story enough to pay for it. +4 caps.';}}]},
   medic:{title:'A Wandering Medic',text:'A medic offers chems from her bag at a fair price.',
-    choices:[{label:'Buy a random chem (2 caps)',cost:2,act:()=>{if(chemTotal()<chemMax()){const id=pick(Object.keys(CHEMS));meta.chems[id]=(meta.chems[id]||0)+1;return `You got a ${CHEMS[id].name}.`;}meta.caps+=2;return 'Your chem pouch is already full. She waves off the caps and wishes you luck.';}},{label:'Decline',act:()=>'She nods and moves along.'}]},
+    choices:[{label:'Buy a random chem (2 caps)',cost:2,act:()=>{if(chemTotal()<chemMax()){const id=pick(Object.keys(CHEMS));meta.chems[id]=(meta.chems[id]||0)+1;return `You got a ${CHEMS[id].name}.`;}meta.caps+=2;return 'Your chem pouch is already full. She waves off the caps and wishes you luck.';}},{label:'Sweet-talk her into a free chem',req:['Charm',7],act:()=>{if(chemTotal()<chemMax()){const id=pick(Object.keys(CHEMS));meta.chems[id]=(meta.chems[id]||0)+1;return `She laughs, rummages in her bag and hands you a ${CHEMS[id].name}. No charge.`;}return 'Your chem pouch is already full. She wishes you luck anyway.';}},{label:'Decline',act:()=>'She nods and moves along.'}]},
 };
+Object.assign(EVENTS,{
+  safe:{title:'A Pre-War Safe',text:'A rusted safe sits half-buried in the sand, its door welded shut by two centuries of rust. Somebody went to a lot of trouble hiding something in it.',
+    choices:[{label:'Crack the combination',req:['Smarts',7],act:()=>{const c=runAddCard({rank:pick(['A','4','5','6','7','8','9','10']),suit:pick(SUITS),mod:pick(Object.keys(MODS)),ed:rollEdition(null)});meta.caps+=6;showReveal('add','Inside the safe','An upgraded card with a special finish. It joins your deck.',[c]);return `Click. Inside: ${cardName(c)} (${MODS[c.mod].name}, ${EDITIONS[c.ed].name}) and 6 caps.`;}},
+             {label:'Force the door',req:['Strength',7],act:()=>{meta.caps+=14;return 'The hinges give with a shriek. You pocket 14 caps from inside.';}},
+             {label:'Shake it for loose change',act:()=>{meta.caps+=3;return 'Something rattles. You get 3 caps out of the crack.';}}]},
+  radstorm:{title:'A Radstorm',text:'The sky turns green over the ridge. A radstorm is rolling in, fast. Dig in and wait it out, or run for the next town and hope for the best.',
+    choices:[{label:'Dig in and wait it out (4 caps of supplies)',cost:4,act:()=>'You sit tight under a tarp until it passes. A little poorer, a lot safer.'},
+             {label:'Run through it like you were born to it',req:['Grit',8],act:()=>{meta.caps+=6;return 'You barely notice. On the far side you find 6 caps in the debris.';}},
+             {label:'Run for it',act:()=>{run().nextRules=['light'];return 'You make it, but your hands shake. Next table: you hold one fewer card.';}}]},
+});
 function eventChoose(i){
   const r=run(),ev=EVENTS[r.event];if(!ev)return;const ch=ev.choices[i];if(!ch)return;
+  if(ch.req&&statOf(ch.req[0])<ch.req[1])return;
   if(ch.cost&&meta.caps<ch.cost)return;
   if(ch.cost)meta.caps-=ch.cost;
-  const res=ch.act();if(res!=null)r.eventResult=res;save();
+  {const c=cdx();c.event[r.event]=(c.event[r.event]||0)+1;}
+  const res=withSeed('ev:'+r.stop+':'+i,()=>ch.act());if(res!=null)r.eventResult=res;save();
 }
 function eventDone(){const r=run();r.event=null;r.eventResult=null;r.phase='shop';openShop();save();}
 
@@ -4599,11 +4758,19 @@ const ruleChip=id=>`<span class="rb house-chip" title="${esc(BOSS_RULES[id].desc
 function runHeaderHTML(){
   const r=run(),slots=perkSlots();
   return `<div class="charstrip"><img src="${portrait(r.char)}" alt=""><div><small>${esc(TIERS[tierIdx(r.tier)].name)} · ${esc(DECKS[deckIdx(r.deck)].name)}</small><b>${esc(CHARS[r.char].name)}</b>
-      <span>${isWC()?`The Water Chip · ${r.days} days left · `:''}${inBeyond(r.stop)?`Beyond the Strip · mile ${mileOf(r.stop)}`:`Stop ${r.stop+1} of ${RUN_STOPS.length}`} · ${r.won} table${r.won===1?'':'s'} won · Grit ${'●'.repeat(r.grit||0)||'none'}</span></div></div>
+      <span>${isWC()?`The Water Chip · ${r.days} days left · `:''}${inBeyond(r.stop)?`Beyond the Strip · mile ${mileOf(r.stop)}`:`Stop ${r.stop+1} of ${RUN_STOPS.length}`} · ${r.won} table${r.won===1?'':'s'} won · Grit ${'●'.repeat(r.grit||0)||'none'}${r.seed?(r.daily?' · Daily run':` · Seed ${esc(r.seed)}`):''}</span></div></div>
     <div class="hubbar">${capsHTML(meta.caps)}<button class="pill num kitpill" data-kitopen="deck">Deck ${meta.deck.length}${modCount()?` · ${modCount()} upgraded`:''}</button><button class="pill num kitpill" data-kitopen="perks">Perks ${meta.perks.length}/${slots}</button><button class="pill num kitpill" data-kitopen="chems">Chems ${chemTotal()}/${chemMax()}</button></div>
     ${meta.perks.length?`<div class="rulesbar" style="justify-content:center">${meta.perks.map(p=>`<span class="rb perk-chip rar-${PERK_RARITY[p]}" title="${esc(PERKS[p].desc)}">${PERKS[p].name}</span>`).join('')}${r.vouchers.map(v=>`<span class="rb char-chip" title="${esc(VOUCHERS[v].desc)}">${VOUCHERS[v].name}</span>`).join('')}</div>`:''}`;
 }
 let runArmed=false, runPre=false;
+function bossPickHTML(){
+  const r=run();if(!r||!r.bossPick||!r.bossPick.length)return '';
+  const full=meta.perks.length>=perkSlots();
+  return `<section class="panel bossreward"><h3 class="sub" style="margin-top:0">Boss reward: pick a free perk</h3>
+    ${full?'<p class="note">Your perk slots are full. Sell a perk in the trading post to make room, or take the caps instead.</p>':'<p class="note">Choose one. These are uncommon or better.</p>'}
+    <div class="plist">${r.bossPick.map(id=>`<button class="prow" data-bosspick="${id}" ${full?'disabled':''}><div><b>${esc(PERKS[id].name)} <i class="rar rar-${PERK_RARITY[id]}">${PERK_RARITY[id]}</i></b><span>${esc(PERKS[id].desc)}</span></div></button>`).join('')}</div>
+    <button class="btn" data-bossskip>Take ${r.bossCaps||bossPerkCaps(0)} caps instead</button></section>`;
+}
 function renderRunMap(){
   const r=run();
   const idxs=inBeyond(r.stop)?[r.stop-1,r.stop,r.stop+1]:RUN_STOPS.map((_,i)=>i);
@@ -4633,6 +4800,7 @@ function renderRunMap(){
   <div class="hubbtns kitbtns"><button class="btn" data-kitopen="deck">Your deck, perks & chems</button>${r.offers?`<button class="btn" data-runshopback>← Back to the trading post</button>`:''}</div>
   ${r.tagPick?`<section class="panel"><h3 class="sub" style="margin-top:0">Tag Skills: pick a free perk</h3><div class="plist">${r.tagPick.map(id=>`<button class="prow" data-tagpick="${id}"><div><b>${esc(PERKS[id].name)}</b><span>${esc(PERKS[id].desc)}</span></div></button>`).join('')}</div></section>`:''}
   ${isWC()?`<div class="wcclock"><b class="num">${r.days}</b> days of water left<span>Saloon ${WC_COST[0]} · High Stakes ${WC_COST[1]} · Boss ${WC_COST[2]} · Skip ${WC_SKIP}</span></div>`:''}
+  ${bossPickHTML()}
   <section class="panel trailmap"><div class="maplabel">${isWC()?'Vault 13 → The Cathedral':'Goodsprings → The Strip'}</div>${rows}</section>
   ${runPre?runPreHandHTML():''}
   ${kitOpen?kitHTML():''}
@@ -4648,10 +4816,12 @@ function runPreHandHTML(){
     <dl>
       <dt>Character</dt><dd>${esc(CHARS[r.char].name)}</dd>
       <dt>Reward</dt><dd>+${Math.round(tableReward(s,t)*(has('roller')?1.5:1)*winMult())} caps, plus interest (1 per 5 caps you hold, up to ${interestCap()})</dd>
+      ${wagerRowHTML(r,s,t)}
       <dt>Sell range</dt><dd>${rangeTxt(R.range.p)===rangeTxt(R.range.a)?rangeTxt(R.range.p):`You ${rangeTxt(R.range.p)} · dealer ${rangeTxt(R.range.a)}`}</dd>
-      <dt>Rules</dt><dd>${ids.length?ids.map(id=>`<b>${BOSS_RULES[id].name}:</b> ${esc(BOSS_RULES[id].desc)}`).join('<br>'):'None. Straight Caravan.'}</dd>
+      <dt>Rules</dt><dd>${rulesWithSwapHTML(r,s,t,ids)}</dd>
       ${d.rival?`<dt>Rival</dt><dd>${esc(RIVALS[d.rival].rule)}${s===RUN_STOPS.length-1&&d.rival==='greg'&&!charUnlocked('greg')?' Beat him to unlock Greg.':''}${s===RUN_STOPS.length-1&&d.rival==='jeanita'&&!charUnlocked('jeanita')?' Beat her to unlock Jeanita.':''}</dd>`:''}
       ${t===2?`<dt>Bounty</dt><dd>${BOUNTIES[r.bounties[s]].name}: ${esc(BOUNTIES[r.bounties[s]].desc)} +${bossBountyPay(s)}</dd>`:''}
+      ${t===2&&AI_STYLES[d.name]&&AI_STYLES[d.name].tell?`<dt>Style</dt><dd>${esc(AI_STYLES[d.name].tell)}</dd>`:''}
       <dt>Deck twist</dt><dd>${esc(DECKS[deckIdx(r.deck)].twist)}</dd>
       <dt>Chems</dt><dd>${chems.length?chems.map(([id,n])=>`${CHEMS[id].name} ×${n}`).join(' · '):'None'}</dd>
       <dt>Loadout</dt><dd>${(r.gear||[]).length?r.gear.map(id=>`<b>${esc(GEAR[id].name)}:</b> ${esc(GEAR[id].desc)}`).join('<br>'):'Nothing equipped'}</dd>
@@ -4668,6 +4838,10 @@ function renderRunSetup(){
   <div class="mbar">${backBtn('home','Modes')}</div>
   <section class="hero small"><div class="neon sm">${nr.special==='waterchip'?'The Water Chip':'The Road'}</div><p class="tagline">${nr.special==='waterchip'?'Seven stops to save Vault 13, and 150 days of water to do it. You start with 1 Grit; run out and one more loss ends the run.':'Six stops to the Strip. You start with 1 Grit; run out and one more loss ends the run.'}</p></section>
   ${meta.char?`<div class="charstrip"><img src="${portrait(meta.char)}" alt=""><div><small>Character</small><b>${esc(CHARS[meta.char].name)}</b><span>${CHARS[meta.char].traits.map(t=>t[1]).join(' · ')}</span></div><button class="btn" data-go="pickchar">Change</button></div>`:''}
+  <section class="panel dailybox">
+    <h2 style="font-size:22px">Daily run</h2>
+    ${(()=>{const day=dailySeed().slice(6),dl=(meta.dailyLog||{})[day],c=CHARS[dailyChar()];return `<p class="note">Same road for everyone today: ${esc(c.name)}, Plain deck, Copper Road, no gear. ${dl?`Your best today: ${dl.won?'reached Vegas':`stop ${dl.stop+1}`}. Streak: ${meta.dailyStreak||0} day${(meta.dailyStreak||0)===1?'':'s'}. Replay it for practice.`:'You haven’t played it yet. Your first finish pays NCR dollars.'}</p><button class="btn hot" data-rundaily>Play today’s daily</button>`;})()}
+  </section>
   <section class="panel">
     <h2 style="font-size:24px">New run</h2>
     <div class="runpick" role="radiogroup" aria-label="Which run">
@@ -4683,6 +4857,9 @@ function renderRunSetup(){
     <p class="note">${esc(TIERS[tierIdx(nr.tier)].desc)}${(()=>{const n=deckTierCount(nr.deck);return n<TIERS.length?` Win with this deck on the ${TIERS[n-1].name} to unlock the ${TIERS[n].name} for it.`:'';})()}</p>
     <h3 class="sub">Token</h3>
     ${meta.tokens.length?`<div class="hubbtns" style="margin-top:0"><button class="btn${!nr.token?' hot':''}" data-runtoken="">None</button>${meta.tokens.map(tk=>`<button class="btn${nr.token===tk?' hot':''}" data-runtoken="${tk}" title="${esc(TOKENS[tk].desc)}">${esc(TOKENS[tk].name)}</button>`).join('')}</div><p class="note">${nr.token?esc(TOKENS[nr.token].desc):'Bring one token into the run.'}</p>`:'<p class="note">Win runs to unlock tokens: small boosts you can bring into a run.</p>'}
+    <h3 class="sub">Seed</h3>
+    <input id="seed-input" type="text" maxlength="24" placeholder="Random" value="${esc(nr.seed||'')}" autocomplete="off" autocapitalize="characters" spellcheck="false" style="width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,.25);background:rgba(0,0,0,.3);color:inherit;font:inherit">
+    <p class="note">Leave it blank for a random road. The same seed gives the same bosses, shops and events, so you can share one with a friend.</p>
     <h3 class="sub">Loadout</h3>
     <div class="loadline"><p class="note" style="margin:0">${loadoutLine()}</p><button class="btn" data-go="office">Mojave Express ${scripHTML(meta.scrip||0)}</button></div>
     <button class="btn hot" data-runstart style="width:100%;margin-top:10px;font-size:16px;padding:12px">${nr.special==='waterchip'?'Leave Vault 13':'Start the run'}</button>
@@ -4695,9 +4872,50 @@ function renderRunSetup(){
     </div>
   </section>
   <section class="panel" style="margin-top:14px">
-    <h2 style="font-size:22px">Your record</h2>
+    <div class="sect-h"><h2 style="font-size:22px">Your record</h2><button class="btn" data-go="codex">Codex</button></div>
     <p class="note">Runs won: ${meta.runsWon||0} · Best: ${meta.bestStop>=RUN_STOPS.length?'Reached Vegas':meta.bestStop?`stop ${meta.bestStop+1}`:'none yet'}${meta.endlessBest?` · Beyond the Strip: ${TIERS.map(t=>meta.endlessBest[t.id]?`${t.name.split(' ')[0]} ${meta.endlessBest[t.id]}`:null).filter(Boolean).join(', ')}`:''}</p>
     ${(meta.runHist||[]).length?`<div class="hist">${meta.runHist.slice(0,6).map(h=>`<div class="${h.result}"><b>${h.result==='won'?'Won':'Lost'}</b> ${esc(CHARS[h.char]?CHARS[h.char].name:'?')} · ${esc(DECKS[deckIdx(h.deck)].name)} · ${esc(TIERS[tierIdx(h.tier)].name)}${h.result==='lost'?` · stop ${h.stop+1}`:''}${h.beyond?` · +${h.beyond-1} beyond`:''} · ${h.won} tables</div>`).join('')}</div>`:''}
+  </section>`;
+}
+function runStatsHTML(r){
+  if(!r.hands)return '';
+  const rs=r.rs||{},mins=Math.max(1,Math.round(((r.endedAt||Date.now())-(r.started||Date.now()))/60000));
+  const rows=[['hands',r.hands],['tables won',r.won],['skipped',r.skips||0],['caps earned',rs.caps||0],['best payout',rs.best||0],['triple sales',rs.sweeps||0],['bounties',rs.bounties||0],['Kings played',rs.kings||0],['Jacks played',rs.jacks||0],['Jokers played',rs.jokers||0],['turns',rs.turns||0],['discards',rs.discards||0],['minutes',mins]];
+  return `<h3 class="sub">How it went</h3><div class="hubbtns" style="justify-content:center">${rows.map(([l,v])=>`<span class="pill num"><b>${v}</b>&nbsp;${l}</span>`).join('')}</div>
+    ${meta.perks.length?`<p class="note" style="text-align:center"><b>Perks:</b> ${meta.perks.map(id=>esc(PERKS[id].name)).join(' · ')}</p>`:''}
+    <p class="note" style="text-align:center"><b>Deck:</b> ${esc(deckSummary(meta.deck))}${modCount()?` ${modCount()} upgraded.`:''}</p>`;
+}
+let codexTab='perks';
+const codexBosses=()=>[...new Set([...NV_STOPS.map(i=>ROAD[i].name),...Object.values(CHARS).map(c=>c.name),...BEYOND.map(b=>b.name),...WC_ROUTE.filter(x=>x.name).map(x=>x.name),...Object.values(WC_JUNK).map(x=>x.name)])];
+function renderCodex(){
+  const c=cdx(),tabs=[['perks','Perks'],['legends','Legends'],['bosses','Bosses'],['events','Events'],['upgrades','Upgrades']],rk={common:0,uncommon:1,rare:2,legendary:3};
+  let body='',count='';
+  if(codexTab==='perks'){
+    const ids=Object.keys(PERKS).sort((a,b)=>(rk[PERK_RARITY[a]]||0)-(rk[PERK_RARITY[b]]||0)||PERKS[a].name.localeCompare(PERKS[b].name));
+    count=`${ids.filter(id=>c.perk[id]).length}/${ids.length}`;
+    body=`<div class="plist">${ids.map(id=>{const st=c.perk[id]||0;return st?`<div class="prow"><div><b>${esc(PERKS[id].name)} <i class="rar rar-${PERK_RARITY[id]}">${PERK_RARITY[id]}</i></b><span>${esc(PERKS[id].desc)}</span></div><span class="pill num">${st&4?'Won with':st&2?'Owned':'Seen'}</span></div>`:`<div class="prow"><div><b>???</b><span>Not seen yet. Perks turn up in shops, crates and boss rewards.</span></div></div>`;}).join('')}</div>`;
+  }else if(codexTab==='legends'){
+    const ids=Object.keys(LEGENDS),own=id=>(meta.legends||[]).includes(id);count=`${ids.filter(own).length}/${ids.length}`;
+    body=`<div class="plist">${ids.map(id=>{const L=LEGENDS[id];return own(id)?`<div class="prow lgrow">${cardHTML({legend:id})}<div><b class="lg-${L.rar}">${esc(L.name)} <i class="rar lgt-${L.rar}">${L.rar}</i></b><span>${esc(L.desc)}</span></div></div>`:`<div class="prow"><div><b>???</b><span>${L.found?esc(L.found):'Buy it at the Mojave Express to add it to the trading posts.'}</span></div></div>`;}).join('')}</div>`;
+  }else if(codexTab==='bosses'){
+    const names=codexBosses();count=`${names.filter(n=>c.boss[n]).length}/${names.length}`;
+    body=`<div class="plist">${names.map(n=>{const b=c.boss[n];if(!b)return `<div class="prow"><div><b>???</b><span>You haven’t faced this boss yet.</span></div></div>`;const st=AI_STYLES[n];
+      return `<div class="prow">${bossPic({rival:b.rv,art:b.art},'rivalimg')}<div><b>${esc(n)}</b><span>Faced ${b.f} · beaten ${b.w}${st&&st.tell?` · ${esc(st.tell)}`:''}</span></div></div>`;}).join('')}</div>`;
+  }else if(codexTab==='events'){
+    const ks=Object.keys(EVENTS);count=`${ks.filter(k=>c.event[k]).length}/${ks.length}`;
+    body=`<div class="plist">${ks.map(k=>{const e=EVENTS[k],n=c.event[k];return n?`<div class="prow"><div><b>${esc(e.title)}</b><span>${esc(e.text)} · met ${n} time${n>1?'s':''}</span></div></div>`:`<div class="prow"><div><b>???</b><span>Something you haven’t met on the road yet.</span></div></div>`;}).join('')}</div>`;
+  }else{
+    body=`<h3 class="sub">Card upgrades</h3><div class="plist">${Object.values(MODS).map(m=>`<div class="prow"><div><b>${esc(m.name)}</b><span>${esc(m.desc)}</span></div></div>`).join('')}</div>
+      <h3 class="sub">Special finishes</h3><div class="plist">${Object.values(EDITIONS).map(e=>`<div class="prow"><div><b>${esc(e.name)}</b><span>${esc(e.desc)}</span></div></div>`).join('')}</div>
+      <h3 class="sub">Chems</h3><div class="plist">${Object.values(CHEMS).map(e=>`<div class="prow"><div><b>${esc(e.name)}</b><span>${esc(e.desc)}</span></div></div>`).join('')}</div>`;
+  }
+  app.innerHTML=`
+  <div class="mbar">${backBtn('road','The Road')}${count?`<span class="pill num">${count}</span>`:''}</div>
+  <section class="panel">
+    <h2 style="font-size:28px">Codex</h2>
+    <p class="note">Everything you’ve met on the Road. Unseen entries stay hidden until you find them.</p>
+    <div class="tabs" role="group" aria-label="Codex section">${tabs.map(([k,l])=>`<button class="btn" data-cxtab="${k}" aria-pressed="${codexTab===k}">${l}</button>`).join('')}</div>
+    ${body}
   </section>`;
 }
 function renderRunOver(){
@@ -4710,10 +4928,13 @@ function renderRunOver(){
     ${r.special==='waterchip'?`<p>${won?`You brought the water chip home with ${r.days} days to spare. The Overseer thanked you, then exiled you.`:r.dry?`The vault’s water ran out while you were at ${esc(placeOf(r.stop))}.`:`You fell at ${esc(placeOf(r.stop))} with ${r.days} days of water left.`}</p>`:''}
     <p style="${r.special?'display:none':''}">${r.fellBeyond?`${esc(CHARS[r.char].name)} beat the Strip, then made it ${mileOf(r.stop)-1} stop${mileOf(r.stop)-1===1?'':'s'} past it before falling at ${esc(placeOf(r.stop))}. Best on the ${esc(TIERS[tierIdx(r.tier)].name)}: ${(meta.endlessBest||{})[r.tier]||0}.`:won?`${esc(CHARS[r.char].name)} beat the Strip on the ${esc(TIERS[tierIdx(r.tier)].name)} with the ${esc(DECKS[deckIdx(r.deck)].name)}.`:`${esc(CHARS[r.char].name)} fell at ${esc(placeOf(r.stop))}, ${TABLE_KIND[r.table].toLowerCase()}.`}</p>
     <p class="num">${r.won} tables won · ${r.skips} skipped · ${meta.caps} caps left</p>
+    ${r.seed?`<p class="note">${r.daily?'Daily run':'Seed'}: ${esc(r.seed)}${r.daily?'':' · share it to replay the same road'}</p>`:''}
+    ${r.dailyBonus?`<p class="num" style="color:var(--neon)">Daily bonus: +${r.dailyBonus} NCR dollars · streak ${meta.dailyStreak||1}</p>`:''}
     ${r.scrip?`<p class="num" style="color:var(--neon)">+${r.scrip} NCR dollars this run${r.scripMiles?` (${r.scripMiles} of it for the miles)`:''} · ${meta.scrip} to spend at the Mojave Express</p>`:''}
+    ${runStatsHTML(r)}
     ${won&&r.unlocked&&r.unlocked.length?`<h3 class="sub">Unlocked</h3><ul class="traits">${r.unlocked.map(u=>`<li class="pro"><b>+ ${esc(u)}</b></li>`).join('')}</ul>`:''}
     ${won&&!r.endless?`<div class="explain" style="text-align:left"><p><b>Beyond the Strip.</b> Keep this run going into endless stops past Vegas: more boss rules every stop, sharper dealers, bigger rewards. See how far you get. Your unlocks are already saved.</p></div>
-      ${r.special?'':'<button class="btn hot" data-runbeyond>Keep going</button>'} <button class="btn" data-runnew>New run</button>`:`<button class="btn hot" data-runnew>New run</button>`} <button class="btn" data-runoffice style="margin-left:6px">Mojave Express</button>
+      ${r.special?'':'<button class="btn hot" data-runbeyond>Keep going</button>'} <button class="btn" data-runnew>New run</button>`:`<button class="btn hot" data-runnew>New run</button>`} <button class="btn" data-runoffice style="margin-left:6px">Mojave Express</button> <button class="btn" data-go="codex" style="margin-left:6px">Codex</button>
   </section>
   ${runStoryHTML()}`;
 }
@@ -4728,8 +4949,9 @@ function renderEvent(){
     <h2 style="font-size:26px;color:var(--neon)">${esc(ev.title)}</h2>
     <p class="story">${esc(ev.text)}</p>
     ${r.eventResult?`<p class="ex">${esc(r.eventResult)}</p><button class="btn hot" data-eventdone>Continue to the shop</button>`:
-      `<div class="spoils">${ev.choices.map((c,i)=>`<button class="spoil" data-eventpick="${i}" ${c.cost&&meta.caps<c.cost?'disabled':''}><b>${esc(c.label)}</b>${c.cost&&meta.caps<c.cost?'<span>Not enough caps.</span>':''}</button>`).join('')}</div>`}
+      `<div class="spoils">${ev.choices.map((c,i)=>{const low=c.req&&statOf(c.req[0])<c.req[1],poor=c.cost&&meta.caps<c.cost;return `<button class="spoil" data-eventpick="${i}" ${low||poor?'disabled':''}><b>${c.req?`[${c.req[0]} ${c.req[1]}] `:''}${esc(c.label)}</b>${low?`<span>Needs ${c.req[0]} ${c.req[1]}. You have ${statOf(c.req[0])}.</span>`:poor?'<span>Not enough caps.</span>':''}</button>`;}).join('')}</div><p class="note" style="margin-top:10px">${STAT_NAMES.map(n=>`${n} ${statOf(n)}`).join(' · ')}</p>`}
   </section>
+  ${bossPickHTML()}
   <div class="hubbtns kitbtns"><button class="btn" data-kitopen="deck">Your deck, perks & chems</button></div>
   ${r.picker?pickerHTML():''}
   ${kitOpen?kitHTML():''}
@@ -4749,6 +4971,7 @@ function kitHTML(){
     (r.freeBundles||[]).length?`${r.freeBundles.length>1?r.freeBundles.length+' free bundles':`A free ${r.freeBundles[0]==='collector'?'Collector’s':'Supply'} bundle`} at your next shop`:null,
     r.freeCrate?`A free ${r.freeCrate==='collector'?'Collector’s':'Supply'} bundle at your next shop`:null,
     r.halfShop&&!r.offers?'Your next shop is half price':null,
+    r.bossPick?'A free boss perk is waiting for you to pick it':null,
     (r.nextRules||[]).length?`Next table: ${r.nextRules.map(id=>`${BOSS_RULES[id].name} (${BOSS_RULES[id].desc})`).join(', ')}`:null,
   ].filter(Boolean);
   const tabBtn=(k,l)=>`<button class="btn" data-kitopen="${k}" aria-pressed="${tab===k}">${l}</button>`;
@@ -4784,6 +5007,7 @@ function renderRunShop(){
   app.innerHTML=`
   <div class="mbar"><span class="pill">${esc(placeOf(r.stop))} · next: ${TABLE_KIND[r.table]}</span>${capsHTML(meta.caps)}</div>
   ${runHeaderHTML()}
+  ${bossPickHTML()}
   <section class="panel">
     <div class="sect-h"><h2 style="font-size:26px">Trading post</h2><button class="btn hot" data-runnext>Next table →</button></div>
     ${r.halfShop?'<p class="note" style="color:var(--sage)">Clearance Sale: everything is half price this visit.</p>':''}
@@ -4894,17 +5118,25 @@ function handleRunClick(d){
   if('runspecial' in d){meta.newRun.special=d.runspecial||null;render();return true;}
   if('rundeck' in d){meta.newRun.deck=d.rundeck;if(!tierUnlocked(meta.newRun.tier,d.rundeck))meta.newRun.tier='copper';render();return true;}
   if('cashin' in d){if(r&&r.phase==='shop'&&!r.vouchUsed&&(meta.capVouch||[]).length){meta.capVouch.sort((a,b)=>b.caps-a.caps);const v=meta.capVouch.shift();meta.caps+=v.caps;r.vouchUsed=true;sfx('clink');checkState();save();}render();return true;}
+  if('cxtab' in d){codexTab=d.cxtab;render();window.scrollTo(0,0);return true;}
+  if('bosspick' in d){if(r&&r.bossPick&&r.bossPick.includes(d.bosspick)&&meta.perks.length<perkSlots()){meta.perks.push(d.bosspick);meta.equipped=meta.perks;r.bossPick=null;if(meta.perks.length>=5)unlock('loaded');if(typeof sfx==='function')sfx('clink');save();}render();return true;}
+  if('bossskip' in d){if(r&&r.bossPick){meta.caps+=r.bossCaps||bossPerkCaps(0);r.bossPick=null;if(typeof sfx==='function')sfx('clink');save();}render();return true;}
   if('tagpick' in d){if(r&&r.tagPick&&r.tagPick.includes(d.tagpick)){meta.perks.push(d.tagpick);meta.equipped=meta.perks;r.tagPick=null;save();}render();return true;}
-  if('runoffice' in d){meta.run=null;screen='office';save();render();window.scrollTo(0,0);return true;}
+  if('runoffice' in d){if(meta.run&&meta.run.daily&&meta.run.prevChar!==undefined)meta.char=meta.run.prevChar;meta.run=null;screen='office';save();render();window.scrollTo(0,0);return true;}
   if('runtier' in d){meta.newRun.tier=d.runtier;render();return true;}
   if('runtoken' in d){meta.newRun.token=d.runtoken||null;render();return true;}
+  if('rundaily' in d){if(runLive())return true;const old=meta.newRun;meta.newRun={deck:'plain',tier:'copper',token:null,special:null,daily:true};startRun();meta.newRun=old||{deck:'plain',tier:'copper',token:null};runPre=false;runArmed=false;render();window.scrollTo(0,0);return true;}
   if('runstart' in d){if(!meta.char){screen='pickchar';render();return true;}startRun();runPre=false;runArmed=false;render();window.scrollTo(0,0);return true;}
   if('runstoryok' in d){r.story.shift();save();render();return true;}
   if('runbeyond' in d){if(r&&r.result==='won'&&!r.endless){r.endless=true;r.phase='event';r.result=null;r.stop=RUN_STOPS.length;r.table=0;ensureStop(r.stop);r.event=pickEvent();r.eventResult=null;r.story=[{title:'Beyond the Strip',text:BEYOND_INTRO}];save();}render();window.scrollTo(0,0);return true;}
-  if('runnew' in d){meta.run=null;save();render();window.scrollTo(0,0);return true;}
+  if('runnew' in d){if(meta.run&&meta.run.daily&&meta.run.prevChar!==undefined)meta.char=meta.run.prevChar;meta.run=null;save();render();window.scrollTo(0,0);return true;}
   if('runabandon' in d){if(runArmed){runArmed=false;runLost(true);save();}else runArmed=true;render();return true;}
   if('runplay' in d){runPre=true;render();return true;}
-  if('runcancel' in d){runPre=false;render();return true;}
+  if('runcancel' in d){runPre=false;if(r){r.swapPick=null;r.wagerSel=0;}render();return true;}
+  if('wager' in d){if(r){const v=Math.max(0,+d.wager||0);r.wagerSel=(v<=meta.caps&&v<=wagerMax(r.stop))?v:0;}render();return true;}
+  if('rulesw' in d){const s2=r.stop,i=+d.rulesw;if(r.phase==='table'&&r.table===2&&!(r.swapUsed||{})[s2]&&meta.caps>=bossSwapCost(s2)){const opts=swapOptions(s2,i);if(opts.length)r.swapPick={s:s2,i,opts};}render();return true;}
+  if('rulepick' in d){const pk=r.swapPick;if(pk&&pk.opts.includes(d.rulepick)&&meta.caps>=bossSwapCost(pk.s)){meta.caps-=bossSwapCost(pk.s);r.bosses[pk.s][pk.i]=d.rulepick;r.bosses[pk.s].sort((a,b)=>(RANGE_RULES.includes(b)?1:0)-(RANGE_RULES.includes(a)?1:0));(r.swapUsed=r.swapUsed||{})[pk.s]=1;r.swapPick=null;save();}render();return true;}
+  if('rulekeep' in d){r.swapPick=null;render();return true;}
   if('runconfirm' in d){runPre=false;if(r.table===2){render();wantedPoster(()=>startRunTable());}else startRunTable();return true;}
   if('runskip' in d){skipTable();render();return true;}
   if('tychoskip' in d){if(r&&r.phase==='table'&&r.table===2&&gear('tycho')&&!r.tychoUsed&&r.stop<RUN_STOPS.length-1){r.tychoUsed=true;r.skips++;if(isWC()){r.days-=WC_SKIP;}r.stop++;r.table=0;r.phase='event';r.event=pickEvent();save();}render();return true;}
@@ -5145,6 +5377,7 @@ function wantedPoster(cb){
     <div class="pimg">${d.rival||(d.art&&PORTRAIT_FILE[d.art])?`<img src="${d.rival?portrait(d.rival):PORTRAIT_FILE[d.art]}" alt="">`:`<span class="psil">${OUTLAW_SVG}</span>`}</div>
     <div class="pname">${esc(d.name)}</div>
     ${d.rival&&RIVAL_TAUNT[d.rival]?`<div class="ptaunt">${esc(RIVAL_TAUNT[d.rival])}</div>`:''}
+    ${AI_STYLES[d.name]&&AI_STYLES[d.name].tell?`<div class="ptaunt">Style: ${esc(AI_STYLES[d.name].tell)}</div>`:''}
     <div class="prules">${ids.length?ids.map(id=>`<span><b>${BOSS_RULES[id].name}</b> · ${esc(BOSS_RULES[id].desc)}</span>`).join(''):'<span>No house rules. Just a mean streak.</span>'}${d.rival?`<span><b>Rival</b> · ${esc(RIVALS[d.rival].rule)}</span>`:''}</div>
     <div class="preward">REWARD ${capN(Math.round(tableReward(s,2)*(has('roller')?1.5:1)*winMult()))} + BOUNTY ${capN(bossBountyPay(s))}</div>
     <div class="ptap">Tap to deal in</div></div>`;
