@@ -119,6 +119,13 @@ function tablePropsHTML(){
     const src=PROP_FILE[id];
     return `<div class="tprop slot${i} sz-${p.size} p-${id}" aria-hidden="true" style="--pt:${tilt.toFixed(1)}deg;--ps:${sc.toFixed(2)}"><img src="${src}" alt=""></div>`;}).join('')+'<div class="tvig" aria-hidden="true"></div>';
 }
+// Home screen shelf: on phones the table has no room for props, so they stand on a ledge under the title instead.
+function propShelfHTML(){
+  if(!PROPS_ON)return '';
+  const ids=((meta.look&&meta.look.props)||[]).filter(id=>propUnlocked(id)&&PROP_FILE[id]).slice(0,PROP_SLOTS);
+  if(!ids.length)return '';
+  return `<button class="shelf" data-go="look" aria-label="Your table props. Tap to change.">${ids.map(id=>`<img src="${PROP_FILE[id]}" alt="" class="sp-${id}">`).join('')}</button>`;
+}
 function propsPickerHTML(){
   if(!PROPS_ON)return '';
   const eq=(meta.look.props||[]);

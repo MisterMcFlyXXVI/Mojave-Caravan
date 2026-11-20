@@ -179,6 +179,7 @@ function renderHome(){
     <div class="neon" aria-label="Caravan">CAR<span class="dim">A</span>VAN</div>
     <p class="tagline">The Mojave’s card game. Pick how you want to play.</p>
   </section>
+  ${propShelfHTML()}
   <div class="modes">
     <button class="mode" data-go="classic">
       <span class="mk">Classic</span>
