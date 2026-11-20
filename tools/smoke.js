@@ -49,7 +49,7 @@ const ok = (name, cond, extra) => { cond ? pass++ : fail++; console.log(`${cond 
     handleRunClick({ bosspick: r.bossPick[0] }); out.rewardTaken = r.bossPick === null && meta.perks.length === 1;
     r.bossPick = rollBossPerks(); meta.perks = ['wide', 'royal', 'steady']; r.bossCaps = 15; const c0 = meta.caps; handleRunClick({ bossskip: '' }); out.rewardCaps = meta.caps - c0;
     r = fresh(); meta.perks = ['courier', 'hazmat', 'cannon']; r.phase = 'table'; startRunTable();
-    out.perkRules = G.rules.kingDraw.p && G.rules.jokerproof.p && G.rules.glassMult.p === 3;
+    out.perkRules = G.rules.freeRank.p.includes('K') && G.rules.jokerproof.p && G.rules.glassMult.p === 3;
     r = fresh({ deck: 'scorched' }); out.scorched = meta.deck.length === 48 && meta.deck.filter((c) => !isNum(c)).length === 8;
 
     // --- every event, every character ---
@@ -83,7 +83,7 @@ const ok = (name, cond, extra) => { cond ? pass++ : fail++; console.log(`${cond 
     boss('Velvet Moreno', 'copper'); G.p.cv = [[E('2', 'S')], [E('9', 'H'), E('10', 'S')], [E('4', 'D')]]; G.a.cv = [[], [], []];
     G.a.hand = hand([['A', 'S'], ['A', 'H'], ['A', 'D'], ['A', 'C'], ['2', 'C'], ['2', 'D'], ['2', 'H'], ['5', 'C']]); dealer(4); out.knifeEarly = !G.sig.fired && G.p.cv[1].length === 2; dealer(1); out.knife = G.sig.fired && G.p.cv[1].length === 1 && G.lastLost.lane === 1;
     boss('Greg', 'copper'); G.a.hand = hand([['A', 'S'], ['2', 'H'], ['3', 'D'], ['4', 'C'], ['5', 'S'], ['6', 'H'], ['7', 'D'], ['8', 'C']]); G.p.cv = [[E('9', 'S')], [E('9', 'H')], [E('9', 'D')]]; G.a.cv = [[], [], []]; dealer(7); out.hug = G.sig.fired && G.turn === 'a';
-    boss('Benny', 'copper'); G.a.hand = hand([['A', 'S'], ['2', 'H'], ['3', 'D'], ['4', 'C'], ['5', 'S'], ['6', 'H'], ['7', 'D'], ['8', 'C'], ['9', 'S'], ['10', 'H']]); G.a.cv = [[], [], []]; dealer(G.sig.at - 1); const chipEarly = G.rules.range.a[0] === 21; dealer(1); out.chip = chipEarly && G.rules.range.a[0] === 18 && G.rules.range.a[1] === 30;
+    boss('Benny', 'copper'); G.a.hand = hand([['A', 'S'], ['2', 'H'], ['3', 'D'], ['4', 'C'], ['5', 'S'], ['6', 'H'], ['7', 'D'], ['8', 'C'], ['9', 'S'], ['10', 'H']]); G.a.cv = [[], [], []]; const r0 = G.rules.range.a.slice(); dealer(G.sig.at - 1); const chipEarly = G.rules.range.a[0] === r0[0]; dealer(1); out.chip = chipEarly && G.rules.range.a[0] === Math.min(18, r0[0]) && G.rules.range.a[1] === Math.max(30, r0[1]);
     boss('Mama Tallow', 'copper'); G.a.hand = hand([['A', 'S'], ['2', 'H'], ['3', 'D'], ['4', 'C'], ['5', 'S']]); G.a.cv = [[], [], []]; G.a.deck = hand([['6', 'S'], ['7', 'S'], ['8', 'S'], ['9', 'S'], ['10', 'S'], ['6', 'H']]); dealer(2); const hb = G.a.hand.length; dealer(1); out.feast = G.sig.fired && G.a.hand.length >= hb + 1;
     out.sigTiers = ['copper', 'silver', 'gold'].map((t) => { boss('Greg', t); return G.sig.at; }).join(',') === '7,6,5';
     boss('Silver Lou', 'copper'); out.edge = G.rules.tieWin.a && laneWinner(24, 24, G.rules) === 'a';
@@ -104,13 +104,18 @@ const ok = (name, cond, extra) => { cond ? pass++ : fail++; console.log(`${cond 
   });
 
   const T = (name, v) => ok(name, !!v);
+  // every perk in the game is either simulated by tools/perk-power.js or explicitly listed as not simulated
+  const gamePerks = await page.evaluate(() => Object.keys(PERKS));
+  const pp = require('./perk-power.js'), covered = new Set([...Object.keys(pp.PERKS), ...pp.NOT_SIMULATED]);
+  const notCovered = gamePerks.filter((id) => !covered.has(id)), stale = [...covered].filter((id) => !gamePerks.includes(id));
+  ok('tools/perk-power.js covers every perk in the game', !notCovered.length && !stale.length, `missing: ${notCovered.join(',') || 'none'}; stale: ${stale.join(',') || 'none'}`);
   T('same seed gives the same bosses, rivals and shops; a different seed differs', R.seedSame && R.seedDiff);
   T('seeded randomness is switched off again afterwards', R.randomNative);
   T('the daily run has its fixed setup', R.daily);
   ok('the daily pays a bonus once, restores your character, and abandoning pays nothing', R.dailyBonus === 5 && R.charRestored && R.dailyOnce && R.abandonPays === 0, `bonus ${R.dailyBonus}`);
   T('beating a boss offers three perks and one can be taken', R.rewardOffered && R.rewardTaken);
   ok('with full perk slots you can take caps instead', R.rewardCaps === 15, R.rewardCaps);
-  T('new perk rules are wired up (King draw, Joker-proof, Glass Cannon)', R.perkRules);
+  T('new perk rules are wired up (free Kings, Joker-proof, Glass Cannon)', R.perkRules);
   T('the Scorched deck burns six face cards', R.scorched);
   ok('every event runs for every character', R.eventErrors === 0, R.eventFirst || '');
   T('a stat-locked event choice is rejected', R.lockedRejected);

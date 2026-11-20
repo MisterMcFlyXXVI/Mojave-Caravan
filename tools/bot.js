@@ -5,6 +5,7 @@
 //   regular  also uses character abilities, companions, gear actives, chems and Legend cards, takes small wagers,
 //            and buys perks by rarity.
 //   scout    regular play with random perk choices; used by --learn so perk values aren't biased by the bot's own picks.
+//   noperk   regular play that never takes a perk or boss reward perk (compare with regular to measure perk dependence).
 //   expert   sharper play (holds Kings), buys perks from measured value (tools/data/learned.json), swaps dangerous
 //            boss rules, skips dangerous tables, sells weak perks, rerolls, and sizes wagers to the risk.
 //
@@ -45,6 +46,7 @@
     novice:  { noise: 5, abilities: false, chems: false, perks: 'random', wager: 'none',  swap: false, skip: false, style: null,                  smartShop: false },
     regular: { noise: 4, abilities: true,  chems: true,  perks: 'rarity', wager: 'small', swap: false, skip: false, style: { king: 3 },            smartShop: true },
     scout:   { noise: 4, abilities: true,  chems: true,  perks: 'random', wager: 'none',  swap: false, skip: false, style: { king: 3 },            smartShop: true },   // regular play, random perks: for measuring
+    noperk:  { noise: 4, abilities: true,  chems: true,  perks: 'none',   wager: 'small', swap: false, skip: false, style: { king: 3 },            smartShop: true },   // regular play that never takes a perk: measures how much perks matter
     expert:  { noise: 2, abilities: true,  chems: true,  perks: 'learned', wager: 'smart', swap: true,  skip: true,  style: { king: 6, jack: 2 }, smartShop: true },
   };
   const RAR = { common: 1, uncommon: 2, rare: 3, legendary: 4 };
@@ -108,7 +110,7 @@
 
     function claimBossReward(r) {
       if (!r.bossPick || !r.bossPick.length) return;
-      if (meta.perks.length < perkSlots()) {
+      if (S.perks !== 'none' && meta.perks.length < perkSlots()) {
         const id = S.perks === 'random' ? r.bossPick[Math.floor(B() * r.bossPick.length)] : r.bossPick.slice().sort((a, b) => perkValue(b) - perkValue(a))[0];
         handleRunClick({ bosspick: id });
       } else handleRunClick({ bossskip: '' });
@@ -116,6 +118,7 @@
 
     // ---------- the trading post ----------
     function buyPerks(r, of) {
+      if (S.perks === 'none') return;
       const slots = () => perkSlots() - meta.perks.length;
       const idx = of.perks.map((_, i) => i).filter((i) => !of.sold['perk' + i]);
       if (S.perks === 'random') {
@@ -367,7 +370,7 @@
       const plies = playMatch(r);
       const won = !!(G && G.over && G.over.winner === 'p');
       const used = G ? ['turretUsed', 'hugUsed', 'regrowUsed', 'zapUsed', 'booneUsed', 'batUsed', 'repairUsed', 'requestUsed', 'quickUsed'].filter((k) => G[k]) : [];
-      out.tables.push({ s, t, won, boss: t === 2 ? boss : null, plies, sig, sigFired: G && G.sig ? !!G.sig.fired : null, perks: perksAtDeal, rules, wager, used, dCaps: meta.caps - capsBefore });
+      out.tables.push({ s, t, won, reason: G && G.over ? String(G.over.reason).replace(/\d+/g, 'N').slice(0, 40) : null, boss: t === 2 ? boss : null, plies, sig, sigFired: G && G.sig ? !!G.sig.fired : null, perks: perksAtDeal, rules, wager, used, dCaps: meta.caps - capsBefore });
       G = null; screen = 'road';
     }
 

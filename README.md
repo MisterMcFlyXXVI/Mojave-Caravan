@@ -42,6 +42,7 @@ node engine-tests.js            # rules + dealer AI, no browser (add --quick for
 node smoke.js                   # drives the real page: seeds, daily, wagers, signatures, events, codex, clicks
 node simulate-runs.js --runs 480 --workers 4 --out a.json       # bot plays whole runs, prints a balance report
 node simulate-runs.js --compare a.json b.json                   # before/after boss win rates
+node perk-power.js                             # how much each perk helps, in plain AI-vs-AI hands (no browser)
 ```
 
 The simulation bot uses the real game code with rendering and timers stubbed (about a second per run). It has skill
