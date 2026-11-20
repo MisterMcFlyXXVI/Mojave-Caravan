@@ -842,6 +842,15 @@ ul.resl{text-align:left;display:inline-block;margin:0 auto 6px}
 .tprop.slot0{left:40%;top:-2px;--sx:1px;--sy:4px}
 .tprop.slot1{left:23%;bottom:-3px;--sx:-2px;--sy:4px}
 .tprop.slot2{left:46%;bottom:-6px;--sx:2px;--sy:4px}
+/* On wide screens the props rest on the desk around the mat, half on the table edge, at a size you can actually see */
+@media(min-width:900px){
+  .tprop.sz-s{width:128px}.tprop.sz-m{width:156px}.tprop.sz-l{width:180px}
+  .tprop.p-lantern{width:84px}.tprop.p-cocktail{width:82px}.tprop.p-dice{width:140px}.tprop.p-switchblade{width:160px}
+  .tprop.slot0{left:6%;top:auto;right:auto;bottom:-84px;--sx:3px;--sy:6px}
+  .tprop.slot1{left:33%;top:auto;right:auto;bottom:-92px;--sx:-3px;--sy:6px}
+  .tprop.slot2{left:60%;top:auto;right:auto;bottom:-86px;--sx:3px;--sy:6px}
+  .mg-table{padding-bottom:96px}
+}
 @media(max-width:560px){.tprop.slot0{left:50%;top:-8px}.tprop.slot1{left:30%;bottom:-6px}.tprop.slot2{display:none}}
 .tvig{position:absolute;inset:0;z-index:-1;pointer-events:none;border-radius:inherit;
   background:radial-gradient(ellipse 80% 75% at 50% 45%,transparent 60%,#00000040 100%)}
