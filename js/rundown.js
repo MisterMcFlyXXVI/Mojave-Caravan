@@ -71,7 +71,7 @@ function handleRundownClick(d){
 // =====================================================================
 const PROP_SLOTS=3;
 // Table props are switched off for now. Unlocks are still tracked quietly, so flipping this to true brings them back with everything already earned.
-const PROPS_ON=false;
+const PROPS_ON=true;
 const TABLE_PROPS=[
   {id:'badge',name:'Tin star',size:'s',from:'Sheriff Amos Dunn',how:'Beat Sheriff Dunn in the campaign (Goodsprings).',camp:'goodsprings'},
   {id:'pearls',name:'Pearl necklace',size:'s',from:'Lady Marigold',how:'Beat Lady Marigold in the campaign (Primm).',camp:'primm'},
@@ -89,7 +89,7 @@ const TABLE_PROPS=[
 const PROP_FILE={};
 function loadPropFiles(){
   if(!PROPS_ON)return;
-  const exts=['png','webp','PNG','WEBP'];
+  const exts=["webp","png"];
   for(const p of TABLE_PROPS){const tryExt=n=>{if(n>=exts.length)return;const im=new Image();
     im.onload=()=>{PROP_FILE[p.id]=im.src;if(meta&&(screen==='match'||screen==='look'))render();};im.onerror=()=>tryExt(n+1);im.src=`props/${p.id}.${exts[n]}`;};tryExt(0);}
 }
@@ -118,6 +118,13 @@ function tablePropsHTML(){
     const h=hashStr(id+':'+i);const tilt=lo+(h%1000)/1000*(hi-lo);const sc=0.94+((h>>10)%100)/100*0.12;
     const src=PROP_FILE[id];
     return `<div class="tprop slot${i} sz-${p.size} p-${id}" aria-hidden="true" style="--pt:${tilt.toFixed(1)}deg;--ps:${sc.toFixed(2)}"><img src="${src}" alt=""></div>`;}).join('')+'<div class="tvig" aria-hidden="true"></div>';
+}
+// Home screen shelf: on phones the table has no room for props, so they stand on a ledge under the title instead.
+function propShelfHTML(){
+  if(!PROPS_ON)return '';
+  const ids=((meta.look&&meta.look.props)||[]).filter(id=>propUnlocked(id)&&PROP_FILE[id]).slice(0,PROP_SLOTS);
+  if(!ids.length)return '';
+  return `<button class="shelf" data-go="look" aria-label="Your table props. Tap to change.">${ids.map(id=>`<img src="${PROP_FILE[id]}" alt="" class="sp-${id}">`).join('')}</button>`;
 }
 function propsPickerHTML(){
   if(!PROPS_ON)return '';

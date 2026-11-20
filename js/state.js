@@ -53,6 +53,8 @@ function migrate(m){
   // Star Bottle Cap and Strength Bobblehead are back: undo the short-lived rename to Gold Bar / Mesmetron.
   {const L=(m.legends||[]).map(id=>id==='goldbar'?'starcap':id);if(L.includes('mesmetron')&&!m.legendsFixed)L.push('bobble');m.legends=[...new Set(L)];m.legendsFixed=1;}
   if(m.run&&Array.isArray(m.deck))m.deck.forEach(c=>{if(c&&c.legend==='goldbar')c.legend='starcap';});
+  // Cosmetics and the GNR pack became achievement rewards: anything you were already using stays yours.
+  if(!m.lookGrand){m.lookGrand=1;const u=m.look.unlocked=m.look.unlocked||[];for(const k of ['font','face','mat'])if(m.look[k]&&!u.includes(m.look[k]))u.push(m.look[k]);if(m.ach&&m.ach.jeanita&&!u.includes('gnr'))u.push('gnr');}
   m.charFlags=m.charFlags||{};
   m.codex=m.codex||{};m.codex.perk=m.codex.perk||{};m.codex.boss=m.codex.boss||{};m.codex.event=m.codex.event||{};
   return m;
