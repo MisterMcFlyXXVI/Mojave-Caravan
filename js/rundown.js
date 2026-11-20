@@ -71,7 +71,7 @@ function handleRundownClick(d){
 // =====================================================================
 const PROP_SLOTS=3;
 // Table props are switched off for now. Unlocks are still tracked quietly, so flipping this to true brings them back with everything already earned.
-const PROPS_ON=false;
+const PROPS_ON=true;
 const TABLE_PROPS=[
   {id:'badge',name:'Tin star',size:'s',from:'Sheriff Amos Dunn',how:'Beat Sheriff Dunn in the campaign (Goodsprings).',camp:'goodsprings'},
   {id:'pearls',name:'Pearl necklace',size:'s',from:'Lady Marigold',how:'Beat Lady Marigold in the campaign (Primm).',camp:'primm'},
@@ -89,7 +89,7 @@ const TABLE_PROPS=[
 const PROP_FILE={};
 function loadPropFiles(){
   if(!PROPS_ON)return;
-  const exts=['png','webp','PNG','WEBP'];
+  const exts=["webp","png"];
   for(const p of TABLE_PROPS){const tryExt=n=>{if(n>=exts.length)return;const im=new Image();
     im.onload=()=>{PROP_FILE[p.id]=im.src;if(meta&&(screen==='match'||screen==='look'))render();};im.onerror=()=>tryExt(n+1);im.src=`props/${p.id}.${exts[n]}`;};tryExt(0);}
 }

@@ -86,8 +86,8 @@ const numCount=m=>Object.entries(m).filter(([k])=>isNum(fromKeyC(k))).reduce((a,
 
 // Cosmetics. Every item has an id; add unlock:{...} to an item later to gate it.
 const LOOKS={
-  font:[{id:'deco',name:'Deco'},{id:'pixel',name:'Pixel'},{id:'western',name:'Western'},{id:'typewriter',name:'Typewriter'},{id:'stencil',name:'Stencil'},{id:'classic',name:'Classic'},{id:'marker',name:'Marker'},{id:'atomic',name:'Atomic'}],
-  face:[{id:'bone',name:'Bone'},{id:'sand',name:'Sun-bleached'},{id:'night',name:'Midnight'},{id:'contrast',name:'High contrast'}],
+  font:[{id:'deco',name:'Deco'},{id:'pixel',name:'Pixel',unlock:'tut_road'},{id:'western',name:'Western',unlock:'champ1'},{id:'typewriter',name:'Typewriter',unlock:'chal10'},{id:'stencil',name:'Stencil',unlock:'gear1'},{id:'classic',name:'Classic',unlock:'hands100'},{id:'marker',name:'Marker',unlock:'bounty1'},{id:'atomic',name:'Atomic',unlock:'run1'}],
+  face:[{id:'bone',name:'Bone'},{id:'sand',name:'Sun-bleached',unlock:'road_first'},{id:'night',name:'Midnight',unlock:'silver_road'},{id:'contrast',name:'High contrast'},{id:'gilt',name:'Gilded',unlock:'strip_all'}],
   // The first 11 are free designs for your starter deck. The art backs below are extra packs, earned through achievements.
   back:[{id:'sunburst',name:'Sunburst'},{id:'cap',name:'Bottle cap'},{id:'stripe',name:'Barber pole'},{id:'dusk',name:'Mojave dusk'},{id:'star',name:'Lone star'},
     {id:'blood',name:'Blood-spattered'},{id:'uranium',name:'Uranium glow'},{id:'cowhide',name:'Cowhide'},{id:'rust',name:'Rusted steel'},{id:'shot',name:'Shot up'},{id:'map',name:'Old trail map'},
@@ -100,7 +100,7 @@ const LOOKS={
     {id:'fisto',name:'FISTO',art:true,unlock:'quick'},
     {id:'sierramadre',name:'Sierra Madre',art:true,unlock:'exact26'},
     {id:'zeta',name:'Mothership Zeta',art:true,unlock:'wipe'},
-    {id:'gnr',name:'Galaxy News Radio',art:true,unlock:'jeanita'},
+    {id:'gnr',name:'Galaxy News Radio',art:true,unlock:'threedog'},
     {id:'ultraluxe',name:'Ultra-Luxe',art:true,unlock:'all_in'},
     {id:'brotherhood',name:'Brotherhood of Steel',art:true,unlock:'camp_done'},
     {id:'lucky38',name:'Lucky 38',art:true,unlock:'road_strip'},
@@ -113,12 +113,13 @@ const LOOKS={
     {id:'waterchip',name:'Water Chip',art:true,unlock:'wc_saved'},
     {id:'cathedral',name:'Children of the Cathedral',art:true,unlock:'wc_100'},
     {id:'junktown',name:'Junktown',art:true,unlock:'wc_both'}],
-  mat:[{id:'leather',name:'Saddle leather'},{id:'felt',name:'Casino felt'},{id:'navy',name:'Midnight felt'},{id:'wood',name:'Barn wood'},{id:'desert',name:'Desert sand'}],
+  mat:[{id:'leather',name:'Saddle leather'},{id:'felt',name:'Casino felt',unlock:'camp_first'},{id:'navy',name:'Midnight felt',unlock:'highroller'},{id:'wood',name:'Barn wood',unlock:'trophy3'},{id:'desert',name:'Desert sand',unlock:'beyond5'}],
 };
 const lookUnlocked=item=>!item.unlock||!!(meta.ach&&meta.ach[item.unlock])||meta.look.unlocked.includes(item.id);
 const backReward=achId=>LOOKS.back.find(b=>b.unlock===achId);
 function applyLook(){
   {const b=LOOKS.back.find(o=>o.id===meta.look.back);if(!b||b.art||!lookUnlocked(b))meta.look.back=starterBack();}
+  for(const k of ['font','face','mat']){const o=LOOKS[k].find(x=>x.id===meta.look[k]);if(!o||!lookUnlocked(o))meta.look[k]=LOOKS[k][0].id;}
   const L=meta.look, el=document.documentElement;
   el.dataset.font=L.font||'deco'; el.dataset.face=L.face; el.dataset.back=L.back; el.dataset.mat=L.mat; el.dataset.four=L.four?'1':'0';el.dataset.pip=L.pip?'1':'0';
 }
@@ -234,6 +235,9 @@ const CHAR_UNLOCK={
   harold:()=>!!(meta.charFlags||{}).harold,
 };
 const charUnlocked=id=>CHAR_UNLOCK[id]?CHAR_UNLOCK[id]():true;
+// How close a locked character is, for characters whose unlock is a count
+const charProgress=id=>id==='threedog'?[Math.min(3,new Set((meta.stripBy||[]).filter(c=>CHARS[c])).size),3]:null;
+const charProgressHTML=id=>{const p=charProgress(id);return p?` <b class="num">${p[0]} / ${p[1]}</b>`:'';};
 const isChar=id=>meta&&meta.char===id;
 const chemMax=()=>chemCap(specialChar());
 const disc=n=>{let m=SPX.discount(sp('C'));if(runLive()){const r=meta.run;if(r.halfShop)m*=0.5;if(r.tier==='gold')m*=1.25;}return Math.max(1,Math.ceil(Math.round(n*m*1000)/1000));};   // rounded first: 100*1.1 is 110.00000000000001

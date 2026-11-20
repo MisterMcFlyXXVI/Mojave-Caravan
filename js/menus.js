@@ -325,7 +325,7 @@ function charBioHTML(id){
     <p class="note">Gear from the Mojave Express adds to these stats.</p>
     <h3 class="sub">On the Road</h3>
     <p class="route">${ORIGINALS.includes(id)||NEWCOMERS.includes(id)?'Meets rivals from the cast along the way. Final table: Greg.':id==='greg'?'Meets three rivals from the cast each run. Final table: Jeanita.':'Meets three rivals from the cast and Greg each run. Final table: Silver Lou.'}</p>
-    ${ok?'':`<p class="locknote">Locked. ${esc(c.unlock)}</p>`}
+    ${ok?'':`<p class="locknote">Locked. ${esc(c.unlock)}${charProgressHTML(id)}</p>`}
     <div class="hubbtns" style="justify-content:center">${ok?`<button class="btn${on?'':' hot'}" data-pickchar="${id}" ${on?'disabled':''}>${on?'Playing':'Play as '+esc(c.name.split(' ')[0])}</button>`:''}<button class="btn" data-closeinfo>Close</button></div>
   </div></div>`;
 }
@@ -342,7 +342,7 @@ function renderPickChar(){
         <p class="cbio">${esc(c.bio)}</p>
         <p class="cbio" style="font-size:12px"><b>SPECIAL</b> ${esc(specialLine(id))}</p>
         <ul class="traits">${c.traits.map(([k,n,dsc])=>`<li class="${k==='+'?'pro':k==='='?'meh':'con'}"><b>${k} ${esc(n)}</b> ${esc(dsc)}</li>`).join('')}</ul>
-        ${ok?'':`<p class="locknote">${esc(c.unlock)}</p>`}
+        ${ok?'':`<p class="locknote">${esc(c.unlock)}${charProgressHTML(id)}</p>`}
         <div class="hubbtns" style="margin-top:0">${ok?`<button class="btn${on?'':' hot'}" data-pickchar="${id}" ${on?'disabled':''}>${on?'Playing':'Play as '+esc(c.name.split(' ')[0])}</button>`:`<button class="btn" disabled>Locked</button>`}<button class="btn ghost" data-charinfo="${id}">Bio</button></div></div></div>`;}).join('')}</div>
   </section>
   ${charInfo?charBioHTML(charInfo):''}`;

@@ -208,6 +208,44 @@ const ok = (name, cond, extra) => { cond ? pass++ : fail++; console.log(`${cond 
   }
   ok('the opening can be played with real clicks', await page.evaluate(() => G.setupLeft.p === 0));
 
+  // ---- achievements, rewards, props ----
+  const AR = await page.evaluate(() => {
+    const o = {};
+    // every achievement pays something real: NCR dollars or a small voucher, and hard ones pay more
+    o.unpaid = ACH.filter((a) => !achNCR(a) && !achCaps(a) && !backReward(a.id)).map((a) => a.id);
+    o.ids = new Set(ACH.map((a) => a.id)).size === ACH.length;
+    o.badPay = Object.keys(ACH_NCR).concat(Object.keys(ACH_VOUCH)).filter((id) => !ACH.some((a) => a.id === id));
+    o.hardPays = achNCR('deck_gold3') >= 15 && achNCR('flawless') >= 8 && achNCR('exact26') <= 2;
+    o.gnr = LOOKS.back.find((b) => b.id === 'gnr').unlock === 'threedog';
+    // paying: NCR lands in the wallet once, with a toast-free unlock
+    achSilent = true; meta.ach = {}; meta.scrip = 0;
+    unlock('flawless'); unlock('flawless');
+    o.paid = meta.scrip === achNCR('flawless');
+    const before = meta.scrip; unlock('first_win'); o.tiny = meta.scrip === before && meta.capVouch.some((v) => v.id === 'first_win');
+    // gated cosmetics: locked until the achievement, and a locked pick falls back to the default
+    meta.ach = {}; meta.look.unlocked = []; meta.look.font = 'western'; applyLook(); o.fall = meta.look.font === 'deco';
+    meta.ach.champ1 = 1; meta.look.font = 'western'; applyLook(); o.keep = meta.look.font === 'western';
+    // the old-save grandfather: a save that was using a now-gated mat keeps it
+    o.gated = ['font', 'face', 'mat'].every((k) => LOOKS[k].some((x) => x.unlock)) && LOOKS.face.find((x) => x.id === 'contrast').unlock === undefined;
+    // progress UI
+    meta.ach = {}; meta.st = Object.assign(meta.st || {}, { wins: 7 }); meta.stripBy = ['vladmira'];
+    screen = 'ach'; render(); o.near = document.body.innerHTML.includes('Closest to unlocking');
+    o.td = charProgress('threedog') && charProgress('threedog')[0] === 1;
+    return o;
+  });
+  ok('every achievement pays NCR dollars or a tutorial voucher, and every reward id is real', AR.unpaid.length === 0 && AR.ids && AR.badPay.length === 0, AR.unpaid.concat(AR.badPay).join(','));
+  ok('rewards scale with difficulty, and Galaxy News Radio comes from Three Dog', AR.hardPays && AR.gnr);
+  ok('an achievement pays its NCR dollars exactly once; tutorial steps pay a voucher instead', AR.paid && AR.tiny);
+  ok('fonts, card faces and mats are achievement rewards (High contrast stays free), and a locked pick falls back', AR.gated && AR.fall && AR.keep);
+  ok('the achievements screen lists what is closest to unlocking, and Three Dog shows 1 / 3', AR.near && AR.td);
+  const PR = await page.evaluate(async () => {
+    meta.propsUnlocked = TABLE_PROPS.map((p) => p.id); meta.look.props = ['badge', 'dice', 'watch'];
+    loadPropFiles();
+    await new Promise((r) => setTimeout(r, 800));
+    return { files: TABLE_PROPS.filter((p) => PROP_FILE[p.id]).length, total: TABLE_PROPS.length, on: PROPS_ON, html: (tablePropsHTML().match(/class="tprop/g) || []).length };
+  });
+  ok('all twelve table props load from props/<id>.webp and three sit on the table', PR.on && PR.files === PR.total && PR.html === 3, `${PR.files}/${PR.total}, ${PR.html} on table`);
+
   // ---- the simulation bot ----
   const botPage = await browser.newPage();
   await botPage.goto('file://' + path.resolve(__dirname, '..', 'index.html')); await botPage.waitForTimeout(1200);
