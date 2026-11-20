@@ -33,7 +33,7 @@ function renderRunMap(){
         ${ids.length?`<div class="rulesbar">${ids.map(ruleChip).join('')}${t===2&&d.rival?`<span class="rb house-chip">Rival: ${esc(RIVALS[d.rival].rule)}</span>`:''}</div>`:(t===2&&d.rival?`<div class="rulesbar"><span class="rb house-chip">Rival: ${esc(RIVALS[d.rival].rule)}</span></div>`:'')}
         ${ids.length?`<div class="ruledescs">${ids.map(id=>`<span><b>${BOSS_RULES[id].name}:</b> ${esc(BOSS_RULES[id].desc)}</span>`).join('')}</div>`:''}
         ${st==='now'&&tag?`<div class="boon"><b>Or skip it:</b> give up this table’s winnings to earn a boon. <span><b>${esc(tag.name)}:</b> ${esc(tag.desc)}</span></div>`:st==='next'&&tag?`<div class="boon dim">Skip boon: <b>${esc(tag.name)}</b>. ${esc(tag.desc)}</div>`:''}
-        <div class="rt-foot"><span class="num">Win +${Math.round(tableReward(s,t)*(has('roller')?1.5:1)*winMult())} · Sell all 3: +${sweepBonus(s,t)} more${t===2?` · Bounty: ${BOUNTIES[r.bounties[s]].name} +${bossBountyPay(s)}`:''}</span>
+        <div class="rt-foot"><span class="num">Win +${Math.round(tableReward(s,t)*rollerMult()*winMult())} · Sell all 3: +${sweepBonus(s,t)} more${t===2?` · Bounty: ${BOUNTIES[r.bounties[s]].name} +${bossBountyPay(s)}`:''}</span>
           ${st==='now'?`<span class="rt-btns">${tag?`<button class="btn" data-runskip>Skip for ${esc(tag.name)}</button>`:''}${t===2&&gear('tycho')&&!r.tychoUsed&&s<RUN_STOPS.length-1?`<button class="btn" data-tychoskip>Tycho: sneak past</button>`:''}<button class="btn hot" data-runplay>Deal in</button></span>`:st==='done'?'<span class="tag">DONE</span>':''}</div>
       </div>`;}).join('');
     return `<div class="stopcur"><h3>${inBeyond(s)?`Mile ${mileOf(s)}`:s+1}. ${esc(place)}</h3>${tables}</div>`;
@@ -60,10 +60,11 @@ function runPreHandHTML(){
     <h2>${esc(placeOf(s))}</h2><p class="who">${TABLE_KIND[t]} · ${esc(d.name)} · ${esc(d.blurb)}</p>
     <dl>
       <dt>Character</dt><dd>${esc(CHARS[r.char].name)}</dd>
-      <dt>Reward</dt><dd>+${Math.round(tableReward(s,t)*(has('roller')?1.5:1)*winMult())} caps, plus interest (1 per 5 caps you hold, up to ${interestCap()})</dd>
+      <dt>Reward</dt><dd>+${Math.round(tableReward(s,t)*rollerMult()*winMult())} caps, plus interest (1 per 5 caps you hold, up to ${interestCap()})</dd>
       ${wagerRowHTML(r,s,t)}
       <dt>Sell range</dt><dd>${rangeTxt(R.range.p)===rangeTxt(R.range.a)?rangeTxt(R.range.p):`You ${rangeTxt(R.range.p)} · dealer ${rangeTxt(R.range.a)}`}</dd>
       <dt>Rules</dt><dd>${rulesWithSwapHTML(r,s,t,ids)}</dd>
+      ${escalationFor(s,t).length?`<dt>Late game</dt><dd>${escalationFor(s,t).map(e=>esc(e.text)).join('<br>')}</dd>`:''}
       ${d.rival?`<dt>Rival</dt><dd>${esc(RIVALS[d.rival].rule)}${s===RUN_STOPS.length-1&&d.rival==='greg'&&!charUnlocked('greg')?' Beat him to unlock Greg.':''}${s===RUN_STOPS.length-1&&d.rival==='jeanita'&&!charUnlocked('jeanita')?' Beat her to unlock Jeanita.':''}</dd>`:''}
       ${t===2?`<dt>Bounty</dt><dd>${BOUNTIES[r.bounties[s]].name}: ${esc(BOUNTIES[r.bounties[s]].desc)} +${bossBountyPay(s)}</dd>`:''}
       ${t===2&&BOSS_SIGS[d.name]?`<dt>Signature</dt><dd><b>${esc(BOSS_SIGS[d.name].name)}:</b> ${esc(sigDesc(BOSS_SIGS[d.name],r))}</dd>`:''}

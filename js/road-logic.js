@@ -209,19 +209,23 @@ const TOKENS={
 };
 const BOSS_RULES={
   tight:HOUSE.tight, sand:HOUSE.sand, nojk:HOUSE.nojk, long:HOUSE.long, stacked:HOUSE.stacked, iron:HOUSE.iron, royal:HOUSE.royal,
-  drought:{name:'Drought',desc:'You can’t discard.',apply:R=>{R.noDiscard.p=true;}},
+  drought:{name:'Drought',desc:'You can’t discard or disband.',apply:R=>{R.noDiscard.p=true;R.noDisband=R.noDisband||{p:false,a:false};R.noDisband.p=true;}},
+  loaded:{name:'Loaded Deck',desc:'The dealer’s deck has 2 extra Jacks, 2 extra Kings and an extra Joker.',apply:R=>{R.dealerBonus={J:2,K:2,JK:1};}},
   short:{name:'Short Deal',desc:'You open with at most 6 cards.',apply:R=>{R.deal.p=Math.min(R.deal.p,6);}},
-  noking:{name:'No Kings',desc:'Kings can’t be played.',apply:R=>{R.banned.push('K');}},
-  noqueen:{name:'No Queens',desc:'Queens can’t be played.',apply:R=>{R.banned.push('Q');}},
-  heavy:{name:'Heavy Hitter',desc:'The dealer opens with 2 extra cards.',apply:R=>{R.deal.a+=2;}},
+  noking:{name:'Home Kings',desc:'Kings can only be played on your own caravans: nobody can King the other side.',apply:R=>{R.kingOwn=true;}},
+  noqueen:{name:'No Queens',desc:'You can’t play Queens.',apply:R=>{R.banP.push('Q');}},
+  pickpocket:{name:'Pickpocket',desc:'When the dealer Jacks one of your number cards, they take it into their hand and draw a card.',apply:R=>{R.heist.a=true;}},
+  heavy:{name:'Heavy Hitter',desc:'The dealer opens with 4 extra cards.',apply:R=>{R.deal.a+=4;}},
   nojack:{name:'No Jacks',desc:'Jacks can’t be played.',apply:R=>{R.banned.push('J');}},
   light:{name:'Light Pockets',desc:'You hold 1 fewer card.',apply:R=>{R.hand.p=Math.max(3,R.hand.p-1);}},
   floor:{name:'High Floor',desc:'Caravans sell at 23–26.',apply:R=>{R.range.p=[23,26];R.range.a=[23,26];}},
   stubborn:{name:'No Backing Out',desc:'Nobody can disband a caravan.',apply:R=>{R.noDisband={p:true,a:true};}},
-  mirror:{name:'Crooked Crown',desc:'The dealer’s Kings triple instead of double.',apply:R=>{R.kingMult.a=3;}},
-  greedy:{name:'Greedy House',desc:'The dealer’s caravans sell up to 1 point higher.',apply:R=>{R.range.a=[R.range.a[0],R.range.a[1]+1];}},
+  mirror:{name:'Crooked Crown',desc:'The dealer’s Kings triple instead of double, and each one draws them a card.',apply:R=>{R.kingMult.a=3;R.kingDraw.a=true;}},
+  greedy:{name:'Greedy House',desc:'The dealer’s caravans sell up to 2 points higher.',apply:R=>{R.range.a=[R.range.a[0],R.range.a[1]+2];}},
 };
-const BOSS_POOL=Object.keys(BOSS_RULES);
+// Rules that measured as helping the player stay defined (old saved runs may hold them) but are no longer dealt.
+const BOSS_LEGACY=['royal','short','noqueen','quick','pickpocket'];
+const BOSS_POOL=Object.keys(BOSS_RULES).filter(id=>!BOSS_LEGACY.includes(id));
 const GENERIC_DEALERS=[
   ['Whiskey Wanda','Pours a double, deals a single.'],['Tumbleweed Tom','Rolls into town, rolls out broke.'],['Doc Fizz','Prescribes cards for every ailment.'],
   ['Rattlesnake Ruth','Rattles her bracelets when she bluffs.'],['Lefty Loomis','Deals left-handed. Swears it’s lucky.'],['Big Iron Ike','Keeps his hand on his holster and his eyes on yours.'],
@@ -278,28 +282,29 @@ function runPackBack(){
 function runAddCard(c){const n={...c};delete n.id;const b=runPackBack();if(b)n.pack=b;meta.deck.push(n);return n;}
 const edLine=c=>c&&c.ed&&EDITIONS[c.ed]?`${EDITIONS[c.ed].name}: ${EDITIONS[c.ed].desc}`:'';
 const PERK_RARITY={
-  twotone:'common',honest:'common',nose:'common',
-  shark:'uncommon',cool:'uncommon',kingpin:'uncommon',prospector:'uncommon',collector:'uncommon',hunter:'uncommon',scav:'uncommon',steady:'uncommon',
-  scrapper:'rare',wide:'rare',royal:'rare',roller:'rare',momentum:'rare',jackrabbit:'rare',heist:'rare',hazmat:'rare',courier:'rare',cannon:'rare',
-  ironclad:'uncommon',showcase:'uncommon',
+  nose:'common',heist:'common',scrapper:'common',ironclad:'common',royal:'common',cool:'common',prospector:'common',scav:'common',
+  honest:'uncommon',shark:'uncommon',twotone:'uncommon',roller:'uncommon',collector:'uncommon',showcase:'uncommon',hunter:'uncommon',
+  wide:'rare',kingpin:'rare',momentum:'rare',jackrabbit:'rare',courier:'rare',steady:'rare',hazmat:'rare',cannon:'rare',
   lead:'legendary',insure:'legendary',
 };
+
+
 const RARITY_PRICE={common:10,uncommon:16,rare:24,legendary:32};
 Object.assign(PERKS,{
-  jackrabbit:{name:'Jackrabbit',desc:'Draw a card whenever you play a Jack.'},
-  scrapper:{name:'Scrapper',desc:'Discards draw 2 cards instead of 1.'},
+  jackrabbit:{name:'Jackrabbit',desc:'Playing a Jack doesn’t use your turn.'},
+  scrapper:{name:'Trickster',desc:'Playing a Joker doesn’t use your turn.'},
   prospector:{name:'Prospector',desc:'Interest can pay up to 3 more caps.'},
-  kingpin:{name:'Kingpin',desc:'Scales: every 3 Kings you play this run raise your sell ceiling by 1 (up to +3).'},
-  nose:{name:'Bloodhound',desc:'+4 caps for every caravan you sell at exactly 26.'},
-  collector:{name:'Collector',desc:'+1 cap per perk you own after every win.'},
-  momentum:{name:'Momentum',desc:'Scales: +1 hand size for every 5 tables you win this run (up to +2).'},
-  honest:{name:'Honest Work',desc:'+6 caps when you win without playing a face card.'},
-  ironclad:{name:'Ironclad',desc:'+2 caps for every Steel card in a caravan you sell.'},
-  showcase:{name:'Showcase',desc:'+2 caps for every card with a special finish in a caravan you sell.'},
-  heist:{name:'Heist',desc:'Every Jack you play on the dealer’s cards pays 2 caps when the hand ends, win or lose.'},
+  kingpin:{name:'Kingpin',desc:'Scales: every 2 Kings you play this run raise your sell ceiling by 1 (up to +4).'},
+  nose:{name:'Bloodhound',desc:'Whenever one of your caravans reaches 25 or 26, draw 2 cards.'},
+  collector:{name:'Collector',desc:'Every perk you own beyond your second raises your sell ceiling by 1.'},
+  momentum:{name:'Momentum',desc:'Scales: +1 hand size for every 4 tables you win this run (up to +2).'},
+  honest:{name:'Honest Work',desc:'Your number cards with no face card on them can’t be removed by Jacks or Jokers.'},
+  ironclad:{name:'Ironclad',desc:'Steel cards in your caravans are worth 2 more.'},
+  showcase:{name:'Showcase',desc:'Cards with a special finish are worth 2 more.'},
+  heist:{name:'Heist',desc:'When you Jack one of the dealer’s number cards, you take it into your hand and draw a card.'},
   hazmat:{name:'Hazmat Suit',desc:'Jokers can never remove your cards, yours included.'},
-  courier:{name:'Royal Courier',desc:'Draw a card whenever you play a King.'},
-  cannon:{name:'Glass Cannon',desc:'Glass cards are worth triple instead of double. They still break.'},
+  courier:{name:'Royal Courier',desc:'Playing a King doesn’t use your turn.'},
+  cannon:{name:'Glass Cannon',desc:'Glass cards are worth triple instead of double, and only break if you lose the hand.'},
 });
 PERKS.insure={name:'Guardian Angel',desc:'If you lose with no Grit left, the run doesn’t end: you get another shot at that table. Breaks when used.'};
 PERKS.scav={name:'Scavenger',desc:'After every table, win or lose, you pocket a random number card from the dealer’s caravans. It joins your deck.'};
@@ -408,25 +413,41 @@ function tableRuleIds(s,t){
   const r=run();const ids=t===2?r.bosses[s].slice(0,gear('combat')?Math.max(0,r.bosses[s].length-1):undefined):(r.extra[s][t]?[r.extra[s][t]]:[]);
   return s===r.stop&&t===r.table?ids.concat(r.nextRules||[]):ids;
 }
+// Late-game escalation: from the third stop on, Boss dealers get stronger in ways shown on the pre-hand screen.
+const ESCALATION=[
+  {from:2,text:'The dealer holds 1 more card.',apply:R=>{R.hand.a+=1;}},
+  {from:3,text:'The dealer’s caravans sell 1 point higher.',apply:R=>{R.range.a=[R.range.a[0],R.range.a[1]+1];}},
+  {from:4,text:'The dealer’s Kings triple.',apply:R=>{R.kingMult.a=Math.max(R.kingMult.a,3);}},
+  {from:5,text:'The dealer holds 1 more card, and opens with 2 extra.',apply:R=>{R.hand.a+=1;R.deal.a+=2;}},
+];
+const escalationFor=(s,t)=>t===2?ESCALATION.filter(e=>(inBeyond(s)?99:s)>=e.from):[];
 function runRules(s,t){
   const r=run(),R=baseRules();
   for(const id of tableRuleIds(s,t))BOSS_RULES[id]&&BOSS_RULES[id].apply(R);
+  for(const e of escalationFor(s,t))e.apply(R);
   if(t===2){const rv=rosterOf()[s];if(rv)RIVALS[rv].fn(R);}
   if(t===2&&isWC()){const b=wcBoss(s);if(b)b.fn(R);}
   if(has('wide'))R.range.p=[R.range.p[0]-2,R.range.p[1]];
   if(has('royal'))R.kingMult.p+=1;
-  if(has('steady'))R.queenDraw.p=true;
-  if(has('shark'))R.deal.p+=1;
+  if(has('steady'))R.freeRank.p.push('Q');
+  if(has('shark'))R.hand.p+=1;
   if(has('lead'))R.jackproof.p=true;
   if(has('twotone'))R.color.p=true;
   if(has('cool'))R.freeDisband.p=true;
-  if(has('jackrabbit'))R.jackDraw.p=true;
-  if(has('courier'))R.kingDraw.p=true;
+  if(has('jackrabbit'))R.freeRank.p.push('J');
+  if(has('courier'))R.freeRank.p.push('K');
+  if(has('scrapper'))R.freeRank.p.push('JK');
   if(has('hazmat'))R.jokerproof.p=true;
   if(has('cannon'))R.glassMult.p=3;
-  if(has('scrapper'))R.discardDraw.p=2;
-  if(has('kingpin'))R.range.p=[R.range.p[0],R.range.p[1]+Math.min(3,Math.floor((r.kings||0)/3))];
-  if(has('momentum'))R.hand.p+=Math.min(2,Math.floor((r.won||0)/5));
+  if(has('collector'))R.range.p=[R.range.p[0],R.range.p[1]+Math.max(0,meta.perks.length-2)];
+  if(has('roller')&&t===2)R.hand.p+=1;
+  if(has('nose'))R.exact26.p=true;
+  if(has('honest'))R.numProof.p=true;
+  if(has('heist'))R.heist.p=true;
+  if(has('ironclad'))R.steelPlus.p=2;
+  if(has('showcase'))R.edPlus.p=2;
+  if(has('kingpin'))R.range.p=[R.range.p[0],R.range.p[1]+Math.min(4,Math.floor((r.kings||0)/2))];
+  if(has('momentum'))R.hand.p+=Math.min(2,Math.floor((r.won||0)/4));
   if(SPX.ceiling(sp('S')))R.range.p=[R.range.p[0],R.range.p[1]+SPX.ceiling(sp('S'))];
   if(isChar('jeanita'))R.jokerproof.p=true;
   if(isChar('greg')){R.hand.p+=1;R.jackproof.a=true;}
@@ -462,6 +483,7 @@ function interestCap(){
 const tableReward=(s,t)=>[5,7,11][t]+Math.round(s*1.5);
 // Selling all three caravans pays half the table's base reward on top (at least 3).
 const sweepBonus=(s,t)=>Math.max(3,Math.ceil(tableReward(s,t)/2));
+const rollerMult=()=>has('roller')?1.25:1;
 const bossBountyPay=s=>Math.round((4+s)*(has('hunter')?2:1)*SPX.bounty(sp('I')));
 
 function plainDeck(){return addFaces(baseNumbers(),{J:4,Q:4,K:4,JK:2});}
@@ -648,7 +670,7 @@ function startRunTable(){
   const s=r.stop,t=r.table,ri=riOf(s);ensureStop(s);
   const R=runRules(s,t);
   const dealer=t===2?bossDealer(s):r.dealers[s][t];
-  G=withSeed('match:'+s+':'+t+':'+(r.hands||0),()=>newMatch(meta.deck,addFaces(baseNumbers(),runDealerExtra(s,t)),ri,R));
+  G=withSeed('match:'+s+':'+t+':'+(r.hands||0),()=>newMatch(meta.deck,addFaces(baseNumbers(),(()=>{const ex={...runDealerExtra(s,t)};if(R.dealerBonus)for(const [k,v] of Object.entries(R.dealerBonus))ex[k]=(ex[k]||0)+v;return ex;})()),ri,R));
   G.mode='road';G.run=true;G.runStop=s;G.runTable=t;G.dealer={...dealer,place:placeOf(s)};G.ruleIds=tableRuleIds(s,t);G.noise=runNoise(s,t);
   G.perks=[...meta.perks];G.char=r.char;G.turretUsed=false;G.hugUsed=false;G.hugPending=false;if(SPX.peek(sp('P')))G.peek=true;G.quick=SPX.quick(sp('A'));G.quickUsed=false;
   G.repairUsed=false;G.requestUsed=false;G.booneUsed=false;G.ede=gear('ede');G.zapUsed=false;
@@ -726,14 +748,13 @@ function runFinish(winner,ov){
   const extras=[];
   if(G.goldCaps){meta.caps+=G.goldCaps;extras.push(`${G.goldCaps} from Golden cards`);}
   // glass breaks
-  const played=new Set(G.glass||[]),spent=new Set(G.spent||[]),gone=new Set([...(gear('jeans')?[]:played),...spent]);
+  const played=new Set(G.glass||[]),spent=new Set(G.spent||[]),keepGlass=gear('jeans')||(has('cannon')&&winner==='p'),gone=new Set([...(keepGlass?[]:played),...spent]);
   if(gone.size)meta.deck=meta.deck.filter((c,i)=>!gone.has(i));
-  if(played.size&&!gear('jeans'))extras.push(`${played.size} glass card${played.size>1?'s':''} broke`);
+  if(played.size&&!keepGlass)extras.push(`${played.size} glass card${played.size>1?'s':''} broke`);
   if(spent.size)extras.push(`${spent.size} one-use Legend card${spent.size>1?'s':''} used up`);
-  {const jh=(G.stats&&G.stats.jackHits)||0;if(has('heist')&&jh){meta.caps+=2*jh;extras.push(`${2*jh} from Heist`);}}
   if(winner==='p'){
     const neon=[0,1,2].reduce((n,l)=>n+(lanes[l]==='p'?edIn(G.p.cv[l],'neon'):0),0);
-    const w=Math.round(tableReward(s,t)*(has('roller')?1.5:1)*winMult()*(1+(isChar('harold')?0.5:0.25)*neon));meta.caps+=w;ov.win=w;if(neon)extras.push(`Neon: winnings +${25*neon}%`);
+    const w=Math.round(tableReward(s,t)*rollerMult()*winMult()*(1+(isChar('harold')?0.5:0.25)*neon));meta.caps+=w;ov.win=w;if(neon)extras.push(`Neon: winnings +${25*neon}%`);
     if(G.wager){const wp=G.wager+Math.round(G.wager*WAGER_ODDS[t]);meta.caps+=wp;extras.push(`Wager paid: +${wp} (your ${G.wager} back plus ${wp-G.wager})`);}
     if(t===2&&isWC()){const b=WC_ROUTE[s];
       if(b&&b.drop&&!b.final){extras.push(wcGive(b.drop,`${wcBoss(s).name} dropped something.`));}
@@ -745,15 +766,9 @@ function runFinish(winner,ov){
     if(t===2&&isChar('threedog')){r.scrip=(r.scrip||0)+2;meta.scrip=(meta.scrip||0)+2;extras.push('2 NCR dollars for fighting the good fight');}
     if(lanes.every(x=>x==='p')){const sw=sweepBonus(s,t)*(gear('chaps')?2:1);meta.caps+=sw;extras.push(`Triple sale: all three caravans sold, +${sw}`);}
     {const sc=[1,2,3][t]+tierIdx(r.tier);r.scrip=(r.scrip||0)+sc;meta.scrip=(meta.scrip||0)+sc;ov.scrip=sc;}
-    if(G.bounty&&bountyMet(G.bounty,lanes)){ov.bountyWon=G.bountyPay;meta.caps+=G.bountyPay;}
+    if(G.bounty&&bountyMet(G.bounty,lanes)){ov.bountyWon=G.bountyPay;meta.caps+=G.bountyPay;if(has('hunter')&&!r.hunterUsed&&(r.grit||0)<2){r.hunterUsed=true;r.grit=(r.grit||0)+1;extras.push('Bounty Hunter: +1 Grit');}}
     let gild=0;[0,1,2].forEach(l=>{if(lanes[l]==='p')for(const e of G.p.cv[l])if(e.card.mod==='gilded')gild+=3;});
     if(gild){meta.caps+=gild;extras.push(`${gild} from Gilded cards`);}
-    {let steel=0,shown=0;[0,1,2].forEach(l=>{if(lanes[l]==='p')for(const e of G.p.cv[l]){if(e.card.mod==='steel')steel++;if(e.card.ed)shown++;}});
-     if(has('ironclad')&&steel){meta.caps+=2*steel;extras.push(`${2*steel} from Ironclad`);}
-     if(has('showcase')&&shown){meta.caps+=2*shown;extras.push(`${2*shown} from Showcase`);}}
-    if(has('nose')){const n=[0,1,2].filter(l=>lanes[l]==='p'&&cvValue(G.p.cv[l])===26).length;if(n){meta.caps+=4*n;extras.push(`${4*n} from Bloodhound`);}}
-    if(has('collector')){meta.caps+=meta.perks.length;extras.push(`${meta.perks.length} from Collector`);}
-    if(has('honest')&&G.stats&&!G.stats.faces){meta.caps+=6;extras.push('6 from Honest Work');}
     if(G.char==='ronald'){meta.caps+=3;extras.push('3 from Bootlegger');}
     const intr=Math.min(interestCap(),Math.floor(before/5));if(intr>0){meta.caps+=intr;extras.push(`${intr} interest`);}
     if(G.char==='nuke'&&chemTotal()<chemMax()){const id=pick(Object.keys(CHEMS));meta.chems[id]=(meta.chems[id]||0)+1;ov.brewed=id;}

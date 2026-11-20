@@ -215,7 +215,7 @@ function wantedPoster(cb){
     ${AI_STYLES[d.name]&&AI_STYLES[d.name].tell?`<div class="ptaunt">Style: ${esc(AI_STYLES[d.name].tell)}</div>`:''}
     ${BOSS_SIGS[d.name]?`<div class="ptaunt">Signature: ${esc(BOSS_SIGS[d.name].name)}</div>`:''}
     <div class="prules">${ids.length?ids.map(id=>`<span><b>${BOSS_RULES[id].name}</b> · ${esc(BOSS_RULES[id].desc)}</span>`).join(''):'<span>No house rules. Just a mean streak.</span>'}${d.rival?`<span><b>Rival</b> · ${esc(RIVALS[d.rival].rule)}</span>`:''}</div>
-    <div class="preward">REWARD ${capN(Math.round(tableReward(s,2)*(has('roller')?1.5:1)*winMult()))} + BOUNTY ${capN(bossBountyPay(s))}</div>
+    <div class="preward">REWARD ${capN(Math.round(tableReward(s,2)*rollerMult()*winMult()))} + BOUNTY ${capN(bossBountyPay(s))}</div>
     <div class="ptap">Tap to deal in</div></div>`;
   document.body.appendChild(el);
   const p=el.querySelector('.poster');
