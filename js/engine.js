@@ -27,12 +27,14 @@ function addFaces(spec,extra){
 function baseRules(){
   return {range:{p:[21,26],a:[21,26]},kingMult:{p:2,a:2},hand:{p:5,a:5},deal:{p:8,a:8},
     color:{p:false,a:false},jackproof:{p:false,a:false},jokerproof:{p:false,a:false},freeDisband:{p:false,a:false},noDiscard:{p:false,a:false},jackDraw:{p:false,a:false},discardDraw:{p:1,a:1},banned:[],hideOpp:false,
-    kingproof:{p:false,a:false},queenproof:{p:false,a:false},allproof:{p:false,a:false},noJoker:{p:false,a:false},queenDraw:{p:false,a:false},luckyDraw:{p:1,a:1},bigJoker:{p:false,a:false},spareParts:{p:false,a:false},tieWin:{p:false,a:false},anyOrder:{p:false,a:false},dead:{p:[],a:[]},kingDraw:{p:false,a:false},glassMult:{p:2,a:2}};
+    kingproof:{p:false,a:false},queenproof:{p:false,a:false},allproof:{p:false,a:false},noJoker:{p:false,a:false},queenDraw:{p:false,a:false},luckyDraw:{p:1,a:1},bigJoker:{p:false,a:false},spareParts:{p:false,a:false},tieWin:{p:false,a:false},anyOrder:{p:false,a:false},dead:{p:[],a:[]},kingDraw:{p:false,a:false},glassMult:{p:2,a:2},banP:[],kingOwn:false,numProof:{p:false,a:false},heist:{p:false,a:false},steelPlus:{p:0,a:0},edPlus:{p:0,a:0},exact26:{p:false,a:false},freeRank:{p:[],a:[]},dealerBonus:null};
 }
 const RULES=g=>g.rules||baseRules();
+// Playing one of these ranks doesn't use your turn (Jackrabbit, Royal Courier, Steady Hands, Trickster).
+const freeFace=(g,side,card)=>{const R=RULES(g);return !!(card&&R.freeRank&&R.freeRank[side]&&R.freeRank[side].includes(card.rank));};
 
 function cvValue(cv){
-  return cv.reduce((s,e)=>s+val(e.card)*(e.card.mod==='glass'?(e.card.gx||2):1)*e.faces.reduce((m,f)=>f.rank==='K'?m*(f.m||2):m,1),0);
+  return cv.reduce((s,e)=>s+(val(e.card)+(e.card.sx||0)+(e.card.ex||0))*(e.card.mod==='glass'?(e.card.gx||2):1)*e.faces.reduce((m,f)=>f.rank==='K'?m*(f.m||2):m,1),0);
 }
 function cvState(cv){
   let dir=0,suit=null,wild=false;
@@ -87,13 +89,14 @@ function legalMoves(g,side){
         if(setup){if(cv.length===0)moves.push({t:'num',ci,lane:l});}
         else if((R.anyOrder&&R.anyOrder[side])||canPlayNum(cv,c,R.color[side]))moves.push({t:'num',ci,lane:l});
       }
-    }else if(!c.legend&&!setup&&!R.banned.includes(c.rank)&&!(c.rank==='JK'&&R.noJoker&&R.noJoker[side])){
+    }else if(!c.legend&&!setup&&!R.banned.includes(c.rank)&&!(R.banP&&side==='p'&&R.banP.includes(c.rank))&&!(c.rank==='JK'&&R.noJoker&&R.noJoker[side])){
       for(const s of ['p','a']){
         if(c.rank==='J'&&s!==side&&R.jackproof[s])continue;
+        if(c.rank==='K'&&R.kingOwn&&s!==side)continue;
         if(s!==side&&((c.rank==='K'&&R.kingproof&&R.kingproof[s])||(c.rank==='Q'&&R.queenproof&&R.queenproof[s])||(R.allproof&&R.allproof[s])))continue;
         for(let l=0;l<3;l++){
           const cv=g[s].cv[l];
-          for(let i=0;i<cv.length;i++)if(canPlayFace(cv,i,c)&&!(c.rank==='J'&&cv[i].card.mod==='steel'))moves.push({t:'face',ci,side:s,lane:l,idx:i});
+          for(let i=0;i<cv.length;i++)if(canPlayFace(cv,i,c)&&!(c.rank==='J'&&cv[i].card.mod==='steel')&&!(c.rank==='J'&&s!==side&&R.numProof&&R.numProof[s]&&!cv[i].faces.length))moves.push({t:'face',ci,side:s,lane:l,idx:i});
         }
       }
     }
@@ -117,17 +120,19 @@ function applyMove(g,side,m,sim){
   if(!sim&&side==='p'&&card.ed==='gold'&&(m.t==='num'||m.t==='face'))g.goldCaps=(g.goldCaps||0)+3;
   if(m.t==='num'){
     if(card.mod==='glass')card.gx=(R.glassMult&&R.glassMult[side])||2;
+    if(card.mod==='steel'&&R.steelPlus&&R.steelPlus[side])card.sx=R.steelPlus[side];
+    if(card.ed&&R.edPlus&&R.edPlus[side])card.ex=R.edPlus[side];
     me.cv[m.lane].push({card,faces:[]});
     if(wasSetup)g.setupLeft[side]--;
   }else if(m.t==='face'){
     const cv=g[m.side].cv[m.lane],e=cv[m.idx];
-    if(card.rank==='J'){const gone=cv.splice(m.idx,1)[0];if(!sim&&gone&&m.side==='p'&&side==='a')g.lastLost={lane:m.lane,e:gone};if(!sim&&m.side!==side&&R.spareParts&&R.spareParts[m.side]&&gone)g[m.side].hand.push(gone.card);}
+    if(card.rank==='J'){const gone=cv.splice(m.idx,1)[0];if(!sim&&gone&&m.side==='p'&&side==='a')g.lastLost={lane:m.lane,e:gone};if(!sim&&m.side!==side&&R.spareParts&&R.spareParts[m.side]&&gone)g[m.side].hand.push(gone.card);if(!sim&&m.side!==side&&R.heist&&R.heist[side]&&gone&&isNum(gone.card)){me.hand.push(gone.card);if(me.deck.length)me.hand.push(me.deck.pop());}}
     else if(card.rank==='JK'){
       e.faces.push(card);
       const tv=val(e.card),ts=e.card.suit;
       for(const s of ['p','a'])for(let l=0;l<3;l++){
         if(R.jokerproof&&R.jokerproof[s])continue;
-        const keep=g[s].cv[l].filter(x=>x===e||!(tv===1?x.card.suit===ts:val(x.card)===tv));
+        const prot=R.numProof&&R.numProof[s],keep=g[s].cv[l].filter(x=>x===e||(prot&&!x.faces.length)||!(tv===1?x.card.suit===ts:val(x.card)===tv));
         if(!sim&&s==='p'&&side==='a'&&keep.length<g[s].cv[l].length){const lost=g[s].cv[l].filter(x=>!keep.includes(x));g.lastLost={lane:l,e:lost[lost.length-1]};}
         g[s].cv[l]=keep;
       }
@@ -142,6 +147,7 @@ function applyMove(g,side,m,sim){
   else if(!(m.t==='num'&&wasSetup))drawTo(g,side,R.hand[side]);
   if(m.t==='num'&&card.mod==='lucky')for(let i=0;i<((R.luckyDraw&&R.luckyDraw[side])||1)&&me.deck.length;i++)me.hand.push(me.deck.pop());
   if(me.deck.length&&m.t==='face'&&((card.rank==='J'&&R.jackDraw&&R.jackDraw[side])||(card.rank==='Q'&&R.queenDraw&&R.queenDraw[side])||(card.rank==='K'&&R.kingDraw&&R.kingDraw[side])))me.hand.push(me.deck.pop());
+  if(R.exact26&&R.exact26[side]){me.h26=me.h26||[false,false,false];for(let l=0;l<3;l++){const v=cvValue(me.cv[l]);if((v===25||v===26)&&!me.h26[l]){me.h26[l]=true;for(let i=0;i<2&&me.deck.length;i++)me.hand.push(me.deck.pop());}else if(v!==25&&v!==26)me.h26[l]=false;}}
 }
 // AI heuristics
 function laneScore(v,r){
@@ -200,4 +206,4 @@ function newMatch(playerSpec,oppSpec,oppIndex,rules){
 }
 // ================= ENGINE END =================
 // Node: lets tools/ load the rules engine directly. In the browser this is skipped and the globals are used.
-if(typeof module!=='undefined'&&module.exports)module.exports={SUITS,SUIT_CH,NUM_RANKS,FACE_NAME,isNum,val,isRed,cardName,clone,other,mk,shuffle,buildDeck,baseNumbers,addFaces,baseRules,RULES,cvValue,cvState,canPlayNum,canPlayFace,inR,laneWinner,edIn,laneRange,lanesResult,winnerOf,legalMoves,handSize,drawTo,applyMove,laneScore,evalState,KEEP,moveCost,chooseAIMove,newMatch};
+if(typeof module!=='undefined'&&module.exports)module.exports={freeFace,SUITS,SUIT_CH,NUM_RANKS,FACE_NAME,isNum,val,isRed,cardName,clone,other,mk,shuffle,buildDeck,baseNumbers,addFaces,baseRules,RULES,cvValue,cvState,canPlayNum,canPlayFace,inR,laneWinner,edIn,laneRange,lanesResult,winnerOf,legalMoves,handSize,drawTo,applyMove,laneScore,evalState,KEEP,moveCost,chooseAIMove,newMatch};

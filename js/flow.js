@@ -115,6 +115,7 @@ function doMove(side,m){
   if(side==='p'&&m.t==='disband'&&G.rules.freeDisband.p)keep=true;
   else if(side==='p'&&G.extra&&m.t!=='disband'){G.extra=false;keep=true;}
   else if(side==='p'&&m.t==='face'&&m._card&&m._card.rank==='J'&&G.sawedoff){keep=true;G.log.unshift('Sawed-Off: your Jack didn’t use your turn.');}
+  else if(side==='p'&&m.t==='face'&&m._card&&freeFace(G,'p',m._card)){keep=true;G.log.unshift(`${FACE_NAME[m._card.rank]}: that play didn’t use your turn.`);}
   else if(side==='p'&&m.t==='discard'&&G.codsworth&&!G.tidyUsed){G.tidyUsed=true;keep=true;G.log.unshift('Codsworth tidies up. That discard was on the house.');}
   else if(side==='p'&&m.t==='discard'&&G.quick&&!G.quickUsed){G.quickUsed=true;keep=true;G.log.unshift('Quick hands: that discard didn’t use your turn.');}
   if(!keep&&side==='p'&&G.hugPending){G.hugPending=false;keep=true;G.log.unshift(`${OPP().name.split(' ').slice(-1)[0]} is still recovering from Greg’s hug. Your turn again.`);}

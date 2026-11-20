@@ -127,13 +127,13 @@ let lookFrom='home';
 const PERKS={
   wide:{name:'Wide Margin',desc:'Your caravans sell from 19 instead of 21.'},
   royal:{name:'Royal Blood',desc:'Your Kings multiply one step more: ×3 instead of ×2.'},
-  steady:{name:'Steady Hands',desc:'Draw a card whenever you play a Queen.'},
-  shark:{name:'Card Shark',desc:'You’re dealt 9 cards to open instead of 8.'},
+  steady:{name:'Steady Hands',desc:'Playing a Queen doesn’t use your turn.'},
+  shark:{name:'Card Shark',desc:'You hold 1 more card in hand.'},
   lead:{name:'Lead Lined',desc:'The dealer’s Jacks can’t touch your caravans.'},
   twotone:{name:'Two-Tone',desc:'Any card of the same color counts as matching suit for you.'},
   cool:{name:'Cool Head',desc:'Disbanding a caravan doesn’t use up your turn.'},
-  roller:{name:'High Roller',desc:'Table winnings pay 50% more.'},
-  hunter:{name:'Bounty Hunter',desc:'Bounties pay double.'},
+  roller:{name:'High Roller',desc:'You hold 1 more card at Boss tables, and table winnings pay 25% more.'},
+  hunter:{name:'Bounty Hunter',desc:'Bounties pay double, and the first one you collect each run restores 1 Grit (up to 2).'},
 };
 const CHEMS={
   spy:{name:'Mentats',desc:'Sharper mind: see the dealer’s hand for the rest of the hand.'},

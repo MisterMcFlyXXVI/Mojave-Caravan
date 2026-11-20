@@ -66,7 +66,8 @@ function tableRulesHTML(){
   if(R.hand.p!==5||R.hand.a!==5)items.push(`<li><b>Hand size:</b> you draw up to ${R.hand.p}, the dealer up to ${R.hand.a}.</li>`);
   if(G.run)for(const id of (G.ruleIds||[]).filter((x,i,a)=>a.indexOf(x)===i))items.push(`<li><b>${BOSS_RULES[id].name}:</b> ${esc(BOSS_RULES[id].desc)}</li>`);
   for(const h of (o.house||[]))items.push(`<li><b>${HOUSE[h].name}:</b> ${esc(HOUSE[h].desc)}</li>`);
-  if(o.rival)items.push(`<li><b>Rival:</b> ${esc(RIVALS[o.rival].rule)}</li>`);
+  if(G.run&&G.runTable===2)for(const e of escalationFor(G.runStop,2))items.push(`<li><b>Late game:</b> ${esc(e.text)}</li>`);
+    if(o.rival)items.push(`<li><b>Rival:</b> ${esc(RIVALS[o.rival].rule)}</li>`);
   if(G.sig)items.push(`<li><b>Signature · ${esc(BOSS_SIGS[G.sig.id].name)}:</b> ${esc(BOSS_SIGS[G.sig.id].desc(G.sig.at))}</li>`);
   if(G.mode==='road'&&G.char&&CHARS[G.char])for(const t of CHARS[G.char].traits)items.push(`<li><b>${esc(t[1])} (${esc(CHARS[G.char].name)}):</b> ${esc(t[2])}</li>`);
   if(G.run&&meta.run){const dk=DECKS[deckIdx(meta.run.deck)];if(dk&&dk.id!=='plain')items.push(`<li><b>${esc(dk.name)}:</b> ${esc(dk.twist)}</li>`);
@@ -103,8 +104,6 @@ function goalsList(){
     const r=meta.run;
     if(r.deck==='sarsaparilla')out.push({kind:'Deck twist',name:'Sticky Fingers',desc:'Every discard costs 1 cap when the hand ends.',reward:`So far: −${st.discards||0}`,state:'info',note:''});
     if(r.deck==='blood')out.push({kind:'Deck twist',name:'Blood Money',desc:'Every Jack you play costs 2 caps when the hand ends.',reward:`So far: −${(st.jacks||0)*2}`,state:'info',note:''});
-    if(has('honest'))out.push({kind:'Perk',name:'Honest Work',desc:PERKS.honest.desc,reward:'+6 caps',...prog('noface')});
-    if(has('nose'))out.push({kind:'Perk',name:'Bloodhound',desc:PERKS.nose.desc,reward:'+4 per caravan',...prog('p26')});
   }
   return out;
 }

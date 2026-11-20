@@ -35,8 +35,10 @@ function aiProfile(){
   if(!G)return null;
   if(G.mode==='road'&&G.run){
     const r=run(),t=G.runTable,P={...(t===2?(AI_STYLES[OPP().name]||{}):{})};
-    if(t===2){const floor=inBeyond(G.runStop)?4:{copper:1,silver:3,gold:6}[r.tier]||1;if(floor>1)P.king=Math.max(P.king||1,floor);}
-    else if(t===1&&r.tier==='gold')P.king=3;
+    // Dealers get savvier with their Kings the further you go: all tables a little, bosses a lot (and more on Silver and Gold).
+    const st=Math.min(5,G.runStop);
+    if(t===2){const floor=inBeyond(G.runStop)?6:[1,1,2,3,4,5][st]+({copper:0,silver:1,gold:3}[r.tier]||0);if(floor>1)P.king=Math.max(P.king||1,floor);}
+    else{const f=Math.max(t===1?[1,1,1,2,3,3][st]:[1,1,1,1,2,2][st],t===1&&r.tier==='gold'?3:1);if(f>1)P.king=f;}
     return P;
   }
   if(G.mode==='classic'&&G.opp>=0)return CLASSIC_STYLES[G.opp]||null;

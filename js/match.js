@@ -75,7 +75,7 @@ function hintText(selMoves){
   }
   const c=G.p.hand[sel];
   const plays=selMoves.filter(m=>m.t!=='discard');
-  if(G.rules.banned.includes(c.rank))return `${FACE_NAME[c.rank]}s are banned at this table. Discard it, or pick another card.`;
+  if(G.rules.banned.includes(c.rank)||(G.rules.banP&&G.rules.banP.includes(c.rank)))return `${FACE_NAME[c.rank]}s are banned at this table. Discard it, or pick another card.`;
   if(isNum(c)&&!setup){
     const blocked=[0,1,2].map(l=>{const r=whyNot(G.p.cv[l],c);return r?`${ROMAN[l]}: ${r}`:null;}).filter(Boolean);
     if(!plays.length){const dead=G.rules.dead&&G.rules.dead.p&&G.rules.dead.p.includes(c.rank);return dead?`${cardName(c)} is dead at this table. Discard it, or pick another card.`:`${cardName(c)} can’t go anywhere${blocked.length?`. ${blocked.join('. ')}`:''}. Discard it, or pick another card.`;}

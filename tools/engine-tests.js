@@ -39,6 +39,56 @@ ok('Two-Tone: same colour counts as the suit', E.canPlayNum(climbing, E.mk('2', 
   ok('a Joker-proof side keeps its cards', g.p.cv[0].length === 1);
 }
 
+// ---- rules and perks added for boss difficulty and build depth ----
+{
+  const R = E.baseRules(); R.kingOwn = true;
+  const g = board([[ent('9', 'H')], [], []], [E.mk('K', 'S')], R); g.a.cv[0] = [ent('4', 'C')];
+  const mv = E.legalMoves(g, 'a').filter((m) => m.t === 'face');
+  ok('Home Kings: Kings only go on your own caravans', mv.length > 0 && mv.every((m) => m.side === 'a'));
+}
+{
+  const R = E.baseRules(); R.banP.push('Q');
+  const gp = board([[], [], []], [], R); gp.p.hand = [E.mk('Q', 'S')]; gp.p.cv[0] = [ent('4', 'C')]; gp.turn = 'p';
+  const ga = board([[ent('4', 'C')], [], []], [E.mk('Q', 'S')], R);
+  ok('No Queens bans Queens for the player only', E.legalMoves(gp, 'p').every((m) => m.t !== 'face') && E.legalMoves(ga, 'a').some((m) => m.t === 'face'));
+}
+{
+  const R = E.baseRules(); R.numProof.p = true;
+  const g = board([[ent('9', 'H'), ent('5', 'S', [['K', 'D']])], [], []], [E.mk('J', 'S')], R);
+  const targets = E.legalMoves(g, 'a').filter((m) => m.t === 'face').map((m) => m.idx);
+  ok('Honest Work: Jacks can only hit number cards that carry a face card', targets.length === 1 && targets[0] === 1, targets.join(','));
+}
+{
+  const R = E.baseRules(); R.heist.a = true;
+  const g = board([[ent('9', 'H'), ent('3', 'C')], [], []], [E.mk('J', 'S')], R);
+  E.applyMove(g, 'a', { t: 'face', ci: 0, side: 'p', lane: 0, idx: 0 }, false);
+  ok('Heist: a Jack takes the number card it removes into your hand', g.a.hand.some((c) => c.rank === '9' && c.suit === 'H'));
+}
+{
+  const R = E.baseRules(); R.exact26.p = true;
+  const deck = ['2', '3', '4', '5', '6', '7', '8', '9'].map((r) => E.mk(r, 'S'));
+  const g = { p: { deck, hand: [E.mk('K', 'D'), E.mk('Q', 'H')], cv: [[ent('4', 'C'), ent('9', 'S', [['K', 'H']])], [], []] }, a: { deck: [], hand: [], cv: [[], [], []] }, turn: 'p', setupLeft: { p: 0, a: 0 }, rules: R };
+  // 4 + 9*2 = 22; a King on the 4 makes 8 + 18 = 26
+  E.applyMove(g, 'p', { t: 'face', ci: 0, side: 'p', lane: 0, idx: 0 }, false);
+  const drew = g.p.hand.length;                                           // refilled to 5, then 2 more for the 26
+  E.applyMove(g, 'p', { t: 'face', ci: 0, side: 'p', lane: 0, idx: 1 }, false);   // a Queen: lane stays at 26, so no second trigger
+  ok('Bloodhound: reaching exactly 26 draws 2 cards, once', E.cvValue(g.p.cv[0]) === 26 && drew === 7 && g.p.hand.length === 6 && g.p.h26[0] === true, `hand ${drew} then ${g.p.hand.length}`);
+}
+{
+  const R = E.baseRules(); R.steelPlus.p = 2; R.edPlus.p = 1;
+  const g = board([[], [], []], [], R); g.turn = 'p';
+  const steel = E.mk('5', 'S'); steel.mod = 'steel'; const holo = E.mk('4', 'H'); holo.ed = 'holo';
+  g.p.hand = [steel, holo];
+  E.applyMove(g, 'p', { t: 'num', ci: 0, lane: 0 }, false); E.applyMove(g, 'p', { t: 'num', ci: 0, lane: 1 }, false);
+  ok('Ironclad and Showcase: Steel is worth 2 more, finished cards 1 more', E.cvValue(g.p.cv[0]) === 7 && E.cvValue(g.p.cv[1]) === 5);
+}
+
+{
+  const R = E.baseRules(); R.freeRank.p.push('J');
+  const g = board([[], [], []], [], R);
+  ok('free plays: only the listed ranks skip the turn, and only for that side', E.freeFace(g, 'p', E.mk('J', 'S')) && !E.freeFace(g, 'p', E.mk('K', 'S')) && !E.freeFace(g, 'a', E.mk('J', 'S')));
+}
+
 // ---- who wins a lane ----
 const R0 = E.baseRules();
 ok('21-26 beats a lower caravan', E.laneWinner(23, 18, R0) === 'p' && E.laneWinner(18, 23, R0) === 'a');
