@@ -880,3 +880,18 @@ ul.resl{text-align:left;display:inline-block;margin:0 auto 6px}
 .shelf::after{content:"";position:absolute;left:6%;right:6%;bottom:2px;height:9px;border-radius:3px;background:linear-gradient(#6b4a2a,#3a2514);box-shadow:0 5px 10px #000a,inset 0 1px 0 #ffffff22}
 .shelf img{height:clamp(46px,13vw,62px);width:auto;max-width:30%;object-fit:contain;position:relative;z-index:1;filter:saturate(.92) contrast(1.04) drop-shadow(0 3px 2px #000c)}
 .shelf img.sp-lantern,.shelf img.sp-cocktail{height:clamp(56px,16vw,74px)}
+
+/* cap flip */
+.capflip{position:fixed;inset:0;z-index:20;display:grid;place-content:center;justify-items:center;gap:10px;background:#000a;backdrop-filter:blur(2px);cursor:pointer;animation:cfIn .2s}
+.capflip .cf-msg{font-family:var(--display,inherit);font-size:24px;color:var(--bone,#f3e5c2);text-shadow:0 2px 8px #000;opacity:0;animation:cfMsg .4s 1.35s forwards}
+.capflip small{color:var(--muted,#b8a78a);font-size:12px}
+.cf-coin{width:96px;height:96px;position:relative;transform-style:preserve-3d;perspective:600px}
+.cf-coin span{position:absolute;inset:0;display:grid;place-items:center;border-radius:50%;font-size:44px;color:#5a3b12;backface-visibility:hidden;
+  background:radial-gradient(circle at 35% 30%,#ffe8a3,#e0a93c 55%,#a86f1a);box-shadow:inset 0 0 0 5px #c8892a,inset 0 0 0 8px #f5cf72,0 8px 18px #000c}
+.cf-coin .cf-b{transform:rotateY(180deg)}
+.cf-coin.heads{transform:rotateY(0)}.cf-coin.tails{transform:rotateY(180deg)}
+.cf-coin.spin{animation:cfHeads 1.4s cubic-bezier(.2,.7,.3,1) both}
+.cf-coin.spin.tails{animation-name:cfTails}
+@keyframes cfHeads{0%{transform:translateY(40px) rotateY(0) scale(.8)}45%{transform:translateY(-90px) rotateY(900deg) scale(1.15)}100%{transform:translateY(0) rotateY(1800deg) scale(1)}}
+@keyframes cfTails{0%{transform:translateY(40px) rotateY(0) scale(.8)}45%{transform:translateY(-90px) rotateY(900deg) scale(1.15)}100%{transform:translateY(0) rotateY(1980deg) scale(1)}}
+@keyframes cfIn{from{opacity:0}to{opacity:1}}@keyframes cfMsg{to{opacity:1}}

@@ -18,6 +18,7 @@ const ok = (name, cond, extra) => { cond ? pass++ : fail++; console.log(`${cond 
   page.on('console', (m) => { if (m.type() === 'error' && !noise.test(m.text())) errors.push('CONSOLE ' + m.text()); });
   page.on('requestfailed', (r) => { const u = r.url(); if (u.startsWith('file:') && /\.(js|css)$/.test(u)) missing.push(u); });
   await page.goto('file://' + path.resolve(__dirname, '..', 'index.html'));
+  await page.evaluate(() => { window.__noFlip = true; }); // most checks want to open the hand themselves; the cap flip has its own check below
   await page.waitForTimeout(1500);
 
   const boot = await page.evaluate(() => ({ scripts: document.querySelectorAll('script[src]').length, home: document.body.innerHTML.includes('CAR'), css: [...document.styleSheets].some((s) => /style\.css/.test(s.href || '')) }));
@@ -197,9 +198,14 @@ const ok = (name, cond, extra) => { cond ? pass++ : fail++; console.log(`${cond 
   ok('SPECIAL shows on the setup screen, bio cards, the Mojave Express and the in-run kit', SP.setupPanel && SP.bio && SP.office && SP.kit);
 
   // A real click-through: story card, Deal in, wager button, confirm, play the opening with real clicks.
-  await page.evaluate(() => { meta.opt.confirm = false; meta.char = 'chevy'; meta.run = null; meta.decksUnlocked = 8; meta.newRun = { deck: 'plain', tier: 'copper', token: null, seed: 'clicks' }; startRun(); meta.caps = 40; screen = 'road'; render(); });
+  await page.evaluate(() => { window.__noFlip = false; meta.opt.confirm = false; meta.char = 'chevy'; meta.run = null; meta.decksUnlocked = 8; meta.newRun = { deck: 'plain', tier: 'copper', token: null, seed: 'clicks' }; startRun(); meta.caps = 40; screen = 'road'; render(); });
   await page.click('[data-runstoryok]'); await page.click('[data-runplay]'); await page.waitForSelector('[data-wager="5"]'); await page.click('[data-wager="5"]'); await page.click('[data-runconfirm]'); await page.waitForSelector('.hand');
   ok('clicking through to a match takes the wager', await page.evaluate(() => screen === 'match' && meta.caps === 35 && document.body.innerHTML.includes('wager 5')));
+  const flip = await page.evaluate(() => ({ shown: !!document.getElementById('capflip'), first: G.first, turn: G.turn, flipped: G.flipped }));
+  ok('a cap flip decides who opens each hand (and the dealer plays first on tails)', flip.shown && flip.flipped && ['p', 'a'].includes(flip.first) && flip.turn === flip.first, JSON.stringify(flip));
+  await page.click('#capflip'); await page.waitForFunction(() => !document.getElementById('capflip'));
+  const tut = await page.evaluate(() => { const g = newTutorial('road'); return g.turn === 'p' && !g.flipped; });
+  ok('tutorials never flip: you always go first', tut);
   for (let i = 0; i < 3; i++) {
     await page.waitForFunction(() => G && G.turn === 'p' && !busy);
     await page.click('.hand .card-btn:has(.card:not(.face):not(.joker):not(.legend))');
