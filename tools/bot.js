@@ -1,3 +1,4 @@
+window.__noFlip = true; // the bot always opens, so balance numbers stay comparable (the real game flips a cap)
 // A bot that plays whole Road runs using the real game code. simulate-runs.js injects this into the page.
 //
 // Three skill levels, so balance can be judged for different players:

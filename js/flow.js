@@ -1,5 +1,5 @@
 // ---------- flow ----------
-function enterMatch(){rulesOpen=false;G.intro=true;undoStack=[];turretMode=false;legendTarget=null;booneMode=false;batMode=false;G.stats=Object.assign({faces:0,jokers:0,kings:0,discards:0,disbands:0,turns:0},G.stats||{});sel=null;disbandMode=false;busy=false;armedFold=false;screen='match';save();render();window.scrollTo(0,0);}
+function enterMatch(){rulesOpen=false;G.intro=true;undoStack=[];turretMode=false;legendTarget=null;booneMode=false;batMode=false;G.stats=Object.assign({faces:0,jokers:0,kings:0,discards:0,disbands:0,turns:0},G.stats||{});sel=null;disbandMode=false;busy=false;armedFold=false;screen='match';if(!G.tut&&!G.flipped&&!window.__noFlip){G.flipped=true;G.first=Math.random()<.5?'p':'a';G.turn=G.first;}save();render();window.scrollTo(0,0);if(G.first&&!G.flipShown&&!G.tut)capFlip();}
 function startMatch(i,skipRundown){
   if(i===-1&&!skipRundown){openRundown('road');return;}
   if(i===-2)G=newRoadTutorial();
@@ -290,3 +290,17 @@ app.addEventListener('keydown',e=>{
 
 app.addEventListener('input',e=>{if(e.target.id==='seed-input'&&meta&&meta.newRun)meta.newRun.seed=e.target.value;if(e.target.id==='auth-email')authForm.email=e.target.value;if(e.target.id==='auth-pass')authForm.pass=e.target.value;});
 app.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.target.id==='auth-pass'||e.target.id==='auth-email')){e.preventDefault();doAuth('login');}});
+
+// Cap flip: heads and you open, tails and the dealer does. Tutorials always let you go first.
+function capFlip(){
+  G.flipShown=true;
+  const mine=G.first==='p',gm=G;
+  const finish=()=>{const el=document.getElementById('capflip');if(el)el.remove();busy=false;if(G===gm&&screen==='match'&&!G.over){render();if(G.turn==='a'){busy=true;render();setTimeout(aiTurn,500);}}};
+  busy=true;render();
+  const el=document.createElement('div');el.id='capflip';el.className='capflip';el.setAttribute('role','status');
+  el.innerHTML=`<div class="cf-coin${mine?' heads':' tails'}${motionOn()?' spin':''}"><span class="cf-f">★</span><span class="cf-b">☠</span></div><b class="cf-msg">${mine?'Heads. You open.':'Tails. '+esc(OPP().name.split(' ')[0])+' opens.'}</b><small>Tap to skip</small>`;
+  document.body.appendChild(el);
+  let done=false;const end=()=>{if(done)return;done=true;finish();};
+  el.onclick=end;setTimeout(end,motionOn()?2100:1300);
+  try{sfx('clink');}catch(e){}
+}
