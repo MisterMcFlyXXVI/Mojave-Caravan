@@ -12,6 +12,7 @@ function start(data){
   try{propsRetro();}catch(e){}
   if(meta.convertNote!=null){const n=meta.convertNote;delete meta.convertNote;save();setTimeout(()=>toast({label:'Update',name:'The Road is now a roguelite',desc:n?`Your old progress became ${n} starting token${n>1?'s':''}. Pick one when you start a run.`:'Every run starts fresh with the Plain deck.'}),1200);}drawSky();render();
   if(screen==='match'&&G&&!G.over&&G.turn==='a'){busy=true;render();setTimeout(aiTurn,600);}
+  try{setTimeout(showWhatsNew,700);}catch(e){}
 }
 window.claude?.hot?.snapshot?.(()=>({meta,G,screen}));
 window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});

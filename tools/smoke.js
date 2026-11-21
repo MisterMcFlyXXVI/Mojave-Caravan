@@ -252,6 +252,21 @@ const ok = (name, cond, extra) => { cond ? pass++ : fail++; console.log(`${cond 
   });
   ok('all twelve table props load from props/<id>.webp and three sit on the table', PR.on && PR.files === PR.total && PR.html === 3, `${PR.files}/${PR.total}, ${PR.html} on table`);
 
+  // ---- what's new ----
+  const WN = await page.evaluate(() => {
+    const o = {}, keep = { s: meta.seenNews, st: meta.st.hands, scr: screen };
+    const grab = () => !!document.getElementById('whatsnew');
+    screen = 'home'; meta.st.hands = 0; meta.runsWon = 0; meta.bestStop = 0; meta.classic.wins = 0; meta.seenNews = undefined;
+    showWhatsNew(); o.newbie = !grab() && meta.seenNews === WHATS_NEW[0].id;           // a brand-new player sees nothing
+    meta.st.hands = 12; meta.seenNews = 'older-release'; showWhatsNew(); o.shown = grab() && /What’s new/.test(document.body.innerHTML);
+    document.querySelector('[data-whatsnew-ok]').click(); o.closed = !grab() && meta.seenNews === WHATS_NEW[0].id;
+    showWhatsNew(); o.once = !grab();                                                   // and only once
+    meta.seenNews = undefined; screen = 'match'; showWhatsNew(); o.notInMatch = !grab(); // never over a hand
+    meta.seenNews = keep.s; meta.st.hands = keep.st; screen = keep.scr;
+    return o;
+  });
+  ok('the what’s-new card shows once to returning players, never to new ones or mid-hand', WN.newbie && WN.shown && WN.closed && WN.once && WN.notInMatch, JSON.stringify(WN));
+
   // ---- the simulation bot ----
   const botPage = await browser.newPage();
   await botPage.goto('file://' + path.resolve(__dirname, '..', 'index.html')); await botPage.waitForTimeout(1200);
