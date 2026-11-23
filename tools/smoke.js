@@ -13,7 +13,7 @@ const ok = (name, cond, extra) => { cond ? pass++ : fail++; console.log(`${cond 
   const page = await browser.newPage({ viewport: { width: 430, height: 900 } });
   const errors = [], missing = [];
   // The sandbox/CI may block fonts and the Firebase script; those aren't game errors.
-  const noise = /ERR_FILE_NOT_FOUND|ERR_TUNNEL|ERR_NAME|ERR_INTERNET|ERR_CONNECTION|ERR_FAILED/;
+  const noise = /ERR_FILE_NOT_FOUND|ERR_TUNNEL|ERR_NAME|ERR_INTERNET|ERR_CONNECTION|ERR_FAILED|Cross origin requests are only supported/; // the last one: custom suit stencils are masks, which browsers refuse to load from file:// (they work on a web server)
   page.on('pageerror', (e) => errors.push('PAGEERR ' + e.message));
   page.on('console', (m) => { if (m.type() === 'error' && !noise.test(m.text())) errors.push('CONSOLE ' + m.text()); });
   page.on('requestfailed', (r) => { const u = r.url(); if (u.startsWith('file:') && /\.(js|css)$/.test(u)) missing.push(u); });
