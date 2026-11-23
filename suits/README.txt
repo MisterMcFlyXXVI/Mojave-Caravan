@@ -6,3 +6,6 @@ Put your own suit symbols here and the game uses them instead of the built-in on
 with the shape filling most of the image. The game uses it as a stencil, so it takes the card's ink colour
 (black, red, four-colour blue/green, Currency green...). Colours inside your image are ignored.
 If a file is missing, that suit keeps the built-in symbol. Delete this note whenever you like.
+
+Full-colour art: spade-art.png, heart-art.png, diamond-art.png and club-art.png (transparent PNG) are shown, in colour, as the BIG
+symbol in the middle of number cards. The small corner symbols stay simple so they stay readable.

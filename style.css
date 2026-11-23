@@ -906,3 +906,4 @@ ul.resl{text-align:left;display:inline-block;margin:0 auto 6px}
 .card .court.img{left:9%;right:9%;top:9%;bottom:9%;background:none}
 .card .court.img::before,.card .court.img::after{content:"";position:absolute;left:0;right:0;height:50%;background:var(--cf) center bottom/contain no-repeat}
 .card .court.img::before{top:0}.card .court.img::after{bottom:0;transform:rotate(180deg)}
+.card .pip .pipart{display:block;width:calc(var(--cw)*.88);height:calc(var(--cw)*.88);object-fit:contain;filter:drop-shadow(0 1px 1px #0003)}
