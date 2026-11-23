@@ -902,3 +902,4 @@ ul.resl{text-align:left;display:inline-block;margin:0 auto 6px}
 .wnlist{text-align:left;margin:4px 0 10px;padding-left:20px;display:grid;gap:6px;font-size:14px;line-height:1.4}.whatsnew .panel{max-height:82vh;overflow:auto;max-width:440px}
 .sx{width:1em;height:1em;display:inline-block;fill:currentColor;vertical-align:-.12em;filter:url(#worn);overflow:visible}
 .card .pip .sx{width:1em;height:1em}
+.sx.img{background:currentColor;-webkit-mask:var(--m) center/contain no-repeat;mask:var(--m) center/contain no-repeat;fill:none;filter:none}

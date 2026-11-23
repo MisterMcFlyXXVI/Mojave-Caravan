@@ -77,7 +77,14 @@ function cardHTML(c){
   return `<div class="card s-${c.suit}${red?' red':''}${num?'':' face'}${md?' m-'+md:''}${edCls(c)}"><span class="r">${c.rank}<i>${suitIcon(c.suit)}</i></span>${num?`<span class="pip">${suitIcon(c.suit)}</span>`:`<span class="court" style="background-image:var(--court-${c.rank}-${red?'r':'b'})"></span>`}<span class="r2">${c.rank}<i>${suitIcon(c.suit)}</i></span>${md?`<span class="mod ${md}">${MODS[md].tag}</span>`:''}${edFx(c)}</div>`;
 }
 // Suit symbols are drawn as worn, hand-inked shapes (see the sprite at the top of index.html), not text glyphs, so they look the same on every phone.
-const suitIcon=s=>`<svg class="sx" viewBox="0 0 24 24" aria-hidden="true"><use href="#sx-${s}"/></svg>`;
+// Your own symbols: drop spade, heart, diamond and club (.svg, .png or .webp, any shape on a transparent background) into suits/.
+// They are used as a stencil, so they take the card's ink colour (red, black, four-color, Currency green...).
+const SUIT_FILE={},SUIT_NAME={S:'spade',H:'heart',D:'diamond',C:'club'};
+function loadSuitFiles(){
+  for(const s of SUITS){const exts=['svg','png','webp'],name=SUIT_NAME[s];const tryExt=n=>{if(n>=exts.length)return;const im=new Image();
+    im.onload=()=>{SUIT_FILE[s]=im.src;if(typeof meta!=='undefined'&&meta&&typeof render==='function')render();};im.onerror=()=>tryExt(n+1);im.src=`suits/${name}.${exts[n]}`;};tryExt(0);}
+}
+const suitIcon=s=>SUIT_FILE[s]?`<span class="sx img" aria-hidden="true" style="--m:url(${SUIT_FILE[s]})"></span>`:`<svg class="sx" viewBox="0 0 24 24" aria-hidden="true"><use href="#sx-${s}"/></svg>`;
 const capsHTML=n=>`<span class="pill num" data-capsval="${n}"><span class="cap"></span> <span class="cn">${n}</span> caps</span>`;
 const capN=n=>`<span class="cap"></span> ${n}`;
 
