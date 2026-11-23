@@ -91,7 +91,7 @@ const suitPip=s=>SUIT_ART[s]?`<img class="pipart" src="${SUIT_ART[s]}" alt="">`:
 const FACE_FILE={};
 function loadFaceFiles(){
   const ids=['JK'];for(const r of ['J','Q','K'])for(const s of SUITS)ids.push(r+s);
-  for(const id of ids){const exts=['png','webp'];const tryExt=n=>{if(n>=exts.length)return;const im=new Image();
+  for(const id of ids){const exts=['webp','png'];const tryExt=n=>{if(n>=exts.length)return;const im=new Image();
     im.onload=()=>{FACE_FILE[id]=im.src;if(typeof meta!=='undefined'&&meta&&typeof render==='function')render();};im.onerror=()=>tryExt(n+1);im.src=`faces/${id}.${exts[n]}`;};tryExt(0);}
 }
 const suitIcon=s=>SUIT_FILE[s]?`<span class="sx img" aria-hidden="true" style="--m:url(${SUIT_FILE[s]})"></span>`:`<svg class="sx" viewBox="0 0 24 24" aria-hidden="true"><use href="#sx-${s}"/></svg>`;
