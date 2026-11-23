@@ -8,4 +8,5 @@ with the shape filling most of the image. The game uses it as a stencil, so it t
 If a file is missing, that suit keeps the built-in symbol. Delete this note whenever you like.
 
 Full-colour art: spade-art.png, heart-art.png, diamond-art.png and club-art.png (transparent PNG) are shown, in colour, as the BIG
-symbol in the middle of number cards. The small corner symbols stay simple so they stay readable.
+symbol in the middle of number cards. spade.png, heart.png, diamond.png and club.png are the same shapes as one-colour stencils for the
+small corner symbols and caravan chips (they take the card's ink colour).
