@@ -1,6 +1,9 @@
 // "What's new": shown once on the first open after an update. To announce a release, add an entry at the TOP of
 // WHATS_NEW with a new id and a few short lines. Players who haven't seen that id get the card; brand-new players don't.
 const WHATS_NEW=[
+  {id:'2026-11-c',title:'Currency cards',lines:[
+    'The <b>Gilded</b> upgrade is now <b>Currency</b>, printed on green NCR banknote paper. It pays <b>1 NCR dollar</b> (once per table) when it’s in a caravan that sells, instead of caps, so it no longer duplicates Golden cards.',
+  ]},
   {id:'2026-11-b',title:'Heads or tails',lines:[
     'A <b>cap flip</b> now decides who opens each hand. Tutorials still let you go first.',
   ]},

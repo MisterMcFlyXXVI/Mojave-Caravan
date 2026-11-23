@@ -87,7 +87,7 @@ const numCount=m=>Object.entries(m).filter(([k])=>isNum(fromKeyC(k))).reduce((a,
 // Cosmetics. Every item has an id; add unlock:{...} to an item later to gate it.
 const LOOKS={
   font:[{id:'deco',name:'Deco'},{id:'pixel',name:'Pixel',unlock:'tut_road'},{id:'western',name:'Western',unlock:'champ1'},{id:'typewriter',name:'Typewriter',unlock:'chal10'},{id:'stencil',name:'Stencil',unlock:'gear1'},{id:'classic',name:'Classic',unlock:'hands100'},{id:'marker',name:'Marker',unlock:'bounty1'},{id:'atomic',name:'Atomic',unlock:'run1'}],
-  face:[{id:'bone',name:'Bone'},{id:'sand',name:'Sun-bleached',unlock:'road_first'},{id:'night',name:'Midnight',unlock:'silver_road'},{id:'contrast',name:'High contrast'},{id:'gilt',name:'Gilded',unlock:'strip_all'}],
+  face:[{id:'bone',name:'Bone'},{id:'sand',name:'Sun-bleached',unlock:'road_first'},{id:'night',name:'Midnight',unlock:'silver_road'},{id:'contrast',name:'High contrast'},{id:'gilt',name:'Gold leaf',unlock:'strip_all'}],
   // The first 11 are free designs for your starter deck. The art backs below are extra packs, earned through achievements.
   back:[{id:'sunburst',name:'Sunburst'},{id:'cap',name:'Bottle cap'},{id:'stripe',name:'Barber pole'},{id:'dusk',name:'Mojave dusk'},{id:'star',name:'Lone star'},
     {id:'blood',name:'Blood-spattered'},{id:'uranium',name:'Uranium glow'},{id:'cowhide',name:'Cowhide'},{id:'rust',name:'Rusted steel'},{id:'shot',name:'Shot up'},{id:'map',name:'Old trail map'},
