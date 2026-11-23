@@ -908,6 +908,3 @@ ul.resl{text-align:left;display:inline-block;margin:0 auto 6px}
 .card .court.img::before,.card .court.img::after{content:"";position:absolute;left:0;right:0;height:50%;background:var(--cf) center bottom/contain no-repeat}
 .card .court.img::before{top:0}.card .court.img::after{bottom:0;transform:rotate(180deg)}
 .card .pip .pipart{display:block;width:calc(var(--cw)*.88);height:calc(var(--cw)*.88);object-fit:contain;filter:drop-shadow(0 1px 1px #0003)}
-/* the corner index gets a narrow cut-out border in the card's own paper colour, so it reads as set into the portrait on purpose */
-.card.face:has(.court.img) .r,.card.face:has(.court.img) .r2{--hl:calc(var(--cw)*.028 + .4px);
-  filter:drop-shadow(var(--hl) 0 0 var(--chip-bg)) drop-shadow(calc(var(--hl)*-1) 0 0 var(--chip-bg)) drop-shadow(0 var(--hl) 0 var(--chip-bg)) drop-shadow(0 calc(var(--hl)*-1) 0 var(--chip-bg)) drop-shadow(0 0 1px #0004)}
