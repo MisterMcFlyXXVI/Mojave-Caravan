@@ -257,7 +257,7 @@ const TAGS={
 };
 const MODS={
   steel:{name:'Steel',desc:'Can’t be removed by Jacks.',tag:'STL'},
-  gilded:{name:'Gilded',desc:'+3 caps when it’s in one of your caravans that sells.',tag:'GLD'},
+  gilded:{name:'Gilded',desc:'Pays 1 NCR dollar when it’s in one of your caravans that sells (once per table).',tag:'GLD'},
   lucky:{name:'Lucky',desc:'Draw an extra card when you play it.',tag:'LCK'},
   glass:{name:'Glass',desc:'Worth double, but breaks after the hand it’s played in.',tag:'GLS'},
   wild:{name:'Wild',desc:'Counts as any suit for the suit rule.',tag:'WLD'},
@@ -767,8 +767,7 @@ function runFinish(winner,ov){
     if(lanes.every(x=>x==='p')){const sw=sweepBonus(s,t)*(gear('chaps')?2:1);meta.caps+=sw;extras.push(`Triple sale: all three caravans sold, +${sw}`);}
     {const sc=[1,2,3][t]+tierIdx(r.tier);r.scrip=(r.scrip||0)+sc;meta.scrip=(meta.scrip||0)+sc;ov.scrip=sc;}
     if(G.bounty&&bountyMet(G.bounty,lanes)){ov.bountyWon=G.bountyPay;meta.caps+=G.bountyPay;if(has('hunter')&&!r.hunterUsed&&(r.grit||0)<2){r.hunterUsed=true;r.grit=(r.grit||0)+1;extras.push('Bounty Hunter: +1 Grit');}}
-    let gild=0;[0,1,2].forEach(l=>{if(lanes[l]==='p')for(const e of G.p.cv[l])if(e.card.mod==='gilded')gild+=3;});
-    if(gild){meta.caps+=gild;extras.push(`${gild} from Gilded cards`);}
+    if([0,1,2].some(l=>lanes[l]==='p'&&G.p.cv[l].some(e=>e.card.mod==='gilded'))){r.scrip=(r.scrip||0)+1;meta.scrip=(meta.scrip||0)+1;ov.scrip=(ov.scrip||0)+1;extras.push('1 NCR dollar from a Gilded card');}
     if(G.char==='ronald'){meta.caps+=3;extras.push('3 from Bootlegger');}
     const intr=Math.min(interestCap(),Math.floor(before/5));if(intr>0){meta.caps+=intr;extras.push(`${intr} interest`);}
     if(G.char==='nuke'&&chemTotal()<chemMax()){const id=pick(Object.keys(CHEMS));meta.chems[id]=(meta.chems[id]||0)+1;ov.brewed=id;}
