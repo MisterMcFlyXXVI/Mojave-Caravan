@@ -257,7 +257,7 @@ const TAGS={
 };
 const MODS={
   steel:{name:'Steel',desc:'Can’t be removed by Jacks.',tag:'STL'},
-  gilded:{name:'Gilded',desc:'Pays 1 NCR dollar when it’s in one of your caravans that sells (once per table).',tag:'GLD'},
+  gilded:{name:'Currency',desc:'Printed on NCR currency paper: pays 1 NCR dollar when it’s in one of your caravans that sells (once per table).',tag:'NCR'},
   lucky:{name:'Lucky',desc:'Draw an extra card when you play it.',tag:'LCK'},
   glass:{name:'Glass',desc:'Worth double, but breaks after the hand it’s played in.',tag:'GLS'},
   wild:{name:'Wild',desc:'Counts as any suit for the suit rule.',tag:'WLD'},
