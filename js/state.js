@@ -74,8 +74,10 @@ function cardHTML(c){
   if(c.rank==='JK')return `<div class="card joker${edCls(c)}"><span class="court jk"></span><span class="jkc t">JOKER</span><span class="jkc b">JOKER</span>${edFx(c)}</div>`;
   const red=isRed(c.suit), s=SUIT_CH[c.suit], num=isNum(c);
   const md=c.mod&&typeof MODS!=='undefined'&&MODS[c.mod]?c.mod:null;
-  return `<div class="card s-${c.suit}${red?' red':''}${num?'':' face'}${md?' m-'+md:''}${edCls(c)}"><span class="r">${c.rank}<i>${s}</i></span>${num?`<span class="pip">${s}</span>`:`<span class="court" style="background-image:var(--court-${c.rank}-${red?'r':'b'})"></span>`}<span class="r2">${c.rank}<i>${s}</i></span>${md?`<span class="mod ${md}">${MODS[md].tag}</span>`:''}${edFx(c)}</div>`;
+  return `<div class="card s-${c.suit}${red?' red':''}${num?'':' face'}${md?' m-'+md:''}${edCls(c)}"><span class="r">${c.rank}<i>${suitIcon(c.suit)}</i></span>${num?`<span class="pip">${suitIcon(c.suit)}</span>`:`<span class="court" style="background-image:var(--court-${c.rank}-${red?'r':'b'})"></span>`}<span class="r2">${c.rank}<i>${suitIcon(c.suit)}</i></span>${md?`<span class="mod ${md}">${MODS[md].tag}</span>`:''}${edFx(c)}</div>`;
 }
+// Suit symbols are drawn as worn, hand-inked shapes (see the sprite at the top of index.html), not text glyphs, so they look the same on every phone.
+const suitIcon=s=>`<svg class="sx" viewBox="0 0 24 24" aria-hidden="true"><use href="#sx-${s}"/></svg>`;
 const capsHTML=n=>`<span class="pill num" data-capsval="${n}"><span class="cap"></span> <span class="cn">${n}</span> caps</span>`;
 const capN=n=>`<span class="cap"></span> ${n}`;
 

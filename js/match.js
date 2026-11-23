@@ -23,7 +23,7 @@ function laneHTML(side,l,lanes,selMoves,proj){
     const ce=selMoves.some(m=>m.t==='face'&&m.side===side&&m.lane===l&&m.idx===i)||(turretMode&&side==='a'&&i===cv.length-1);
     const ek=`E${side}${l}${i}`, anim=fx?(fx.kind==='num'&&i===cv.length-1&&!motionOn()?' land-'+fx.by:(fx.kind==='face'&&fx.rank!=='J'&&i===fx.idx?' pop'+(fx.rank==='K'&&motionOn()?' kingflash':''):'')):'';
     return `<div class="entry${ce?' can':''}${anim}" data-side="${side}" data-lane="${l}" data-idx="${i}" data-cid="${e.card.id}" data-zone="cv" style="top:calc(var(--off) * ${i});--tilt:${tiltOf(e.card.id)}">${cardHTML(e.card)}${
-      e.faces.map((f,k)=>`<span class="chip${f.rank==='JK'?' jk':' s-'+f.suit}" style="left:calc(var(--cw) + 2px + ${(k%3)*17}px);top:${2+Math.floor(k/3)*21}px">${f.rank==='JK'?'★':f.rank+SUIT_CH[f.suit]}</span>`).join('')}${proj[ek]!=null?`<span class="ebadge ${pcls(proj[ek])}">=${proj[ek]}</span>`:''}</div>`;
+      e.faces.map((f,k)=>`<span class="chip${f.rank==='JK'?' jk':' s-'+f.suit}" style="left:calc(var(--cw) + 2px + ${(k%3)*17}px);top:${2+Math.floor(k/3)*21}px">${f.rank==='JK'?'★':f.rank+suitIcon(f.suit)}</span>`).join('')}${proj[ek]!=null?`<span class="ebadge ${pcls(proj[ek])}">=${proj[ek]}</span>`:''}</div>`;
   }).join('');
   const h=Math.max(0,cv.length-1);
   const isBust=!hide&&v>r[1];
