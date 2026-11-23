@@ -153,7 +153,7 @@ html[data-pip="1"] body::after{content:"";position:fixed;inset:0;pointer-events:
 [data-four="1"] .card.s-C,[data-four="1"] .chip.s-C{color:var(--card-green)}
 .card .r,.card .r2{position:absolute;font-family:var(--card-font);font-size:calc(var(--cw)*0.27*var(--card-fs));line-height:1;display:flex;flex-direction:column;align-items:center}
 .card .r{top:3px;left:4px;flex-direction:row;gap:1px;align-items:baseline}
-.card .r2{bottom:3px;right:4px;transform:rotate(180deg)}
+.card .r2{bottom:3px;right:4px;flex-direction:row;gap:1px;align-items:baseline;transform:rotate(180deg)}
 .card .r i,.card .r2 i{font-style:normal;font-size:.8em}
 .card .pip{position:absolute;inset:0;display:grid;place-items:center;font-size:calc(var(--cw)*0.5);font-family:var(--card-font)}
 .card.face{background:var(--face-bg)}
