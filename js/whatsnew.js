@@ -1,6 +1,9 @@
 // "What's new": shown once on the first open after an update. To announce a release, add an entry at the TOP of
 // WHATS_NEW with a new id and a few short lines. Players who haven't seen that id get the card; brand-new players don't.
 const WHATS_NEW=[
+  {id:'2026-11-e',title:'Lucky Revolver',lines:[
+    'The <b>Lucky Revolver</b> now adds an extra card on top of a high Luck (3 with Luck 9+), instead of doing the same thing Luck 9 already does.',
+  ]},
   {id:'2026-11-d',title:'A New Vegas deck',lines:[
     'Every face card has its own New Vegas character now: Mr. House, Jane and Yes Man in Spades, Caesar, Lanius and Vulpes in Clubs, Doc Mitchell, Cass and Boone in Hearts, and the King, Sunny Smiles and Victor in Diamonds. Benny is the Joker.',
     'New hand-inked atomic suit symbols on every card.',

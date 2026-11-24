@@ -145,7 +145,7 @@ const GEAR={
   combat:{slot:'shoes',name:'Combat Boots',price:45,sp:{E:1,S:1},desc:'Boss tables have one fewer boss rule.'},
   varmint:{slot:'gun',name:'Varmint Rifle',price:20,sp:{P:1},desc:'Pest control: the dealer can’t play Jokers at all.'},
   sawedoff:{slot:'gun',name:'Sawed-Off Shotgun',price:35,sp:{S:2,P:-1},desc:'Playing a Jack doesn’t use your turn.'},
-  revolver:{slot:'gun',name:'Lucky Revolver',price:50,sp:{L:2},desc:'Lucky cards draw 2 cards instead of 1.'},
+  revolver:{slot:'gun',name:'Lucky Revolver',price:50,sp:{L:2},desc:'Lucky cards draw 1 more extra card. Stacks with Luck 9+, for 3.'},
   knife:{slot:'melee',name:'Combat Knife',price:15,sp:{A:1},desc:'Two random number cards start the run Steel.'},
   machete:{slot:'melee',name:'Machete',price:30,sp:{S:1},desc:'Cuts the deadwood: up to 4 Aces and 2s are cut from your starting deck.'},
   bat:{slot:'melee',name:'Louisville Slugger',price:40,sp:{S:2},desc:'Once per hand, knock the top card off one of your own caravans. Doesn’t use your turn.'},
@@ -258,7 +258,7 @@ const TAGS={
 const MODS={
   steel:{name:'Steel',desc:'Can’t be removed by Jacks.',tag:'STL'},
   gilded:{name:'Currency',desc:'Printed on NCR currency paper: pays 1 NCR dollar when it’s in one of your caravans that sells (once per table).',tag:'NCR'},
-  lucky:{name:'Lucky',desc:'Draw an extra card when you play it.',tag:'LCK'},
+  lucky:{name:'Lucky',desc:'Draw 1 extra card when you play it (Luck 9+: 2).',tag:'LCK'},
   glass:{name:'Glass',desc:'Worth double, but breaks after the hand it’s played in.',tag:'GLS'},
   wild:{name:'Wild',desc:'Counts as any suit for the suit rule.',tag:'WLD'},
 };
@@ -459,7 +459,7 @@ function runRules(s,t){
   if(gear('fawkes'))R.kingproof.p=true;
   if(gear('armor'))R.queenproof.p=true;
   if(gear('varmint'))R.noJoker.a=true;
-  R.luckyDraw.p=Math.max(SPX.luckyDraw(sp('L')),gear('revolver')?2:1);
+  R.luckyDraw.p=SPX.luckyDraw(sp('L'))+(gear('revolver')?1:0);  // the Revolver adds to Luck's bonus instead of duplicating it
   if(gear('dynamite'))R.bigJoker.p=true;
   if(isChar('snipsnip'))R.spareParts.p=true;
   if(isChar('benny')){R.tieWin.p=true;R.hand.a+=1;}   // Double-Crosser: nobody trusts him, so every dealer holds an extra card
