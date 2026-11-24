@@ -910,3 +910,5 @@ ul.resl{text-align:left;display:inline-block;margin:0 auto 6px}
 .card .pip .pipart{display:block;width:calc(var(--cw)*.88);height:calc(var(--cw)*.88);object-fit:contain;filter:drop-shadow(0 1px 1px #0003)}
 /* face cards stack the rank over the suit, like a printed court card: a narrow column that keeps clear of the portrait */
 .card.face .r,.card.face .r2{flex-direction:column;gap:0;align-items:center;line-height:.95}
+.card .court.img.wide{left:21%;right:21%}  /* wide art (the Securitrons): narrower, so the corner index stays clear */
+.card.joker .court.jk.jkart{left:14%;right:14%;top:8%;bottom:8%;background-size:contain;background-position:center}  /* custom Joker art sits between the two JOKER labels */
