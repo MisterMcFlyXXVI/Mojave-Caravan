@@ -257,7 +257,7 @@ const TAGS={
 };
 const MODS={
   steel:{name:'Steel',desc:'Can’t be removed by Jacks.',tag:'STL'},
-  gilded:{name:'Currency',desc:'Printed on NCR currency paper: pays 1 NCR dollar when it’s in one of your caravans that sells (once per table).',tag:'NCR'},
+  gilded:{name:'Currency',desc:'Printed on NCR currency paper: pays 1 NCR dollar when it’s in one of your caravans that sells (once per stop).',tag:'NCR'},
   lucky:{name:'Lucky',desc:'Draw 1 extra card when you play it (Luck 9+: 2).',tag:'LCK'},
   glass:{name:'Glass',desc:'Worth double, but breaks after the hand it’s played in.',tag:'GLS'},
   wild:{name:'Wild',desc:'Counts as any suit for the suit rule.',tag:'WLD'},
@@ -765,9 +765,9 @@ function runFinish(winner,ov){
     if(t===2&&gear('hat')&&!r.hatUsed&&(r.grit||0)<2){r.hatUsed=true;r.grit=(r.grit||0)+1;extras.push('Desperado Hat: +1 Grit');}
     if(t===2&&isChar('threedog')){r.scrip=(r.scrip||0)+2;meta.scrip=(meta.scrip||0)+2;extras.push('2 NCR dollars for fighting the good fight');}
     if(lanes.every(x=>x==='p')){const sw=sweepBonus(s,t)*(gear('chaps')?2:1);meta.caps+=sw;extras.push(`Triple sale: all three caravans sold, +${sw}`);}
-    {const sc=[1,2,3][t]+tierIdx(r.tier);r.scrip=(r.scrip||0)+sc;meta.scrip=(meta.scrip||0)+sc;ov.scrip=sc;}
+    {const sc=[0,1,2][t]+tierIdx(r.tier);if(sc){r.scrip=(r.scrip||0)+sc;meta.scrip=(meta.scrip||0)+sc;ov.scrip=sc;}}  // the first table of a stop pays no NCR on Copper
     if(G.bounty&&bountyMet(G.bounty,lanes)){ov.bountyWon=G.bountyPay;meta.caps+=G.bountyPay;if(has('hunter')&&!r.hunterUsed&&(r.grit||0)<2){r.hunterUsed=true;r.grit=(r.grit||0)+1;extras.push('Bounty Hunter: +1 Grit');}}
-    if([0,1,2].some(l=>lanes[l]==='p'&&G.p.cv[l].some(e=>e.card.mod==='gilded'))){r.scrip=(r.scrip||0)+1;meta.scrip=(meta.scrip||0)+1;ov.scrip=(ov.scrip||0)+1;extras.push('1 NCR dollar from a Gilded card');}
+    if(r.currencyStop!==s&&[0,1,2].some(l=>lanes[l]==='p'&&G.p.cv[l].some(e=>e.card.mod==='gilded'))){r.currencyStop=s;r.scrip=(r.scrip||0)+1;meta.scrip=(meta.scrip||0)+1;ov.scrip=(ov.scrip||0)+1;extras.push('1 NCR dollar from a Currency card');}  // once per stop
     if(G.char==='ronald'){meta.caps+=3;extras.push('3 from Bootlegger');}
     const intr=Math.min(interestCap(),Math.floor(before/5));if(intr>0){meta.caps+=intr;extras.push(`${intr} interest`);}
     if(G.char==='nuke'&&chemTotal()<chemMax()){const id=pick(Object.keys(CHEMS));meta.chems[id]=(meta.chems[id]||0)+1;ov.brewed=id;}

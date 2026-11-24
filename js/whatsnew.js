@@ -1,7 +1,8 @@
 // "What's new": shown once on the first open after an update. To announce a release, add an entry at the TOP of
 // WHATS_NEW with a new id and a few short lines. Players who haven't seen that id get the card; brand-new players don't.
 const WHATS_NEW=[
-  {id:'2026-11-e',title:'Lucky Revolver',lines:[
+  {id:'2026-11-e',title:'Revolver and NCR pay',lines:[
+    'Tables pay a little less NCR (the first table of each stop pays none on the Copper Road), and <b>Currency</b> cards pay once per stop instead of once per table. Gear should feel earned again.',
     'The <b>Lucky Revolver</b> now adds an extra card on top of a high Luck (3 with Luck 9+), instead of doing the same thing Luck 9 already does.',
   ]},
   {id:'2026-11-d',title:'A New Vegas deck',lines:[
@@ -9,7 +10,7 @@ const WHATS_NEW=[
     'New hand-inked atomic suit symbols on every card.',
   ]},
   {id:'2026-11-c',title:'Currency cards',lines:[
-    'The <b>Gilded</b> upgrade is now <b>Currency</b>, printed on green NCR banknote paper. It pays <b>1 NCR dollar</b> (once per table) when it’s in a caravan that sells, instead of caps, so it no longer duplicates Golden cards.',
+    'The <b>Gilded</b> upgrade is now <b>Currency</b>, printed on green NCR banknote paper. It pays <b>1 NCR dollar</b> (once per stop) when it’s in a caravan that sells, instead of caps, so it no longer duplicates Golden cards.',
   ]},
   {id:'2026-11-b',title:'Heads or tails',lines:[
     'A <b>cap flip</b> now decides who opens each hand. Tutorials still let you go first.',
