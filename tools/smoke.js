@@ -192,7 +192,7 @@ const ok = (name, cond, extra) => { cond ? pass++ : fail++; console.log(`${cond 
   ok('Charisma moves trading post prices', SP.disc === '85,80,110,100', SP.disc);
   ok('Intelligence cheapens rerolls, keeps more bundle cards and halves bounties when very low', SP.rerollNuke === 2 && SP.rerollMatt === 3 && SP.keepNuke === 2 && SP.keepMatt === 1 && SP.bountyHalf, `${SP.rerollNuke}/${SP.keepNuke}`);
   ok('Agility changes the opening hand and frees a discard once per hand', SP.deal === '7,9,8' && SP.quickOn && SP.quickFree && SP.quickOnce, SP.deal);
-  ok('Luck tilts rarity weights (still summing to 100) and Lucky cards draw 2 at 9+', SP.luckSkews && SP.luckyDraw === 2 && SP.luckyDrawMatt === 1);
+  ok('Luck tilts rarity weights (still summing to 100) and Lucky cards draw 2 at 9+ (3 with the Lucky Revolver on top)', SP.luckSkews && SP.luckyDraw === 3 && SP.luckyDrawMatt === 1);
   ok('Benny’s Double-Crosser: every dealer holds an extra card', SP.bennyDealerHand === 6, SP.bennyDealerHand);
   ok('gear can lift a stat over an event threshold', !SP.gateBase && SP.gateGear);
   ok('SPECIAL shows on the setup screen, bio cards, the Mojave Express and the in-run kit', SP.setupPanel && SP.bio && SP.office && SP.kit);
