@@ -71,10 +71,10 @@ function cardHTML(c){
     const art=typeof ART!=='undefined'&&ART.legend[c.legend];
     if(art)return `<div class="card legend has-art lg-${L.rar}"><img class="lgart" src="${art}" alt=""><span class="lgn">${esc(L.name)}</span></div>`;
     return `<div class="card legend lg-${L.rar}"><span class="lgk">Legend</span><span class="lgn">${esc(L.name)}</span><span class="lgr">${L.rar}</span></div>`;}
-  if(c.rank==='JK')return `<div class="card joker${edCls(c)}"><span class="court jk"${FACE_FILE.JK?` style="background-image:url(${FACE_FILE.JK})"`:''}></span><span class="jkc t">JOKER</span><span class="jkc b">JOKER</span>${edFx(c)}</div>`;
+  if(c.rank==='JK')return `<div class="card joker${edCls(c)}"><span class="court jk${FACE_FILE.JK?' jkart':''}"${FACE_FILE.JK?` style="background-image:url(${FACE_FILE.JK})"`:''}></span><span class="jkc t">JOKER</span><span class="jkc b">JOKER</span>${edFx(c)}</div>`;
   const red=isRed(c.suit), s=SUIT_CH[c.suit], num=isNum(c);
   const md=c.mod&&typeof MODS!=='undefined'&&MODS[c.mod]?c.mod:null;
-  return `<div class="card s-${c.suit}${red?' red':''}${num?'':' face'}${md?' m-'+md:''}${edCls(c)}"><span class="r">${c.rank}<i>${suitIcon(c.suit)}</i></span>${num?`<span class="pip">${suitPip(c.suit)}</span>`:FACE_FILE[c.rank+c.suit]?`<span class="court img" style="--cf:url(${FACE_FILE[c.rank+c.suit]})"></span>`:`<span class="court" style="background-image:var(--court-${c.rank}-${red?'r':'b'})"></span>`}<span class="r2">${c.rank}<i>${suitIcon(c.suit)}</i></span>${md?`<span class="mod ${md}">${MODS[md].tag}</span>`:''}${edFx(c)}</div>`;
+  return `<div class="card s-${c.suit}${red?' red':''}${num?'':' face'}${md?' m-'+md:''}${edCls(c)}"><span class="r">${c.rank}<i>${suitIcon(c.suit)}</i></span>${num?`<span class="pip">${suitPip(c.suit)}</span>`:FACE_FILE[c.rank+c.suit]?`<span class="court img${FACE_WIDE[c.rank+c.suit]?' wide':''}" style="--cf:url(${FACE_FILE[c.rank+c.suit]})"></span>`:`<span class="court" style="background-image:var(--court-${c.rank}-${red?'r':'b'})"></span>`}<span class="r2">${c.rank}<i>${suitIcon(c.suit)}</i></span>${md?`<span class="mod ${md}">${MODS[md].tag}</span>`:''}${edFx(c)}</div>`;
 }
 // Suit symbols are drawn as worn, hand-inked shapes (see the sprite at the top of index.html), not text glyphs, so they look the same on every phone.
 // Your own symbols: drop spade, heart, diamond and club (.svg, .png or .webp, any shape on a transparent background) into suits/.
@@ -88,11 +88,11 @@ function loadSuitFiles(){
 const suitPip=s=>SUIT_ART[s]?`<img class="pipart" src="${SUIT_ART[s]}" alt="">`:suitIcon(s);
 // Your own face-card art: faces/KS.png, QH.png, JD.png ... (rank + suit letter) and faces/JK.png for the Joker. .webp works too.
 // Court art is one half-length figure cut off at the waist; the game draws it twice, the second turned upside down.
-const FACE_FILE={};
+const FACE_FILE={},FACE_WIDE={};
 function loadFaceFiles(){
   const ids=['JK'];for(const r of ['J','Q','K'])for(const s of SUITS)ids.push(r+s);
-  for(const id of ids){const exts=['png','webp'];const tryExt=n=>{if(n>=exts.length)return;const im=new Image();
-    im.onload=()=>{FACE_FILE[id]=im.src;if(typeof meta!=='undefined'&&meta&&typeof render==='function')render();};im.onerror=()=>tryExt(n+1);im.src=`faces/${id}.${exts[n]}`;};tryExt(0);}
+  for(const id of ids){const exts=['webp','png'];const tryExt=n=>{if(n>=exts.length)return;const im=new Image();
+    im.onload=()=>{FACE_FILE[id]=im.src;FACE_WIDE[id]=im.naturalWidth/im.naturalHeight>1.45;if(typeof meta!=='undefined'&&meta&&typeof render==='function')render();};im.onerror=()=>tryExt(n+1);im.src=`faces/${id}.${exts[n]}`;};tryExt(0);}
 }
 const suitIcon=s=>SUIT_FILE[s]?`<span class="sx img" aria-hidden="true" style="--m:url(${SUIT_FILE[s]})"></span>`:`<svg class="sx" viewBox="0 0 24 24" aria-hidden="true"><use href="#sx-${s}"/></svg>`;
 const capsHTML=n=>`<span class="pill num" data-capsval="${n}"><span class="cap"></span> <span class="cn">${n}</span> caps</span>`;

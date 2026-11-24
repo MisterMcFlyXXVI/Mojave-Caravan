@@ -903,7 +903,16 @@ ul.resl{text-align:left;display:inline-block;margin:0 auto 6px}
 .sx{width:1em;height:1em;display:inline-block;fill:currentColor;vertical-align:-.12em;filter:url(#worn);overflow:visible}
 .card .pip .sx{width:1em;height:1em}
 .sx.img{background:currentColor;-webkit-mask:var(--m) center/contain no-repeat;mask:var(--m) center/contain no-repeat;fill:none;filter:none}
-.card .court.img{left:9%;right:9%;top:9%;bottom:9%;background:none}
+.card .court.img{left:8%;right:8%;top:10%;bottom:10%;background:none}  /* big, like a printed court card: the corner index sits in front, so art should keep its top-left and bottom-right corners empty (a bust, not a box) */
+.card.face .r,.card.face .r2{z-index:3}
 .card .court.img::before,.card .court.img::after{content:"";position:absolute;left:0;right:0;height:50%;background:var(--cf) center bottom/contain no-repeat}
 .card .court.img::before{top:0}.card .court.img::after{bottom:0;transform:rotate(180deg)}
 .card .pip .pipart{display:block;width:calc(var(--cw)*.88);height:calc(var(--cw)*.88);object-fit:contain;filter:drop-shadow(0 1px 1px #0003)}
+/* face cards stack the rank over the suit, like a printed court card: a narrow column that keeps clear of the portrait */
+.card.face .r,.card.face .r2{flex-direction:column;gap:0;align-items:center;line-height:.95}
+.card.joker .court.jk.jkart{left:14%;right:14%;top:8%;bottom:8%;background-size:contain;background-position:center}  /* custom Joker art sits between the two JOKER labels */
+/* face cards: the corner rank and suit glow like a neon sign, so they read on top of the portrait */
+.card.face:not(.joker) .r,.card.face:not(.joker) .r2{text-shadow:0 0 2px var(--chip-bg),0 0 4px var(--chip-bg),0 0 7px currentColor;
+  filter:drop-shadow(0 0 1px var(--chip-bg)) drop-shadow(0 0 2.5px currentColor)}
+.card.face:not(.joker):not(.red) .r,.card.face:not(.joker):not(.red) .r2{--glow:#7fe3ff;text-shadow:0 0 2px var(--chip-bg),0 0 4px var(--chip-bg),0 0 8px var(--glow);
+  filter:drop-shadow(0 0 1px var(--chip-bg)) drop-shadow(0 0 1px var(--chip-bg)) drop-shadow(0 0 3px var(--glow))}  /* black suits: a cool neon tube glow, since a black glow can't shine */
