@@ -5,6 +5,8 @@ const NV_STOPS=[0,2,4,5,8,9]; // ROAD indices: Goodsprings, Primm, Nelson, Bould
 const WC_IDX=[0,2,4,5,6,8,9];  // The Water Chip: seven stops, difficulty borrowed from these ROAD tables
 let RUN_STOPS=NV_STOPS;
 const isWC=()=>!!(meta&&meta.run&&meta.run.special==='waterchip');
+// What to call the current run in titles and buttons: the Water Chip is a themed Road run, but it has its own name.
+const roadName=()=>isWC()?'The Water Chip':'The Road';
 function syncRoute(){RUN_STOPS=isWC()?WC_IDX:NV_STOPS;}
 // ---- The Water Chip (Fallout 1 special run) ----
 const WC_DAYS=150,WC_COST=[6,8,10],WC_SKIP=3;
@@ -175,19 +177,19 @@ function loadoutLine(){
 function renderOffice(){
   const g=meta.gear,live=runLive();
   app.innerHTML=`
-  <div class="mbar">${backBtn('road','The Road')}${scripHTML(meta.scrip||0)}</div>
+  <div class="mbar">${backBtn('road',roadName())}${scripHTML(meta.scrip||0)}</div>
   <section class="hero small"><div class="neon sm" style="font-size:clamp(24px,7vw,40px)">Mojave Express</div><p class="tagline">Spend NCR dollars on gear you keep for good. Wear one piece in each slot; your loadout is applied when a run starts.</p></section>
   ${live?'<p class="note" style="text-align:center">You’re on a run. Loadout changes apply from your next run.</p>':''}
   <div class="slotstrip" aria-label="Your loadout">${GEAR_SLOTS.map(sl=>{const id=g.on[sl.id];return `<div class="nslot${id?' full':''}">${sl.id==='comp'&&id&&ART.comp[id]?`<img class="compart sm" src="${ART.comp[id]}" alt="">`:''}<small>${sl.name}</small><b>${id&&GEAR[id]?esc(GEAR[id].name):'Empty'}</b></div>`;}).join('')}</div>
   ${meta.char?`<section class="panel"><h2 style="font-size:22px">${esc(CHARS[meta.char].name)}’s SPECIAL</h2>${specialBarsHTML(meta.char,currentGearIds())}${specialEffectsHTML(meta.char,currentGearIds())}<p class="note">Every piece of gear adds to or takes from these. Stats run from 1 to 10.</p></section>`:''}
   <section class="panel office">
-    <p class="note">Earn NCR dollars on the Road: 1 for a Saloon table, 2 for High Stakes, 3 for a Boss (+1 each on Silver, +2 on Gold). A run that ends pays 1 per stop reached, and making it to Vegas pays 10, 15 or 20.</p>
+    <p class="note">Earn NCR dollars on the Road and the Water Chip run: 1 for a High Stakes table, 2 for a Boss (+1 per table on Silver, +2 on Gold; Saloon tables pay only on Silver and Gold). A run that ends pays 1 per stop reached, and making it to Vegas pays 10, 15 or 20.</p>
     ${GEAR_SLOTS.map(sl=>`<div class="nslot-h"><span class="nslot mini${g.on[sl.id]?' full':''}"></span><h3 class="sub">${sl.name}</h3></div><div class="gearrow">${Object.entries(GEAR).filter(([,x])=>x.slot===sl.id).map(([id,x])=>{
       const own=g.owned.includes(id),on=g.on[sl.id]===id,afford=(meta.scrip||0)>=x.price;
       return `<div class="gearopt${on?' on':''}">${x.slot==='comp'&&ART.comp[id]?`<img class="compart" src="${ART.comp[id]}" alt="">`:''}<b>${esc(x.name)}</b><span class="gspwrap">${spChips(x)}</span><span>${esc(x.desc)}</span>
         ${own?`<button class="btn${on?' hot':''}" data-gearon="${id}" aria-pressed="${on}">${on?(x.slot==='comp'?'With you':'Wearing'):(x.slot==='comp'?'Take along':'Wear')}</button>`:x.wc?`<span class="note">🔒︎ Joins you on the Water Chip run.</span>`:`<button class="btn" data-gearbuy="${id}" ${afford?'':'disabled'}><span class="tix" aria-hidden="true"></span> ${x.price}</button>`}</div>`;}).join('')}</div>`).join('')}
     <h3 class="sub" style="margin-top:22px">Legend cards</h3>
-    <p class="note">Buy a Legend card to add it to the trading posts on The Road. They’re rare: about 1 trading post in 4 has one, and legendaries turn up a third as often as rares. Once you buy one on the road it’s in your deck for the run. Playing one doesn’t use your turn.</p>
+    <p class="note">Buy a Legend card to add it to the trading posts on the Road and the Water Chip run. They’re rare: about 1 trading post in 4 has one, and legendaries turn up a third as often as rares. Once you buy one on the road it’s in your deck for the run. Playing one doesn’t use your turn.</p>
     <div class="gearrow">${Object.entries(LEGENDS).map(([id,L])=>{const own=(meta.legends||[]).includes(id),pr=LEGEND_PRICE[L.rar].ncr;
       return `<div class="gearopt lgopt${own?' on':''}">${ART.legend[id]?cardHTML({legend:id}):''}<b class="lg-${L.rar}">${esc(L.name)}</b><i class="rar lgt-${L.rar}">${L.rar}</i><span>${esc(L.desc)}</span>
         ${own?'<button class="btn" disabled>In the trading posts</button>':L.found?`<span class="note">🔒︎ ${esc(L.found)}</span>`:`<button class="btn" data-legendbuy="${id}" ${(meta.scrip||0)>=pr?'':'disabled'}><span class="tix" aria-hidden="true"></span> ${pr}</button>`}</div>`;}).join('')}</div>
@@ -314,6 +316,8 @@ const runV=id=>!!(run()&&run().vouchers.includes(id));
 const deckIdx=id=>DECKS.findIndex(d=>d.id===id);
 const deckUnlocked=id=>deckIdx(id)<(meta.decksUnlocked||1);
 const tierIdx=id=>TIERS.findIndex(t=>t.id===id);
+// 'Copper Road' etc.; on the Water Chip run just 'Copper', since it isn't the Road
+const tierLabel=(id,wc)=>{const t=TIERS[tierIdx(id)];return t?(wc?t.name.replace(/ Road$/,''):t.name):'';};
 // Difficulty is tracked per deck: win a deck on Copper to open Silver for that deck, and so on.
 const deckTierCount=d=>Math.max(1,((meta.deckTiers||{})[d])||1);
 const tierPips=d=>{const w=(meta.deckWon||{})[d]??-1;return ` <span class="tpips" title="${w<0?'Not won yet':'Won on the '+TIERS[w].name}">${TIERS.map((t,i)=>`<i class="tp ${t.id}${i<=w?' won':''}"></i>`).join('')}</span>`;};
@@ -815,13 +819,13 @@ function runLost(abandon){
   if(r.endless){r.phase='over';r.result='won';r.fellBeyond=true;r.unlocked=[];const h=(meta.runHist||[])[0];if(h)h.beyond=mileOf(r.stop);return;}
   r.phase='over';r.result='lost';r.endedAt=Date.now();
   if(!abandon){const b=r.stop+1;r.scrip=(r.scrip||0)+b;meta.scrip=(meta.scrip||0)+b;r.scripMiles=b;recordDaily(r,false);}
-  meta.runHist=meta.runHist||[];meta.runHist.unshift({char:r.char,deck:r.deck,tier:r.tier,stop:r.stop,table:r.table,won:r.won,result:'lost',at:Date.now()});meta.runHist=meta.runHist.slice(0,12);
+  meta.runHist=meta.runHist||[];meta.runHist.unshift({char:r.char,deck:r.deck,tier:r.tier,stop:r.stop,table:r.table,won:r.won,result:'lost',special:r.special,at:Date.now()});meta.runHist=meta.runHist.slice(0,12);
   meta.bestStop=Math.max(meta.bestStop||0,r.stop);
 }
 function runWon(ov){
   const r=run();r.phase='over';r.result='won';recordDaily(r,true);r.endedAt=Date.now();{const c=cdx();for(const id of meta.perks)c.perk[id]=(c.perk[id]||0)|4;}
   meta.runsWon=(meta.runsWon||0)+1;
-  meta.runHist=meta.runHist||[];meta.runHist.unshift({char:r.char,deck:r.deck,tier:r.tier,stop:RUN_STOPS.length,won:r.won,result:'won',at:Date.now()});meta.runHist=meta.runHist.slice(0,12);
+  meta.runHist=meta.runHist||[];meta.runHist.unshift({char:r.char,deck:r.deck,tier:r.tier,stop:RUN_STOPS.length,won:r.won,result:'won',special:r.special,at:Date.now()});meta.runHist=meta.runHist.slice(0,12);
   meta.bestStop=RUN_STOPS.length;
   const unl=[];
   const di=deckIdx(r.deck);if(di+1<DECKS.length&&meta.decksUnlocked<di+2){meta.decksUnlocked=di+2;unl.push(`${DECKS[di+1].name} deck`);}

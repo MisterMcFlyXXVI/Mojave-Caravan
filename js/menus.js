@@ -122,7 +122,7 @@ function rulesPopHTML(){
     <h3 class="sub">Quick answers</h3>
     <div class="qa">${QUICK_QA.map(([q,a])=>`<details><summary>${esc(q)}</summary><p>${esc(a)}</p></details>`).join('')}</div>
     <details class="rules"><summary>The full rules</summary><div class="rulebook">${RULES_HTML}</div></details>
-    ${G&&G.mode==='road'?`<details class="rules"><summary>The Road</summary><ul>${ROAD_RULES}</ul></details>`:''}
+    ${G&&G.mode==='road'?`<details class="rules"><summary>${isWC()?'Water Chip (Road rules)':'The Road'}</summary><ul>${ROAD_RULES}</ul></details>`:''}
     <button class="btn hot" data-rulesclose style="margin-top:14px;width:100%">Back to the table</button>
   </div></div>`;
 }

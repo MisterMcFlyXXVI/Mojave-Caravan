@@ -51,7 +51,7 @@ function topbarHTML(){
 }
 function resumeHTML(){
   const m=meta.lastMode; if(!m)return '';
-  const label=m==='road'?'The Road':m==='campaign'?'Classic campaign':'Classic';
+  const label=m==='road'?roadName():m==='campaign'?'Classic campaign':'Classic';
   const go=m==='campaign'?(meta.classic.camp?'campaign':'classic'):m;
   return `<button class="resume" data-go="${go}"><span>Continue</span><b>${label}</b><em>→</em></button>`;
 }

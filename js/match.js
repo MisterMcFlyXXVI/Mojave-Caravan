@@ -322,7 +322,7 @@ function resultHTML(){
       :ov.mode==='classic'
       ?(G.opp>=0?`<button class="btn hot" data-cplay="${G.opp}">Deal again</button> <button class="btn" data-go="classic" style="margin-left:6px">Back to the table</button>`
         :`<button class="btn hot" data-go="classic">Back to the table</button>`)
-      :`<button class="btn hot" data-go="road">Back to the road</button>`}
+      :`<button class="btn hot" data-go="road">Back to ${isWC()?"the Water Chip":"the road"}</button>`}
   </div></div>`;
 }
 

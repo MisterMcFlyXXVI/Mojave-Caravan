@@ -2,7 +2,7 @@
 const ruleChip=id=>`<span class="rb house-chip" title="${esc(BOSS_RULES[id].desc)}">${BOSS_RULES[id].name}</span>`;
 function runHeaderHTML(){
   const r=run(),slots=perkSlots();
-  return `<div class="charstrip"><img src="${portrait(r.char)}" alt=""><div><small>${esc(TIERS[tierIdx(r.tier)].name)} · ${esc(DECKS[deckIdx(r.deck)].name)}</small><b>${esc(CHARS[r.char].name)}</b>
+  return `<div class="charstrip"><img src="${portrait(r.char)}" alt=""><div><small>${esc(tierLabel(r.tier,r.special==='waterchip'))} · ${esc(DECKS[deckIdx(r.deck)].name)}</small><b>${esc(CHARS[r.char].name)}</b>
       <span>${isWC()?`The Water Chip · ${r.days} days left · `:''}${inBeyond(r.stop)?`Beyond the Strip · mile ${mileOf(r.stop)}`:`Stop ${r.stop+1} of ${RUN_STOPS.length}`} · ${r.won} table${r.won===1?'':'s'} won · Grit ${'●'.repeat(r.grit||0)||'none'}${r.seed?(r.daily?' · Daily run':` · Seed ${esc(r.seed)}`):''}</span></div></div>
     <div class="hubbar">${capsHTML(meta.caps)}<button class="pill num kitpill" data-kitopen="deck">Deck ${meta.deck.length}${modCount()?` · ${modCount()} upgraded`:''}</button><button class="pill num kitpill" data-kitopen="perks">Perks ${meta.perks.length}/${slots}</button><button class="pill num kitpill" data-kitopen="chems">Chems ${chemTotal()}/${chemMax()}</button></div>
     ${meta.perks.length?`<div class="rulesbar" style="justify-content:center">${meta.perks.map(p=>`<span class="rb perk-chip rar-${PERK_RARITY[p]}" title="${esc(PERKS[p].desc)}">${PERKS[p].name}</span>`).join('')}${r.vouchers.map(v=>`<span class="rb char-chip" title="${esc(VOUCHERS[v].desc)}">${VOUCHERS[v].name}</span>`).join('')}</div>`:''}`;
@@ -40,7 +40,7 @@ function renderRunMap(){
   }).join('');
   app.innerHTML=`
   <div class="mbar">${backBtn('home','Modes')}<button class="btn ghost${runArmed?' armed':''}" data-runabandon>${runArmed?'Tap again to abandon':'Abandon run'}</button></div>
-  <section class="hero small"><div class="neon sm">The Road</div></section>
+  <section class="hero small"><div class="neon sm">${roadName()}</div></section>
   ${runHeaderHTML()}
   <div class="hubbtns kitbtns"><button class="btn" data-kitopen="deck">Your deck, perks & chems</button>${r.offers?`<button class="btn" data-runshopback>← Back to the trading post</button>`:''}</div>
   ${r.tagPick?`<section class="panel"><h3 class="sub" style="margin-top:0">Tag Skills: pick a free perk</h3><div class="plist">${r.tagPick.map(id=>`<button class="prow" data-tagpick="${id}"><div><b>${esc(PERKS[id].name)}</b><span>${esc(PERKS[id].desc)}</span></div></button>`).join('')}</div></section>`:''}
@@ -122,7 +122,7 @@ function renderRunSetup(){
   <section class="panel" style="margin-top:14px">
     <div class="sect-h"><h2 style="font-size:22px">Your record</h2><button class="btn" data-go="codex">Codex</button></div>
     <p class="note">Runs won: ${meta.runsWon||0} · Best: ${meta.bestStop>=RUN_STOPS.length?'Reached Vegas':meta.bestStop?`stop ${meta.bestStop+1}`:'none yet'}${meta.endlessBest?` · Beyond the Strip: ${TIERS.map(t=>meta.endlessBest[t.id]?`${t.name.split(' ')[0]} ${meta.endlessBest[t.id]}`:null).filter(Boolean).join(', ')}`:''}</p>
-    ${(meta.runHist||[]).length?`<div class="hist">${meta.runHist.slice(0,6).map(h=>`<div class="${h.result}"><b>${h.result==='won'?'Won':'Lost'}</b> ${esc(CHARS[h.char]?CHARS[h.char].name:'?')} · ${esc(DECKS[deckIdx(h.deck)].name)} · ${esc(TIERS[tierIdx(h.tier)].name)}${h.result==='lost'?` · stop ${h.stop+1}`:''}${h.beyond?` · +${h.beyond-1} beyond`:''} · ${h.won} tables</div>`).join('')}</div>`:''}
+    ${(meta.runHist||[]).length?`<div class="hist">${meta.runHist.slice(0,6).map(h=>`<div class="${h.result}"><b>${h.result==='won'?'Won':'Lost'}</b> ${h.special==='waterchip'?'Water Chip · ':''}${esc(CHARS[h.char]?CHARS[h.char].name:'?')} · ${esc(DECKS[deckIdx(h.deck)].name)} · ${esc(tierLabel(h.tier,h.special==='waterchip'))}${h.result==='lost'?` · stop ${h.stop+1}`:''}${h.beyond?` · +${h.beyond-1} beyond`:''} · ${h.won} tables</div>`).join('')}</div>`:''}
   </section>`;
 }
 function runStatsHTML(r){
@@ -158,10 +158,10 @@ function renderCodex(){
       <h3 class="sub">Chems</h3><div class="plist">${Object.values(CHEMS).map(e=>`<div class="prow"><div><b>${esc(e.name)}</b><span>${esc(e.desc)}</span></div></div>`).join('')}</div>`;
   }
   app.innerHTML=`
-  <div class="mbar">${backBtn('road','The Road')}${count?`<span class="pill num">${count}</span>`:''}</div>
+  <div class="mbar">${backBtn('road',roadName())}${count?`<span class="pill num">${count}</span>`:''}</div>
   <section class="panel">
     <h2 style="font-size:28px">Codex</h2>
-    <p class="note">Everything you’ve met on the Road. Unseen entries stay hidden until you find them.</p>
+    <p class="note">Everything you’ve met on the Road and the Water Chip run. Unseen entries stay hidden until you find them.</p>
     <div class="tabs" role="group" aria-label="Codex section">${tabs.map(([k,l])=>`<button class="btn" data-cxtab="${k}" aria-pressed="${codexTab===k}">${l}</button>`).join('')}</div>
     ${body}
   </section>`;
@@ -228,7 +228,7 @@ function kitHTML(){
     <div class="tabs" role="group" aria-label="Kit section">${tabBtn('deck',`Deck (${meta.deck.length})`)}${tabBtn('perks',`Perks (${meta.perks.length}/${slots})`)}${tabBtn('special','SPECIAL')}${tabBtn('chems',`Chems & more`)}</div>
     ${tab==='deck'?`
       <p class="note">${deckSummary(meta.deck)} ${modCount()?`${modCount()} upgraded.`:''} ${meta.deck.filter(c=>c.ed).length?`${meta.deck.filter(c=>c.ed).length} with a special finish.`:''}</p>
-      <p class="note">On the Road your deck changes at the trading post: add cards from bundles and singles, upgrade them at the workbench, and thin it out with the Burn pile.${back?' You can still go back to this stop’s trading post.':''}</p>
+      <p class="note">On ${isWC()?'the Water Chip run':'the Road'} your deck changes at the trading post: add cards from bundles and singles, upgrade them at the workbench, and thin it out with the Burn pile.${back?' You can still go back to this stop’s trading post.':''}</p>
       <div class="deckgrid">${deck.map(c=>`<div class="card-btn" aria-label="${cardName(c)}${c.mod?' '+MODS[c.mod].name:''}${c.ed?' '+EDITIONS[c.ed].name:''}">${cardHTML(c)}</div>`).join('')}</div>`
     :tab==='perks'?`
       ${meta.perks.length?`<div class="plist">${meta.perks.map(id=>`<div class="prow"><div><b>${PERKS[id].name} <i class="rar rar-${PERK_RARITY[id]}">${PERK_RARITY[id]}</i></b><span>${esc(PERKS[id].desc)}</span></div></div>`).join('')}</div>`:'<p class="note">No perks yet. Buy them at the trading post.</p>'}
